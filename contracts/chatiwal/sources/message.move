@@ -1,4 +1,9 @@
-/// Message module for Chatiwal
+#[allow(lint(share_owned, self_transfer))]
+/// Message module of Chatiwal
+///
+/// This module defines the core `Message` structure in the Chatiwal protocol,
+/// supporting encrypted content, controlled access policies, ownership, and
+/// optional persistence.
 module chatiwal::message;
 
 use chatiwal::events;
@@ -490,7 +495,7 @@ public entry fun read_message_no_policy(
     do_read_message_no_policy(msg, c, ctx);
 }
 
-fun do_read_message_no_policy(msg: &SuperMessageNoPolicy, c: &Clock, ctx: &mut TxContext) {
+fun do_read_message_no_policy(msg: &SuperMessageNoPolicy, c: &Clock, ctx: &TxContext) {
     let r = tx_context::sender(ctx);
     let id = object::id(msg);
 
@@ -511,7 +516,7 @@ public entry fun read_message_time_lock(
     do_read_message_time_lock(msg, c, ctx);
 }
 
-fun do_read_message_time_lock(msg: &SuperMessageTimeLock, c: &Clock, ctx: &mut TxContext) {
+fun do_read_message_time_lock(msg: &SuperMessageTimeLock, c: &Clock, ctx: &TxContext) {
     let now = c.timestamp_ms();
     let r = tx_context::sender(ctx);
     let id = object::id(msg);
@@ -542,11 +547,7 @@ public entry fun read_message_limited_read(
     do_read_message_limited_read(msg, c, ctx);
 }
 
-fun do_read_message_limited_read(
-    msg: &mut SuperMessageLimitedRead,
-    c: &Clock,
-    ctx: &mut TxContext,
-) {
+fun do_read_message_limited_read(msg: &mut SuperMessageLimitedRead, c: &Clock, ctx: &TxContext) {
     let r = tx_context::sender(ctx);
     let id = object::id(msg);
 
@@ -584,7 +585,7 @@ fun do_read_message_fee_based<CoinType>(
     msg: &mut SuperMessageFeeBased<CoinType>,
     p: Coin<CoinType>,
     c: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     let r = tx_context::sender(ctx);
     let id = object::id(msg);
@@ -632,7 +633,7 @@ fun do_read_message_compound<CoinType>(
     msg: &mut SuperMessageCompound<CoinType>,
     p: Coin<CoinType>,
     c: &Clock,
-    ctx: &mut TxContext,
+    ctx: &TxContext,
 ) {
     let now = c.timestamp_ms();
     let r = tx_context::sender(ctx);
@@ -703,10 +704,7 @@ fun do_withdraw_fees<CoinType>(
     );
 }
 
-fun withdraw_fees_impl<CoinType>(
-    msg: &mut SuperMessageFeeBased<CoinType>,
-    recipient: address,
-): u64 {
+fun withdraw_fees_impl<CoinType>(msg: &SuperMessageFeeBased<CoinType>, recipient: address): u64 {
     assert!(
         msg.policy.fee_based_policy_get_recipient<CoinType>() == recipient,
         ENotMessageRecipient,
@@ -747,7 +745,7 @@ fun do_withdraw_fees_compound<CoinType>(
 }
 
 fun withdraw_fees_compound_impl<CoinType>(
-    msg: &mut SuperMessageCompound<CoinType>,
+    msg: &SuperMessageCompound<CoinType>,
     recipient: address,
 ): u64 {
     let amt = balance::value(&msg.fee_collected);
@@ -872,34 +870,76 @@ entry fun seal_approve_super_message_compound<CoinType>(
 
 // === Helper Functions ===
 
-// Get total read count for a limited read message
 public fun get_current_reader(msg: &SuperMessageLimitedRead): u64 {
     msg.readers.size()
 }
 
-// Get collected fees amount
 public fun get_collected_fees<CoinType>(msg: &SuperMessageFeeBased<CoinType>): u64 {
     balance::value(&msg.fee_collected)
 }
 
-// Get collected fees amount from compound message
 public fun get_collected_fees_compound<CoinType>(msg: &SuperMessageCompound<CoinType>): u64 {
     balance::value(&msg.fee_collected)
 }
 
-// Get remaining available reads
 public fun get_remaining_reads(msg: &SuperMessageLimitedRead): u64 {
     msg.policy.limited_read_policy_get_max() - msg.readers.size()
 }
 
-// Check if message is readable based on time lock
 public fun is_readable_by_time(msg: &SuperMessageTimeLock, ts: u64): bool {
     let from = msg.policy.time_lock_policy_get_from();
     let to = msg.policy.time_lock_policy_get_to();
     ts >= from && (ts <= to || to == 0)
 }
 
-// Getter functions for all message types
+// === Accessors ===
+
+public fun message_cap_get_id(msg_cap: &MessageOwnerCap): ID {
+    msg_cap.id.to_inner()
+}
+
+public fun message_cap_get_message_id(msg_cap: &MessageOwnerCap): ID {
+    msg_cap.msg_id
+}
+
+public fun message_snapshot_cap_get_id(msg_snapshot_cap: &MessagesSnapshotCap): ID {
+    object::id(msg_snapshot_cap)
+}
+
+public fun message_snapshot_cap_get_messages_snapshot_id(
+    msg_snapshot_cap: &MessagesSnapshotCap,
+): ID {
+    msg_snapshot_cap.messages_snapshot_id
+}
+
+public fun message_snapshot_get_id(msg_snapshot: &MessagesSnapshot): ID {
+    object::id(msg_snapshot)
+}
+
+public fun message_snapshot_get_group_id(msg_snapshot: &MessagesSnapshot): ID {
+    msg_snapshot.group_id
+}
+
+public fun message_snapshot_get_messages_blob_id(msg_snapshot: &MessagesSnapshot): String {
+    msg_snapshot.messages_blob_id
+}
+
+public fun message_no_policy_get_id(msg: &SuperMessageNoPolicy): ID {
+    object::id(msg)
+}
+
+public fun message_no_policy_get_group_id(msg: &SuperMessageNoPolicy): ID {
+    msg.group_id
+}
+
+public fun message_no_policy_get_message_blob_id(msg: &SuperMessageNoPolicy): String {
+    msg.message_blob_id
+}
+
+public fun message_no_policy_get_owner(msg: &SuperMessageNoPolicy): address {
+    msg.owner
+}
+
 public fun message_limit_read_get_id(msg: &SuperMessageLimitedRead): ID {
     object::id(msg)
 }

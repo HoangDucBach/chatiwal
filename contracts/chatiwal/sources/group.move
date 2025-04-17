@@ -1,7 +1,9 @@
 /// Group module of Chatiwal
 ///
-/// This module defines the Group of the Chatiwal protocol, which is a
-/// collection of members that can interact with each other.
+/// This module defines the `Group` structure used in the Chatiwal protocol,
+/// representing a set of members that can interact with each other. Groups are
+/// controlled via `GroupCap`, a capability object that grants administrative
+/// permissions over a group.
 module chatiwal::group;
 
 use chatiwal::events;
@@ -9,6 +11,13 @@ use chatiwal::utils::is_prefix;
 use std::string::String;
 use sui::clock::Clock;
 use sui::vec_set::{Self, VecSet};
+
+// === Error Constants ===
+
+const EInvalidGroupCap: u64 = 1000;
+const EMemberAlreadyExists: u64 = 1001;
+const EMemberNotExists: u64 = 1002;
+const ESealNotApproved: u64 = 1004;
 
 // === Access Control ===
 
@@ -27,9 +36,9 @@ public struct Group has key {
 
 public entry fun mint_group_and_transfer(metadata_blob_id: String, c: &Clock, ctx: &mut TxContext) {
     let g = do_mint_group(metadata_blob_id, c, ctx);
-    let g_cap = do_mint_group_cap(g.id.to_inner(), c, ctx);
+    let g_cap = do_mint_group_cap(object::id(&g), c, ctx);
     transfer::share_object(g);
-    transfer::transfer(g_cap, ctx.sender());
+    transfer::transfer(g_cap, tx_context::sender(ctx));
 }
 
 public entry fun mint_group_cap(
@@ -39,18 +48,20 @@ public entry fun mint_group_cap(
     c: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(group_cap.group_cap_has_permission_of_group(g));
-    let g_cap = do_mint_group_cap(g.id.to_inner(), c, ctx);
+    assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
+    let g_cap = do_mint_group_cap(object::id(g), c, ctx);
     transfer::transfer(g_cap, recipient);
 }
 
 public entry fun add_member(group_cap: &GroupCap, g: &mut Group, member: address, c: &Clock) {
-    assert!(group_cap.group_cap_has_permission_of_group(g));
+    assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
+    assert!(!vec_set::contains(&g.member, &member), EMemberAlreadyExists);
     do_add_member(g, member, c);
 }
 
 public entry fun remove_member(group_cap: &GroupCap, g: &mut Group, member: address, c: &Clock) {
-    assert!(group_cap.group_cap_has_permission_of_group(g));
+    assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
+    assert!(vec_set::contains(&g.member, &member), EMemberNotExists);
     do_remove_member(g, member, c);
 }
 
@@ -58,13 +69,13 @@ public entry fun remove_member(group_cap: &GroupCap, g: &mut Group, member: addr
 
 fun do_mint_group(metadata_blob_id: String, c: &Clock, ctx: &mut TxContext): Group {
     let g = mint_group_impl(metadata_blob_id, ctx);
-    events::emit_group_minted(g.id.to_inner(), g.metadata_blob_id, c.timestamp_ms());
+    events::emit_group_minted(object::id(&g), g.metadata_blob_id, c.timestamp_ms());
     g
 }
 
 fun do_mint_group_cap(group_id: ID, c: &Clock, ctx: &mut TxContext): GroupCap {
     let g_cap = mint_group_cap_impl(group_id, ctx);
-    events::emit_group_cap_minted(g_cap.id.to_inner(), g_cap.group_id, c.timestamp_ms());
+    events::emit_group_cap_minted(object::id(&g_cap), g_cap.group_id, c.timestamp_ms());
     g_cap
 }
 
@@ -77,32 +88,32 @@ fun mint_group_cap_impl(g_id: ID, ctx: &mut TxContext): GroupCap {
 
 fun do_add_member(g: &mut Group, member: address, c: &Clock) {
     add_member_impl(g, member);
-    events::emit_group_member_added(g.id.to_inner(), member, c.timestamp_ms());
+    events::emit_group_member_added(object::id(g), member, c.timestamp_ms());
 }
 
 fun do_remove_member(g: &mut Group, member: address, c: &Clock) {
     remove_member_impl(g, member);
-    events::emit_group_member_removed(g.id.to_inner(), member, c.timestamp_ms());
+    events::emit_group_member_removed(object::id(g), member, c.timestamp_ms());
 }
 
 fun add_member_impl(g: &mut Group, member: address) {
-    g.member.insert(member);
+    vec_set::insert(&mut g.member, member);
 }
 
 fun remove_member_impl(g: &mut Group, member: address) {
-    g.member.remove(&member);
+    vec_set::remove(&mut g.member, &member);
 }
 
 fun mint_group_impl(metadata_blob_id: String, ctx: &mut TxContext): Group {
     Group {
         id: object::new(ctx),
         member: vec_set::empty(),
-        metadata_blob_id: metadata_blob_id,
+        metadata_blob_id,
     }
 }
 
 public fun namespace(g: &Group): vector<u8> {
-    g.id.to_bytes()
+    object::id_to_bytes(&object::id(g))
 }
 
 // === Seal Interface ===
@@ -111,26 +122,26 @@ public(package) fun approve_internal(id: vector<u8>, caller: address, g: &Group)
     let namespace = namespace(g);
 
     if (!is_prefix(namespace, id)) {
-        return false;
+        return false
     };
 
-    g.member.contains(&caller)
+    vec_set::contains(&g.member, &caller)
 }
 
-entry fun seal_approve(id: vector<u8>, g: &Group, ctx: &TxContext) {
-    assert!(approve_internal(id, ctx.sender(), g), 0);
+public entry fun seal_approve(id: vector<u8>, g: &Group, ctx: &TxContext) {
+    assert!(approve_internal(id, tx_context::sender(ctx), g), ESealNotApproved);
 }
 
 // === Helper Functions ===
 
 fun group_cap_has_permission_of_group(group_cap: &GroupCap, g: &Group): bool {
-    group_cap.group_id == g.id.to_inner()
+    group_cap.group_id == object::id(g)
 }
 
 // === Accessors ===
 
 public fun group_get_group_id(g: &Group): ID {
-    g.id.to_inner()
+    object::id(g)
 }
 
 public fun group_get_group_member(g: &Group): VecSet<address> {
@@ -146,5 +157,9 @@ public fun group_cap_get_group_id(group_cap: &GroupCap): ID {
 }
 
 public fun group_cap_get_id(group_cap: &GroupCap): ID {
-    group_cap.id.to_inner()
+    object::id(group_cap)
+}
+
+public fun is_member(g: &Group, addr: address): bool {
+    vec_set::contains(&g.member, &addr)
 }

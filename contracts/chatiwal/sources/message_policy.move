@@ -1,25 +1,28 @@
+/// Message Policy module of Chatiwal
+///
+/// This module defines reusable access control policies for messages in the
+/// Chatiwal protocol. These policies are intended to be attached to messages
+/// to enforce restrictions such as time-based access, read count limits,
+/// or fee-based access.
 module chatiwal::message_policy;
 
 // === Errors ===
 
 const EInvalidTimeRange: u64 = 3000;
-const EInvalidMaxRead: u64 = 3001;
+const EInvalidMaxReads: u64 = 3001;
 const EInvalidFeeAmount: u64 = 3002;
 
 // === Structs ===
 
-/// Time Lock Policy: TLP
 public struct TimeLockPolicy has copy, drop, store {
     from: u64,
     to: u64,
 }
 
-/// Limited Read Policy: LRP
 public struct LimitedReadPolicy has copy, drop, store {
     max: u64,
 }
 
-/// Fee Based Policy: FBP
 public struct FeeBasedPolicy<phantom CoinType> has drop, store {
     fee_amount: u64,
     recipient: address,
@@ -33,7 +36,7 @@ public fun create_time_lock_policy(from: u64, to: u64): TimeLockPolicy {
 }
 
 public fun create_limited_read_policy(max: u64): LimitedReadPolicy {
-    assert!(max > 0, EInvalidMaxRead);
+    assert!(max > 0, EInvalidMaxReads);
     LimitedReadPolicy { max }
 }
 
