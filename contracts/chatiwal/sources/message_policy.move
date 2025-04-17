@@ -2,9 +2,9 @@ module chatiwal::message_policy;
 
 // === Errors ===
 
-const EInvalidTimeRange: u64 = 0;
-const EInvalidMaxRead: u64 = 0;
-const EInvalidFeeAmount: u64 = 0;
+const EInvalidTimeRange: u64 = 3000;
+const EInvalidMaxRead: u64 = 3001;
+const EInvalidFeeAmount: u64 = 3002;
 
 // === Structs ===
 
@@ -66,6 +66,6 @@ public fun fee_based_policy_get_fee_amount<CoinType>(policy: &FeeBasedPolicy<Coi
     policy.fee_amount
 }
 
-public fun fee_based_policy_get_recipient(policy: &FeeBasedPolicy<address>): address {
+public fun fee_based_policy_get_recipient<CoinType>(policy: &FeeBasedPolicy<CoinType>): address {
     policy.recipient
 }
