@@ -21,33 +21,6 @@ export const buttonRecipe = defineRecipe({
     width: "fit",
     rounded: "full",
   },
-  variants: {
-    semantic: {
-      default: {
-        bg: "default",
-        color: "default.fg",
-      },
-      primary: {
-        bg: "primary",
-        color: "primary.fg",
-        _hover: {
-          bg: "primary.600",
-          color: "primary.100",
-        }
-      },
-      secondary: {
-        bg: "secondary",
-        color: "secondary.fg",
-        _hover: {
-          bg: "secondary.600",
-          color: "secondary.100",
-        }
-      }
-    },
-  },
-  defaultVariants: {
-    semantic: "default",
-  },
 })
 
 interface ButtonRecipeProps extends RecipeVariantProps<typeof buttonRecipe> { }
@@ -55,9 +28,9 @@ export interface ButtonProps extends ChakraButtonProps, ButtonLoadingProps, Butt
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   function Button(props, ref) {
-    const { loading, disabled, loadingText, children, semantic, ...rest } = props
+    const { loading, disabled, loadingText, children, ...rest } = props
     const recipe = useRecipe({ recipe: buttonRecipe })
-    const styles = recipe({ semantic })
+    const styles = recipe({})
 
     return (
       <ChakraButton disabled={loading || disabled} ref={ref} css={styles} {...rest}>
