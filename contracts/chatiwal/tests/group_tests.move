@@ -171,3 +171,41 @@ fun test_remove_non_member_fails() {
     c.destroy_for_testing();
     ts::end(s);
 }
+
+#[test]
+fun test_seal_approve() {
+    let mut s = ts::begin(ADMIN_1);
+    let c = clock::create_for_testing(ts::ctx(&mut s));
+    let g_id: ID;
+    ts::next_tx(&mut s, ADMIN_1);
+    {
+        let ctx = ts::ctx(&mut s);
+        group::mint_group_and_transfer(metadata_string(), &c, ctx);
+    };
+    ts::next_tx(&mut s, ADMIN_1);
+
+    g_id = most_recent_shared_group_id();
+    {
+        let cap = ts::take_from_sender<GroupCap>(&s);
+        let mut g = ts::take_shared_by_id<Group>(&s, g_id);
+
+        group::add_member(&cap, &mut g, USER_1, &c);
+        assert!(group::is_member(&g, USER_1), 1);
+
+        ts::return_to_sender(&s, cap);
+        ts::return_shared(g);
+    };
+
+    ts::next_tx(&mut s, USER_1);
+    {
+        let g = ts::take_shared_by_id<Group>(&s, g_id);
+        let ctx = ts::ctx(&mut s);
+        // get group package id
+        let g_id_bytes = g.group_get_group_id().to_bytes();
+        group::seal_approve(g_id_bytes, &g, ctx);
+
+        ts::return_shared(g);
+    };
+    c.destroy_for_testing();
+    ts::end(s);
+}
