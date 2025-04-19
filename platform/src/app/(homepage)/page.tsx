@@ -3,6 +3,7 @@ import styles from "./page.module.css";
 import { Button } from "@/components/ui/button";
 import { Button as CButton } from "@chakra-ui/react";
 import { Badge, Stat } from "@chakra-ui/react"
+import { Test } from "./_components/Test";
 
 export default function Home() {
   return (
@@ -39,9 +40,7 @@ export default function Home() {
             />
             Deploy now
           </a>
-          <Button semantic={"primary"}>
-            Deploy now first
-          </Button>
+          <Test/>
           <a
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
             target="_blank"
