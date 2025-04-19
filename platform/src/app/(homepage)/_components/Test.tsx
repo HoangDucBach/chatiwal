@@ -2,6 +2,7 @@
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { fromHex } from "@mysten/sui/utils";
 
 export function Test() {
     const client = useChatiwalClient();
@@ -17,7 +18,7 @@ export function Test() {
             const groupCaps = await suiClient.getOwnedObjects({
                 owner: account?.address,
                 filter: {
-                    StructType: `${client.getPackageConfig().chatiwalId}::group::GroupCap`,
+                    StructType: `${client.client.getPackageConfig().chatiwalId}::group::GroupCap`,
                 },
                 options: {
                     showContent: true
@@ -31,14 +32,7 @@ export function Test() {
                 return object.group_id === groupId;
             });
 
-            const tx= await client.addMember({
-                groupCapId: groupCap?.data?.objectId as any,
-                groupId,
-                member: "0x0ae642a56a8faaa5f137fbc007b91b5f2622e3ab375e8a322d5418a3ee22cd95"
-            })
-            sign({
-                transaction: tx
-            });
+            const tx= await client.seal_approve(fromHex(client.client.getPackageConfig().chatiwalId), groupId);
             console.log("Group ID:", groupCaps);
             console.log("Test successful");
         }

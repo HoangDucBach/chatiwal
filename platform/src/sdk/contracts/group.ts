@@ -179,7 +179,7 @@ export function init(packageId: string) {
      */
     function seal_approve(options: {
         arguments: [
-            id: RawTransationArgument<Uint8Array | string>,
+            id: RawTransationArgument<Uint8Array>,
             group: RawTransationArgument<string>,
         ]
     }) {
@@ -187,15 +187,16 @@ export function init(packageId: string) {
             `vector<u8>`,
             `${packageId}::group::Group`,
         ];
-
+        
         return (tx: Transaction) =>
             tx.moveCall({
                 package: packageId,
                 module: "group",
                 function: "seal_approve",
-                arguments: normalizeMoveArguments([
-                    ...options.arguments,
-                ], typesArgs),
+                arguments: [
+                    tx.pure.vector("u8", options.arguments[0]),
+                    tx.object(options.arguments[1]),
+                ],
             });
     }
 

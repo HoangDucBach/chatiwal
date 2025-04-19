@@ -2,40 +2,39 @@
 
 import { useMemo } from "react";
 import { ChatiwalClient, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
-import { ChatiwalClientConfig } from "@/sdk/types";
-import { useSuiClient } from "@mysten/dapp-kit";
+import { ChatiwalClientConfig, GroupCap } from "@/sdk/types";
+import { useCurrentAccount, useSuiClient, useSuiClientQuery } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
+import { InvalidGroupCapError } from "@/sdk/errors";
 
 export interface IGroupActions {
     // === Entry functions ===
-    mint_group_and_transfer(metadata_blob_id: string): void;
+    mint_group_and_transfer(metadata_blob_id: string): Promise<void>;
 
     mint_group_cap(
         group: string,     // object ID or reference
         recipient: string,  // Sui address
         group_cap?: string, // object ID or reference, user provider or hooks auto provide
-    ): void;
+    ): Promise<void>;
 
     add_member(
         group: string,     // object ID or reference
         member: string,   // Sui address
         group_cap?: string, // object ID or reference, user provider or hooks auto provide
-    ): void;
+    ): Promise<void>;
 
     remove_member(
         group: string,     // object ID or reference
         member: string,    // Sui address
         group_cap?: string, // object ID or reference, user provider or hooks auto provide
-    ): void;
+    ): Promise<void>;
 
     seal_approve(
         id: Uint8Array,    // vector<u8>
         group: string      // object ID or reference
-    ): void;
+    ): Promise<void>;
 
     // === Public view functions ===
-    namespace(group: string): Uint8Array;
-
     group_get_group_id(group: string): string;
 
     group_get_group_member(group: string): string[]; // list of Sui addresses
@@ -55,6 +54,8 @@ interface IChatiwalClientActions extends IGroupActions, IMessageActions {
 }
 export function useChatiwalClient(): IChatiwalClientActions {
     const suiClient = useSuiClient();
+    const account = useCurrentAccount();
+
     const client = useMemo(() => {
         const config = {
             packageConfig: TESTNET_CHATIWAL_PACKAGE_CONFIG,
@@ -67,63 +68,137 @@ export function useChatiwalClient(): IChatiwalClientActions {
         throw new Error("Sui client is not available");
     }
 
+    const getOwnedGroupCapById = async (group: string) => {
+        if (!account) throw new Error("Please connect your wallet");
+        const groupCapsOfOwner = await suiClient.getOwnedObjects({
+            owner: account.address,
+            filter: {
+                StructType: `${client.getPackageConfig().chatiwalId}::group::GroupCap`,
+            },
+            options: {
+                showContent: true,
+            }
+        });
+        const groupCap = groupCapsOfOwner.data.find((cap) => {
+            const type = cap.data?.content?.dataType;
+            if (type !== "moveObject") throw new Error("Invalid type");
+            const object = cap.data?.content?.fields as unknown as GroupCap;
+            return object.groupId === group;
+        });
+
+        return groupCap;
+    }
+
     return {
         client,
         mint_group_and_transfer: async (metadata_blob_id: string) => {
-            
+            await client.mintGroupAndTransfer({ metadataBlobId: metadata_blob_id });
         },
 
         mint_group_cap: async (group: string, recipient: string, group_cap?: string) => {
-            const tx = new Transaction();
-            await client.group.mintGroupCap(tx, group, recipient, group_cap);
-            await tx.execute();
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const groupCapOfOwner = await getOwnedGroupCapById(group);
+                if (!groupCapOfOwner || !groupCapOfOwner.data) throw new InvalidGroupCapError("You don't have permission");
+
+                await client.mintGroupCap({
+                    groupCapId: groupCapOfOwner.data?.objectId,
+                    groupId: group,
+                    recipient: recipient,
+                });
+            } catch (error) {
+                throw error;
+            }
         },
 
         add_member: async (group: string, member: string, group_cap?: string) => {
-            const tx = new Transaction();
-            await client.group.addMember(tx, group, member, group_cap);
-            await tx.execute();
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const groupCapOfOwner = await getOwnedGroupCapById(group);
+                if (!groupCapOfOwner || !groupCapOfOwner.data) throw new InvalidGroupCapError("You don't have permission");
+
+                await client.addMember({
+                    groupCapId: groupCapOfOwner.data?.objectId,
+                    groupId: group,
+                    member: member,
+                });
+            } catch (error) {
+                throw error;
+            }
         },
 
         remove_member: async (group: string, member: string, group_cap?: string) => {
-            const tx = new Transaction();
-            await client.group.removeMember(tx, group, member, group_cap);
-            await tx.execute();
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const groupCapOfOwner = await getOwnedGroupCapById(group);
+                if (!groupCapOfOwner || !groupCapOfOwner.data) throw new InvalidGroupCapError("You don't have permission");
+
+                await client.removeMember({
+                    groupCapId: groupCapOfOwner.data?.objectId,
+                    groupId: group,
+                    member: member,
+                });
+            } catch (error) {
+                throw error;
+            }
         },
 
         seal_approve: async (id: Uint8Array, group: string) => {
-            const tx = new Transaction();
-            await client.group.sealApprove(tx, id, group);
-            await tx.execute();
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const tx = await client.sealApprove({
+                    id: id,
+                    groupId: group,
+                });
+                const res = await suiClient.devInspectTransactionBlock({
+                    transactionBlock: tx,
+                    sender: account?.address,
+                });
+                
+                console.log("Transaction result:", res);
+            } catch (error) {
+                throw error;
+            }
         },
 
-        namespace: (group: string) => {
-            return client.group.namespace(group);
-        },
+        // group_get_group_id: (group: string) => {
+        //     try {
+        //         if (!account) throw new Error("Please connect your wallet");
+        //         const tx = await client.groupGetGroupId(group);
+        //         const res = await suiClient.devInspectTransactionBlock({
+        //             transactionBlock: tx,
+        //             sender: account?.address,
+        //         });
 
-        group_get_group_id: (group: string) => {
-            return client.group.getGroupId(group);
-        },
+        //         if (!res || !res.results) {
+        //             throw new Error("No results found");
+        //         }
 
-        group_get_group_member: (group: string) => {
-            return client.group.getGroupMember(group);
-        },
+        //         const groupId = res.results[0];
+        //         console.log("Group ID:", groupId);
+        //         return groupId.returnValues;
+        //     }
+        // },
 
-        group_get_group_metadata_blob_id: (group: string) => {
-            return client.group.getGroupMetadataBlobId(group);
-        },
+        // group_get_group_member: (group: string) => {
+        //     return client.group.getGroupMember(group);
+        // },
 
-        group_cap_get_group_id: (group_cap: string) => {
-            return client.group.getGroupCapGroupId(group_cap);
-        },
+        // group_get_group_metadata_blob_id: (group: string) => {
+        //     return client.group.getGroupMetadataBlobId(group);
+        // },
 
-        group_cap_get_id: (group_cap: string) => {
-            return client.group.getGroupCapId(group_cap);
-        },
+        // group_cap_get_group_id: (group_cap: string) => {
+        //     return client.group.getGroupCapGroupId(group_cap);
+        // },
 
-        is_member: (group: string, addr: string) => {
-            return client.group.isMember(group, addr);
-        }
+        // group_cap_get_id: (group_cap: string) => {
+        //     return client.group.getGroupCapId(group_cap);
+        // },
 
-    };
+        // is_member: (group: string, addr: string) => {
+        //     return client.group.isMember(group, addr);
+        // }
+
+    } as any;
 }

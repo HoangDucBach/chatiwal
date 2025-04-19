@@ -2,7 +2,7 @@ import { ClientCache, ClientWithExtensions } from "@mysten/sui/experimental";
 import { ChatiwalClientConfig, ChatiwalPackageConfig } from "./types";
 import { SuiClient } from "@mysten/sui/client";
 import { MAINNET_CHATIWAL_PACKAGE_CONFIG, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "./constants";
-import { ChatiwalClientError } from "./error";
+import { ChatiwalClientError } from "./errors";
 
 import { init as initGroup } from "./contracts/group";
 import { Transaction } from "@mysten/sui/transactions";
@@ -89,7 +89,7 @@ export class ChatiwalClient {
 
     // Seal approve
     async sealApprove({ id, groupId }: {
-        id: Uint8Array | string;
+        id: Uint8Array;
         groupId: string;
     }) {
         const tx = new Transaction();
