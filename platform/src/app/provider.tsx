@@ -11,7 +11,6 @@ import suiConfig from "@/utils/sui.config";
 import utils from "@/utils"
 
 const queryClient = new QueryClient();
-const chatClient = new ChatClient(utils.ably, {});
 
 export default function Provider({
     children,
@@ -23,9 +22,7 @@ export default function Provider({
             <SuiClientProvider network={suiConfig.defaultNetwork} networks={suiConfig.networks}>
                 <WalletProvider>
                     <UIProvider>
-                        <ChatClientProvider client={chatClient}>
-                            {children}
-                        </ChatClientProvider>
+                        {children}
                     </UIProvider>
                 </WalletProvider>
             </SuiClientProvider>

@@ -1,8 +1,8 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Message} from '@ably/chat';
-import { useMessages} from '@ably/chat/react';
+import { Message } from '@ably/chat';
+import { useMessages } from '@ably/chat/react';
 
 // This is a simple chat component that uses the useMessages hook in Ably Chat to send and receive messages.
 export function Messages() {
@@ -10,7 +10,7 @@ export function Messages() {
     // Setup some state for the messages and a listener for chat messages using the useMessages hook
     const [message, setMessage] = useState('My first message with Ably Chat!');
     const [messages, setMessages] = useState<Message[]>([]);
-    const { send } = useMessages(
+    const { send, get } = useMessages(
         {
             listener: (event) => {
                 console.log('received message', event.message);
@@ -23,7 +23,7 @@ export function Messages() {
     // returned from the useMessages hook
     const handleSend = async () => {
         try {
-            await send({ text: message});
+            await send({ text: message });
             console.log('sent message', message);
             setMessage(''); // Clear input after successful send
         } catch (error) {
@@ -65,6 +65,9 @@ export function Messages() {
                         {/* Display the message timestamp and text */}
                         <div style={{ fontSize: '0.8em', color: '#666', marginBottom: '4px' }}>
                             {new Date(msg.timestamp).toLocaleTimeString()}
+                        </div>
+                        <div>
+                            {msg.clientId}
                         </div>
                         <div style={{ wordBreak: 'break-word', color: '#333' }}>
                             {msg.text}

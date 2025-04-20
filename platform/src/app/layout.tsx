@@ -4,6 +4,7 @@ import "./globals.css";
 import '@mysten/dapp-kit/dist/index.css';
 import { Header } from "@/components/global/header";
 import Provider from "./provider";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Provider>
+          <Toaster/>
           <Header />
           <main>
             {children}
