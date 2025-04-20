@@ -1,8 +1,8 @@
-import { Address, ChatiwalClientConfig, ChatiwalPackageConfig, ObjectId } from "./types";
+import { Transaction } from '@mysten/sui/transactions';
+import { Address, ChatiwalClientConfig, ChatiwalPackageConfig, ObjectId } from "./types"; // Import types
 import { SuiClient } from "@mysten/sui/client";
 import { MAINNET_CHATIWAL_PACKAGE_CONFIG, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "./constants";
 import { ChatiwalClientError } from "./errors";
-import { Transaction } from "@mysten/sui/transactions";
 
 // Import init functions for both modules
 import { init as initGroup } from "./contracts/group";
@@ -10,7 +10,7 @@ import { init as initMessage } from "./contracts/message"; // Import from messag
 
 export class ChatiwalClient {
     protected packageConfig: ChatiwalPackageConfig;
-    protected suiClient: SuiClient; // Use SuiClient directly if experimental ClientWithExtensions is not needed
+    protected suiClient: SuiClient; // Use SuiClient directly
     protected groupModule: ReturnType<typeof initGroup>;
     protected messageModule: ReturnType<typeof initMessage>; // Add message module instance
 
@@ -28,9 +28,8 @@ export class ChatiwalClient {
                     throw new ChatiwalClientError(`Unsupported network: ${network}`);
             }
         } else {
-            // Add null check for config.packageConfig
             if (!config.packageConfig) {
-                throw new ChatiwalClientError("Package config must be provided if network is not specified");
+                 throw new ChatiwalClientError("Package config must be provided if network is not specified");
             }
             this.packageConfig = config.packageConfig;
         }
@@ -78,13 +77,13 @@ export class ChatiwalClient {
      * Note: Review if this function truly exists/is needed based on Move code.
      */
     async mintGroupCap({ groupCapId, groupId, recipient }: {
-        groupCapId: ObjectId;
-        groupId: ObjectId;
+         // Parameters might need adjustment based on actual Move function
+        groupCapId: ObjectId; // ID of the authorizing cap?
+        groupId: ObjectId;    // ID of the target group?
         recipient: Address;
     }) {
         const tx = new Transaction();
-        // The arguments here depend on the actual Move function signature for minting a cap
-        // Adjust if necessary. The previous group.ts refactor assumed [group_id, recipient].
+         // Verify arguments needed by groupModule.mint_group_cap
         this.groupModule.mint_group_cap({ arguments: [groupCapId, groupId, recipient] })(tx);
         return tx;
     }
@@ -155,7 +154,7 @@ export class ChatiwalClient {
         return tx;
     }
 
-    async getNamespace(groupId: ObjectId) {
+    async getNamespace(groupId: ObjectId) { // Renamed from namespace for clarity
         const tx = new Transaction();
         this.groupModule.namespace({ arguments: [groupId] })(tx);
         return tx;
@@ -167,7 +166,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to mint a MessagesSnapshot.
      */
-    async mintMessagesSnapshotAndTransfer({ groupId, metadataBlobId }: { groupId: ObjectId; metadataBlobId: string }) {
+    async mintMessagesSnapshotAndTransfer({ groupId, metadataBlobId }: { groupId: ObjectId; metadataBlobId: string }) { // Renamed args for clarity
         const tx = new Transaction();
         this.messageModule.mint_messages_snapshot_and_transfer({ arguments: [groupId, metadataBlobId] })(tx);
         return tx;
@@ -176,7 +175,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to mint a MessagesSnapshotCap.
      */
-    async mintMessagesSnapshotCapAndTransfer({ msgsSnapshotId }: { msgsSnapshotId: ObjectId }) {
+    async mintMessagesSnapshotCapAndTransfer({ msgsSnapshotId }: { msgsSnapshotId: ObjectId }) { // Renamed args for clarity
         const tx = new Transaction();
         this.messageModule.mint_messages_snapshot_cap_and_transfer({ arguments: [msgsSnapshotId] })(tx);
         return tx;
@@ -185,7 +184,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to mint a SuperMessage with no policy.
      */
-    async mintSuperMessageNoPolicyAndTransfer({ groupId, metadataBlobId }: { groupId: ObjectId; metadataBlobId: string }) {
+    async mintSuperMessageNoPolicyAndTransfer({ groupId, metadataBlobId }: { groupId: ObjectId; metadataBlobId: string }) { // Renamed args for clarity
         const tx = new Transaction();
         this.messageModule.mint_super_message_no_policy_and_transfer({ arguments: [groupId, metadataBlobId] })(tx);
         return tx;
@@ -194,7 +193,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to mint a SuperMessage with TimeLock policy.
      */
-    async mintSuperMessageTimeLockAndTransfer({ groupId, metadataBlobId, from, to }: {
+    async mintSuperMessageTimeLockAndTransfer({ groupId, metadataBlobId, from, to }: { // Renamed args for clarity
         groupId: ObjectId;
         metadataBlobId: string;
         from: bigint | number;
@@ -208,7 +207,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to mint a SuperMessage with LimitedRead policy.
      */
-    async mintSuperMessageLimitedReadAndTransfer({ groupId, metadataBlobId, max }: {
+    async mintSuperMessageLimitedReadAndTransfer({ groupId, metadataBlobId, max }: { // Renamed args for clarity
         groupId: ObjectId;
         metadataBlobId: string;
         max: bigint | number;
@@ -221,11 +220,11 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to mint a SuperMessage with FeeBased policy.
      */
-    async mintSuperMessageFeeBasedAndTransfer({ groupId, metadataBlobId, fee, recipient, coinType }: {
+    async mintSuperMessageFeeBasedAndTransfer({ groupId, metadataBlobId, fee, recipient, coinType }: { // Renamed args for clarity
         groupId: ObjectId;
         metadataBlobId: string;
         fee: bigint | number;
-        recipient: Address; // Changed param name from 'r' to 'recipient' for clarity
+        recipient: Address;
         coinType: string;
     }) {
         const tx = new Transaction();
@@ -239,11 +238,11 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to mint a SuperMessage with Compound policy.
      */
-    async mintSuperMessageCompoundAndTransfer({ groupId, metadataBlobId, timeFrom, timeTo, max, fee, recipient, coinType }: {
+    async mintSuperMessageCompoundAndTransfer({ groupId, metadataBlobId, timeFrom, timeTo, max, fee, recipient, coinType }: { // Renamed args for clarity
         groupId: ObjectId;
         metadataBlobId: string;
-        timeFrom: bigint | number;
-        timeTo: bigint | number;
+        timeFrom: bigint | number; // tf
+        timeTo: bigint | number;   // tt
         max: bigint | number;
         fee: bigint | number;
         recipient: Address;
@@ -260,7 +259,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to read a SuperMessageNoPolicy.
      */
-    async readMessageNoPolicy({ messageId }: { messageId: ObjectId }) {
+    async readMessageNoPolicy({ messageId }: { messageId: ObjectId }) { // Renamed args for clarity
         const tx = new Transaction();
         this.messageModule.read_message_no_policy({ arguments: [messageId] })(tx);
         return tx;
@@ -269,7 +268,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to read a SuperMessageTimeLock.
      */
-    async readMessageTimeLock({ messageId }: { messageId: ObjectId }) {
+    async readMessageTimeLock({ messageId }: { messageId: ObjectId }) { // Renamed args for clarity
         const tx = new Transaction();
         this.messageModule.read_message_time_lock({ arguments: [messageId] })(tx);
         return tx;
@@ -278,7 +277,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to read a SuperMessageLimitedRead.
      */
-    async readMessageLimitedRead({ messageId }: { messageId: ObjectId }) {
+    async readMessageLimitedRead({ messageId }: { messageId: ObjectId }) { // Renamed args for clarity
         const tx = new Transaction();
         this.messageModule.read_message_limited_read({ arguments: [messageId] })(tx);
         return tx;
@@ -287,9 +286,9 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to read a SuperMessageFeeBased.
      */
-    async readMessageFeeBased({ messageId, paymentCoinId, coinType }: {
+    async readMessageFeeBased({ messageId, paymentCoinId, coinType }: { // Renamed args for clarity
         messageId: ObjectId;
-        paymentCoinId: ObjectId;
+        paymentCoinId: ObjectId; // Needs to be a valid Coin object in the TX block
         coinType: string;
     }) {
         const tx = new Transaction();
@@ -303,9 +302,9 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to read a SuperMessageCompound.
      */
-    async readMessageCompound({ messageId, paymentCoinId, coinType }: {
+    async readMessageCompound({ messageId, paymentCoinId, coinType }: { // Renamed args for clarity
         messageId: ObjectId;
-        paymentCoinId: ObjectId;
+        paymentCoinId: ObjectId; // Needs to be a valid Coin object in the TX block
         coinType: string;
     }) {
         const tx = new Transaction();
@@ -319,7 +318,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to withdraw fees from a SuperMessageFeeBased.
      */
-    async withdrawFees({ messageId, coinType }: {
+    async withdrawFees({ messageId, coinType }: { // Renamed args for clarity
         messageId: ObjectId;
         coinType: string;
     }) {
@@ -334,7 +333,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to withdraw fees from a SuperMessageCompound.
      */
-    async withdrawFeesCompound({ messageId, coinType }: {
+    async withdrawFeesCompound({ messageId, coinType }: { // Renamed args for clarity
         messageId: ObjectId;
         coinType: string;
     }) {
@@ -349,7 +348,7 @@ export class ChatiwalClient {
     /**
     * Creates a transaction block to approve a seal for SuperMessageTimeLock.
     */
-    async sealApproveSuperMessageTimeLock({ id, messageId, groupId }: {
+    async sealApproveSuperMessageTimeLock({ id, messageId, groupId }: { // Renamed args for clarity
         id: Uint8Array;
         messageId: ObjectId;
         groupId: ObjectId;
@@ -362,7 +361,7 @@ export class ChatiwalClient {
     /**
     * Creates a transaction block to approve a seal for SuperMessageLimitedRead.
     */
-    async sealApproveSuperMessageLimitedRead({ id, messageId, groupId }: {
+    async sealApproveSuperMessageLimitedRead({ id, messageId, groupId }: { // Renamed args for clarity
         id: Uint8Array;
         messageId: ObjectId;
         groupId: ObjectId;
@@ -375,7 +374,7 @@ export class ChatiwalClient {
     /**
     * Creates a transaction block to approve a seal for SuperMessageFeeBased.
     */
-    async sealApproveSuperMessageFeeBased({ id, messageId, groupId, coinType }: {
+    async sealApproveSuperMessageFeeBased({ id, messageId, groupId, coinType }: { // Renamed args for clarity
         id: Uint8Array;
         messageId: ObjectId;
         groupId: ObjectId;
@@ -392,7 +391,7 @@ export class ChatiwalClient {
     /**
      * Creates a transaction block to approve a seal for SuperMessageCompound.
      */
-    async sealApproveSuperMessageCompound({ id, messageId, groupId, coinType }: {
+    async sealApproveSuperMessageCompound({ id, messageId, groupId, coinType }: { // Renamed args for clarity
         id: Uint8Array;
         messageId: ObjectId;
         groupId: ObjectId;
@@ -409,49 +408,49 @@ export class ChatiwalClient {
     // --- Message View/Accessor Methods (as transaction calls) ---
     // These build transactions. For pure reads outside a TX, use suiClient.getObject.
 
-    async getCurrentReader({ messageId }: { messageId: ObjectId }) {
+    async getCurrentReader({ messageId }: { messageId: ObjectId }) { // Renamed args
         const tx = new Transaction();
         this.messageModule.get_current_reader({ arguments: [messageId] })(tx);
         return tx;
     }
 
-    async getCollectedFees({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async getCollectedFees({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed args
         const tx = new Transaction();
         this.messageModule.get_collected_fees({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
 
-    async getCollectedFeesCompound({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async getCollectedFeesCompound({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed args
         const tx = new Transaction();
         this.messageModule.get_collected_fees_compound({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
 
-    async getRemainingReads({ messageId }: { messageId: ObjectId }) {
+    async getRemainingReads({ messageId }: { messageId: ObjectId }) { // Renamed args
         const tx = new Transaction();
         this.messageModule.get_remaining_reads({ arguments: [messageId] })(tx);
         return tx;
     }
 
-    async isReadableByTime({ messageId, timestamp }: { messageId: ObjectId, timestamp: bigint | number }) {
+    async isReadableByTime({ messageId, timestamp }: { messageId: ObjectId, timestamp: bigint | number }) { // Renamed args
         const tx = new Transaction();
         this.messageModule.is_readable_by_time({ arguments: [messageId, timestamp] })(tx);
         return tx;
     }
 
-    async messageCapGetId({ capId }: { capId: ObjectId }) {
+    async messageCapGetId({ capId }: { capId: ObjectId }) { // Renamed args
         const tx = new Transaction();
         this.messageModule.message_cap_get_id({ arguments: [capId] })(tx);
         return tx;
     }
 
-    async messageCapGetMessageId({ capId }: { capId: ObjectId }) {
+    async messageCapGetMessageId({ capId }: { capId: ObjectId }) { // Renamed args
         const tx = new Transaction();
         this.messageModule.message_cap_get_message_id({ arguments: [capId] })(tx);
         return tx;
     }
 
-    // ... Add wrappers for all other accessor functions from message.ts ...
+    // --- Added Missing Message Accessor Methods ---
 
     async messageSnapshotCapGetId({ capId }: { capId: ObjectId }) {
         const tx = new Transaction();
@@ -483,173 +482,169 @@ export class ChatiwalClient {
         return tx;
     }
 
-    // Add wrappers for message_no_policy_get_*
-    async messageNoPolicyGetId({ messageId }: { messageId: ObjectId }) {
+    async messageNoPolicyGetId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_no_policy_get_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageNoPolicyGetGroupId({ messageId }: { messageId: ObjectId }) {
+    async messageNoPolicyGetGroupId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_no_policy_get_group_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageNoPolicyGetMessageBlobId({ messageId }: { messageId: ObjectId }) {
+    async messageNoPolicyGetMessageBlobId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_no_policy_get_message_blob_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageNoPolicyGetOwner({ messageId }: { messageId: ObjectId }) {
+    async messageNoPolicyGetOwner({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_no_policy_get_owner({ arguments: [messageId] })(tx);
         return tx;
     }
 
-    // Add wrappers for message_limit_read_get_*
-    async messageLimitReadGetId({ messageId }: { messageId: ObjectId }) {
+    async messageLimitReadGetId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_limit_read_get_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageLimitReadGetGroupId({ messageId }: { messageId: ObjectId }) {
+    async messageLimitReadGetGroupId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_limit_read_get_group_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageLimitReadGetMessageBlobId({ messageId }: { messageId: ObjectId }) {
+    async messageLimitReadGetMessageBlobId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_limit_read_get_message_blob_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageLimitReadGetPolicy({ messageId }: { messageId: ObjectId }) {
+    async messageLimitReadGetPolicy({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_limit_read_get_policy({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageLimitReadGetOwner({ messageId }: { messageId: ObjectId }) {
+    async messageLimitReadGetOwner({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_limit_read_get_owner({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageLimitReadGetReaders({ messageId }: { messageId: ObjectId }) {
+    async messageLimitReadGetReaders({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_limit_read_get_readers({ arguments: [messageId] })(tx);
         return tx;
     }
 
-    // Add wrappers for message_time_lock_get_*
-    async messageTimeLockGetId({ messageId }: { messageId: ObjectId }) {
+    async messageTimeLockGetId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_time_lock_get_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageTimeLockGetGroupId({ messageId }: { messageId: ObjectId }) {
+    async messageTimeLockGetGroupId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_time_lock_get_group_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageTimeLockGetMessageBlobId({ messageId }: { messageId: ObjectId }) {
+    async messageTimeLockGetMessageBlobId({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_time_lock_get_message_blob_id({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageTimeLockGetPolicy({ messageId }: { messageId: ObjectId }) {
+    async messageTimeLockGetPolicy({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_time_lock_get_policy({ arguments: [messageId] })(tx);
         return tx;
     }
-    async messageTimeLockGetOwner({ messageId }: { messageId: ObjectId }) {
+    async messageTimeLockGetOwner({ messageId }: { messageId: ObjectId }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_time_lock_get_owner({ arguments: [messageId] })(tx);
         return tx;
     }
 
-    // Add wrappers for message_fee_based_get_*
-    async messageFeeBasedGetId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageFeeBasedGetId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_fee_based_get_id({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageFeeBasedGetGroupId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageFeeBasedGetGroupId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_fee_based_get_group_id({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageFeeBasedGetMessageBlobId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageFeeBasedGetMessageBlobId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_fee_based_get_message_blob_id({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageFeeBasedGetPolicy({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageFeeBasedGetPolicy({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_fee_based_get_policy({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageFeeBasedGetOwner({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageFeeBasedGetOwner({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_fee_based_get_owner({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageFeeBasedGetReaders({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageFeeBasedGetReaders({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_fee_based_get_readers({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageFeeBasedGetFeeCollected({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageFeeBasedGetFeeCollected({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_fee_based_get_fee_collected({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
 
-    // Add wrappers for message_compound_get_*
-    async messageCompoundGetId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_id({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetGroupId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetGroupId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_group_id({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetMessageBlobId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetMessageBlobId({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_message_blob_id({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetTimeLock({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetTimeLock({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_time_lock({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetLimitedRead({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetLimitedRead({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_limited_read({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetFeePolicy({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetFeePolicy({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_fee_policy({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetOwner({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetOwner({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_owner({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetFeeCollected({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetFeeCollected({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_fee_collected({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetReaders({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetReaders({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_readers({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
-    async messageCompoundGetRemainingReads({ messageId, coinType }: { messageId: ObjectId, coinType: string }) {
+    async messageCompoundGetRemainingReads({ messageId, coinType }: { messageId: ObjectId, coinType: string }) { // Renamed arg
         const tx = new Transaction();
         this.messageModule.message_compound_get_remaining_reads({ arguments: [messageId], typeArgs: [coinType] })(tx);
         return tx;
     }
+
 }

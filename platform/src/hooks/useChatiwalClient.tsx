@@ -22,91 +22,72 @@ export interface IGroupActions {
 }
 
 export interface IMessageActions {
-    // Snapshot management
-    mint_messages_snapshot_and_transfer(
-        groupId: string,
-        metadataBlobId: string
-    ): Promise<void>;
-    
-    mint_messages_snapshot_cap_and_transfer(
-        messages_snapshot_id: string
-    ): Promise<void>;
-    
-    // No Policy Messages
-    mint_super_message_no_policy_and_transfer(
-        groupId: string,
-        metadataBlobId: string
-    ): Promise<void>;
-    
-    read_message_no_policy(
-        msgId: string
-    ): Promise<void>;
-    
-    // Time Lock Messages
-    mint_super_message_time_lock_and_transfer(
-        groupId: string,
-        metadataBlobId: string,
-        timeFrom: number | bigint,
-        timeTo: number | bigint
-    ): Promise<void>;
-    
-    read_message_time_lock(
-        msgId: string
-    ): Promise<void>;
-    
-    // Limited Read Messages
-    mint_super_message_limited_read_and_transfer(
-        groupId: string,
-        metadataBlobId: string,
-        maxReads: number | bigint
-    ): Promise<void>;
-    
-    read_message_limited_read(
-        msgId: string
-    ): Promise<void>;
-    
-    // Fee Based Messages
-    mint_super_message_fee_based_and_transfer(
-        groupId: string,
-        metadataBlobId: string,
-        fee: number | bigint,
-        recipient: string,
-        coinType: string
-    ): Promise<void>;
-    
-    read_message_fee_based(
-        msgId: string,
-        payment_coin_id: string,
-        coinType: string
-    ): Promise<void>;
-    
-    withdraw_fees(
-        msgId: string,
-        coinType: string
-    ): Promise<void>;
-    
-    // Compound Messages
-    mint_super_message_compound_and_transfer(
-        groupId: string,
-        metadataBlobId: string,
-        timeFrom: number | bigint,
-        timeTo: number | bigint,
-        maxReads: number | bigint,
-        fee: number | bigint,
-        recipient: string,
-        coinType: string
-    ): Promise<void>;
-    
-    read_message_compound(
-        msgId: string,
-        payment_coin_id: string,
-        coinType: string
-    ): Promise<void>;
-    
-    withdraw_fees_compound(
-        msgId: string,
-        coinType: string
-    ): Promise<void>;
+    mint_messages_snapshot_and_transfer(groupId: string, metadataBlobId: string): Promise<void>;
+    mint_messages_snapshot_cap_and_transfer(messages_snapshot_id: string): Promise<void>;
+    mint_super_message_no_policy_and_transfer(groupId: string, metadataBlobId: string): Promise<void>;
+    read_message_no_policy(messageId: string): Promise<void>;
+    mint_super_message_time_lock_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint): Promise<void>;
+    read_message_time_lock(messageId: string): Promise<void>;
+    mint_super_message_limited_read_and_transfer(groupId: string, metadataBlobId: string, maxReads: number | bigint): Promise<void>; read_message_limited_read(messageId: string): Promise<void>;
+    mint_super_message_fee_based_and_transfer(groupId: string, metadataBlobId: string, fee: number | bigint, recipient: string, coinType: string): Promise<void>;
+    read_message_fee_based(messageId: string, payment_coin_id: string, coinType: string): Promise<void>; withdraw_fees(messageId: string, coinType: string): Promise<void>;
+    mint_super_message_compound_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, coinType: string): Promise<void>;
+    read_message_compound(messageId: string, payment_coin_id: string, coinType: string): Promise<void>;
+    withdraw_fees_compound(messageId: string, coinType: string): Promise<void>;
+
+    // === Seal Integration ===
+
+    seal_approve_super_message_time_lock(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<void>;
+    seal_approve_super_message_limited_read(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<void>;
+    seal_approve_super_message_fee_based(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<void>;
+    seal_approve_super_message_compound(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<void>;
+
+    // === Public view functions (Accessors using devInspect) ===
+
+    get_current_reader(messageId: ObjectId): Promise<string>; // u64 as string
+    get_collected_fees(messageId: ObjectId, coinType: string): Promise<string>; // u64 as string
+    get_collected_fees_compound(messageId: ObjectId, coinType: string): Promise<string>; // u64 as string
+    get_remaining_reads(messageId: ObjectId): Promise<string>; // u64 as string
+    is_readable_by_time(messageId: ObjectId, timestamp: bigint | number): Promise<boolean>;
+    message_cap_get_id(capId: ObjectId): Promise<ObjectId>;
+    message_cap_get_message_id(capId: ObjectId): Promise<ObjectId>;
+    message_snapshot_cap_get_id(capId: ObjectId): Promise<ObjectId>;
+    message_snapshot_cap_get_messages_snapshot_id(capId: ObjectId): Promise<ObjectId>;
+    message_snapshot_get_id(snapshotId: ObjectId): Promise<ObjectId>;
+    message_snapshot_get_group_id(snapshotId: ObjectId): Promise<ObjectId>;
+    message_snapshot_get_messages_blob_id(snapshotId: ObjectId): Promise<string>;
+    message_no_policy_get_id(messageId: ObjectId): Promise<ObjectId>;
+    message_no_policy_get_group_id(messageId: ObjectId): Promise<ObjectId>;
+    message_no_policy_get_message_blob_id(messageId: ObjectId): Promise<string>;
+    message_no_policy_get_owner(messageId: ObjectId): Promise<Address>;
+    message_limit_read_get_id(messageId: ObjectId): Promise<ObjectId>;
+    message_limit_read_get_group_id(messageId: ObjectId): Promise<ObjectId>;
+    message_limit_read_get_message_blob_id(messageId: ObjectId): Promise<string>;
+    message_limit_read_get_policy(messageId: ObjectId): Promise<any>; // Specific policy type needed for parsing
+    message_limit_read_get_owner(messageId: ObjectId): Promise<Address>;
+    message_limit_read_get_readers(messageId: ObjectId): Promise<Address[]>;
+    message_time_lock_get_id(messageId: ObjectId): Promise<ObjectId>;
+    message_time_lock_get_group_id(messageId: ObjectId): Promise<ObjectId>;
+    message_time_lock_get_message_blob_id(messageId: ObjectId): Promise<string>;
+    message_time_lock_get_policy(messageId: ObjectId): Promise<any>; // Specific policy type needed for parsing
+    message_time_lock_get_owner(messageId: ObjectId): Promise<Address>;
+    message_fee_based_get_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
+    message_fee_based_get_group_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
+    message_fee_based_get_message_blob_id(messageId: ObjectId, coinType: string): Promise<string>;
+    message_fee_based_get_policy(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed for parsing
+    message_fee_based_get_owner(messageId: ObjectId, coinType: string): Promise<Address>;
+    message_fee_based_get_readers(messageId: ObjectId, coinType: string): Promise<Address[]>;
+    message_fee_based_get_fee_collected(messageId: ObjectId, coinType: string): Promise<any>; // Specific Balance type needed
+    message_compound_get_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
+    message_compound_get_group_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
+    message_compound_get_message_blob_id(messageId: ObjectId, coinType: string): Promise<string>;
+    message_compound_get_time_lock(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed
+    message_compound_get_limited_read(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed
+    message_compound_get_fee_policy(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed
+    message_compound_get_owner(messageId: ObjectId, coinType: string): Promise<Address>;
+    message_compound_get_fee_collected(messageId: ObjectId, coinType: string): Promise<any>; // Specific Balance type needed
+    message_compound_get_readers(messageId: ObjectId, coinType: string): Promise<Address[]>;
+    message_compound_get_remaining_reads(messageId: ObjectId, coinType: string): Promise<string>; // u64 as string
 }
 
 export interface IChatiwalClientActions extends IGroupActions, IMessageActions {
@@ -136,7 +117,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
     const getOwnedGroupCapById = async (group: string) => {
         validateAccount();
-        
+
         const groupCapsOfOwner = await suiClient.getOwnedObjects({
             owner: account!.address,
             filter: {
@@ -146,7 +127,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 showContent: true,
             }
         });
-        
+
         const groupCap = groupCapsOfOwner.data.find((cap) => {
             const type = cap.data?.content?.dataType;
             if (type !== "moveObject") throw new Error("Invalid type");
@@ -195,14 +176,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
     const groupActions: IGroupActions = {
         mint_group_and_transfer: async (metadataBlobId: string) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintGroupAndTransfer({ metadataBlobId: metadataBlobId })
             );
         },
 
         mint_group_cap: async (group: string, recipient: string) => {
             const groupCapId = await validateGroupCap(group);
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintGroupCap({
                     groupCapId,
                     groupId: group,
@@ -213,7 +194,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         add_member: async (group: string, member: string) => {
             const groupCapId = await validateGroupCap(group);
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.addMember({
                     groupCapId,
                     groupId: group,
@@ -224,7 +205,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         remove_member: async (group: string, member: string) => {
             const groupCapId = await validateGroupCap(group);
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.removeMember({
                     groupCapId,
                     groupId: group,
@@ -234,7 +215,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         seal_approve: async (id: Uint8Array, group: string) => {
-            await executeInspectTransaction(() => 
+            await executeInspectTransaction(() =>
                 client.sealApprove({
                     id,
                     groupId: group,
@@ -291,48 +272,48 @@ export function useChatiwalClient(): IChatiwalClientActions {
     const messageActions: IMessageActions = {
         // Snapshot management
         mint_messages_snapshot_and_transfer: async (groupId: string, metadataBlobId: string) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintMessagesSnapshotAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId
                 })
             );
         },
-        
+
         mint_messages_snapshot_cap_and_transfer: async (messages_snapshot_id: string) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintMessagesSnapshotCapAndTransfer({
                     msgsSnapshotId: messages_snapshot_id
                 })
             );
         },
-        
+
         // No Policy Messages
         mint_super_message_no_policy_and_transfer: async (groupId: string, metadataBlobId: string) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintSuperMessageNoPolicyAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId
                 })
             );
         },
-        
-        read_message_no_policy: async (msgId: string) => {
-            await executeTransaction(() => 
+
+        read_message_no_policy: async (messageId: string) => {
+            await executeTransaction(() =>
                 client.readMessageNoPolicy({
-                    messageId: msgId
+                    messageId: messageId
                 })
             );
         },
-        
+
         // Time Lock Messages
         mint_super_message_time_lock_and_transfer: async (
-            groupId: string, 
-            metadataBlobId: string, 
-            timeFrom: number | bigint, 
+            groupId: string,
+            metadataBlobId: string,
+            timeFrom: number | bigint,
             timeTo: number | bigint
         ) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintSuperMessageTimeLockAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
@@ -341,22 +322,22 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 })
             );
         },
-        
-        read_message_time_lock: async (msgId: string) => {
-            await executeTransaction(() => 
+
+        read_message_time_lock: async (messageId: string) => {
+            await executeTransaction(() =>
                 client.readMessageTimeLock({
-                    messageId: msgId
+                    messageId: messageId
                 })
             );
         },
-        
+
         // Limited Read Messages
         mint_super_message_limited_read_and_transfer: async (
-            groupId: string, 
-            metadataBlobId: string, 
+            groupId: string,
+            metadataBlobId: string,
             maxReads: number | bigint
         ) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintSuperMessageLimitedReadAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
@@ -364,24 +345,24 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 })
             );
         },
-        
-        read_message_limited_read: async (msgId: string) => {
-            await executeTransaction(() => 
+
+        read_message_limited_read: async (messageId: string) => {
+            await executeTransaction(() =>
                 client.readMessageLimitedRead({
-                    messageId: msgId
+                    messageId: messageId
                 })
             );
         },
-        
+
         // Fee Based Messages
         mint_super_message_fee_based_and_transfer: async (
-            groupId: string, 
-            metadataBlobId: string, 
-            fee: number | bigint, 
+            groupId: string,
+            metadataBlobId: string,
+            fee: number | bigint,
             recipient: string,
             coinType: string
         ) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintSuperMessageFeeBasedAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
@@ -391,43 +372,42 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 })
             );
         },
-        
-        read_message_fee_based: async (msgId: string, payment_coin_id: string, coinType: string) => {
-            await executeTransaction(() => 
+
+        read_message_fee_based: async (messageId: string, payment_coin_id: string, coinType: string) => {
+            await executeTransaction(() =>
                 client.readMessageFeeBased({
-                    messageId: msgId,
+                    messageId: messageId,
                     paymentCoinId: payment_coin_id,
                     coinType: coinType
                 })
             );
         },
-        
-        withdraw_fees: async (msgId: string, coinType: string) => {
-            await executeTransaction(() => 
+
+        withdraw_fees: async (messageId: string, coinType: string) => {
+            await executeTransaction(() =>
                 client.withdrawFees({
-                    messageId: msgId,
+                    messageId: messageId,
                     coinType: coinType
                 })
             );
         },
-        
-        // Compound Messages
+
         mint_super_message_compound_and_transfer: async (
-            groupId: string, 
-            metadataBlobId: string, 
-            timeFrom: number | bigint, 
-            timeTo: number | bigint, 
-            maxReads: number | bigint, 
-            fee: number | bigint, 
+            groupId: string,
+            metadataBlobId: string,
+            timeFrom: number | bigint,
+            timeTo: number | bigint,
+            maxReads: number | bigint,
+            fee: number | bigint,
             recipient: string,
             coinType: string
         ) => {
-            await executeTransaction(() => 
+            await executeTransaction(() =>
                 client.mintSuperMessageCompoundAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
-                    tf: timeFrom,
-                    tt: timeTo,
+                    timeFrom: timeFrom,
+                    timeTo: timeTo,
                     max: maxReads,
                     fee: fee,
                     recipient: recipient,
@@ -435,23 +415,465 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 })
             );
         },
-        
-        read_message_compound: async (msgId: string, payment_coin_id: string, coinType: string) => {
-            await executeTransaction(() => 
+
+        read_message_compound: async (messageId: string, payment_coin_id: string, coinType: string) => {
+            await executeTransaction(() =>
                 client.readMessageCompound({
-                    messageId: msgId,
+                    messageId: messageId,
                     paymentCoinId: payment_coin_id,
                     coinType: coinType
                 })
             );
         },
-        
-        withdraw_fees_compound: async (msgId: string, coinType: string) => {
-            await executeTransaction(() => 
+
+        withdraw_fees_compound: async (messageId: string, coinType: string) => {
+            await executeTransaction(() =>
                 client.withdrawFeesCompound({
-                    messageId: msgId,
-                    coinType: [coinType]
+                    messageId: messageId,
+                    coinType: coinType
                 })
+            );
+        },
+
+        // === Seal Integration ===
+
+        seal_approve_super_message_time_lock: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
+            await executeInspectTransaction(() =>
+                client.sealApproveSuperMessageTimeLock({
+                    id,
+                    messageId: messageId,
+                    groupId: groupId
+                })
+            );
+        },
+        seal_approve_super_message_limited_read: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
+            await executeInspectTransaction(() =>
+                client.sealApproveSuperMessageLimitedRead({
+                    id,
+                    messageId: messageId,
+                    groupId: groupId
+                })
+            );
+        },
+        seal_approve_super_message_fee_based: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
+            await executeInspectTransaction(() =>
+                client.sealApproveSuperMessageFeeBased({
+                    id,
+                    messageId: messageId,
+                    groupId: groupId,
+                    coinType: coinType
+                })
+            );
+        },
+        seal_approve_super_message_compound: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
+            await executeInspectTransaction(() =>
+                client.sealApproveSuperMessageCompound({
+                    id,
+                    messageId: messageId,
+                    groupId: groupId,
+                    coinType: coinType
+                })
+            );
+        },
+
+        // === Public view functions (Accessors using devInspect) ===
+
+        get_current_reader: async (messageId: ObjectId): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.getCurrentReader({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        get_collected_fees: async (messageId: ObjectId, coinType: string): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.getCollectedFees({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        get_collected_fees_compound: async (messageId: ObjectId, coinType: string): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.getCollectedFeesCompound({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        get_remaining_reads: async (messageId: ObjectId): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.getRemainingReads({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        is_readable_by_time: async (messageId: ObjectId, timestamp: bigint | number): Promise<boolean> => {
+            return executeInspectTransaction(
+                () => client.isReadableByTime({ messageId, timestamp }),
+                (res) => res.results[0].returnValues![0][0] as unknown as boolean
+            );
+        },
+
+        message_cap_get_id: async (capId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageCapGetId({ capId }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_cap_get_message_id: async (capId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageCapGetMessageId({ capId }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_snapshot_cap_get_id: async (capId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageSnapshotCapGetId({ capId }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_snapshot_cap_get_messages_snapshot_id: async (capId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageSnapshotCapGetMessagesSnapshotId({ capId }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_snapshot_get_id: async (snapshotId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageSnapshotGetId({ snapshotId }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_snapshot_get_group_id: async (snapshotId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageSnapshotGetGroupId({ snapshotId }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_snapshot_get_messages_blob_id: async (snapshotId: ObjectId): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.messageSnapshotGetMessagesBlobId({ snapshotId }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_no_policy_get_id: async (messageId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageNoPolicyGetId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_no_policy_get_group_id: async (messageId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageNoPolicyGetGroupId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_no_policy_get_message_blob_id: async (messageId: ObjectId): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.messageNoPolicyGetMessageBlobId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_no_policy_get_owner: async (messageId: ObjectId): Promise<Address> => {
+            return executeInspectTransaction(
+                () => client.messageNoPolicyGetOwner({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_limit_read_get_id: async (messageId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageLimitReadGetId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_limit_read_get_group_id: async (messageId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageLimitReadGetGroupId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_limit_read_get_message_blob_id: async (messageId: ObjectId): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.messageLimitReadGetMessageBlobId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_limit_read_get_policy: async (messageId: ObjectId): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageLimitReadGetPolicy({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_limit_read_get_owner: async (messageId: ObjectId): Promise<Address> => {
+            return executeInspectTransaction(
+                () => client.messageLimitReadGetOwner({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_limit_read_get_readers: async (messageId: ObjectId): Promise<Address[]> => {
+            return executeInspectTransaction(
+                () => client.messageLimitReadGetReaders({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_time_lock_get_id: async (messageId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageTimeLockGetId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_time_lock_get_group_id: async (messageId: ObjectId): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageTimeLockGetGroupId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_time_lock_get_message_blob_id: async (messageId: ObjectId): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.messageTimeLockGetMessageBlobId({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_time_lock_get_policy: async (messageId: ObjectId): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageTimeLockGetPolicy({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_time_lock_get_owner: async (messageId: ObjectId): Promise<Address> => {
+            return executeInspectTransaction(
+                () => client.messageTimeLockGetOwner({
+                    messageId: messageId
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_fee_based_get_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageFeeBasedGetId({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_fee_based_get_group_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageFeeBasedGetGroupId({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_fee_based_get_message_blob_id: async (messageId: ObjectId, coinType: string): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.messageFeeBasedGetMessageBlobId({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_fee_based_get_policy: async (messageId: ObjectId, coinType: string): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageFeeBasedGetPolicy({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_fee_based_get_owner: async (messageId: ObjectId, coinType: string): Promise<Address> => {
+            return executeInspectTransaction(
+                () => client.messageFeeBasedGetOwner({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_fee_based_get_readers: async (messageId: ObjectId, coinType: string): Promise<Address[]> => {
+            return executeInspectTransaction(
+                () => client.messageFeeBasedGetReaders({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_fee_based_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageFeeBasedGetFeeCollected({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetId({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_group_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetGroupId({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_message_blob_id: async (messageId: ObjectId, coinType: string): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetMessageBlobId({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_time_lock: async (messageId: ObjectId, coinType: string): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetTimeLock({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_limited_read: async (messageId: ObjectId, coinType: string): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetLimitedRead({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_fee_policy: async (messageId: ObjectId, coinType: string): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetFeePolicy({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_owner: async (messageId: ObjectId, coinType: string): Promise<Address> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetOwner({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<any> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetFeeCollected({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_readers: async (messageId: ObjectId, coinType: string): Promise<Address[]> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetReaders({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
+            );
+        },
+
+        message_compound_get_remaining_reads: async (messageId: ObjectId, coinType: string): Promise<string> => {
+            return executeInspectTransaction(
+                () => client.messageCompoundGetRemainingReads({
+                    messageId: messageId,
+                    coinType: coinType
+                }),
+                (res) => res.results[0].returnValues![0][0]
             );
         }
     };
