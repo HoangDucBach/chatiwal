@@ -6,6 +6,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 
 import { toaster } from "@/components/ui/toaster"
 import { useEffect } from "react";
+import { ChannelProvider } from "ably/react";
 
 interface ProviderProps extends React.PropsWithChildren {
     roomId: string;
@@ -18,8 +19,8 @@ export default function Provider(
     if (!currentAccount) return null;
 
     return (
-        <ChatRoomProvider id={roomId} options={AllFeaturesEnabled}>
+        <ChannelProvider channelName={roomId}>
             {children}
-        </ChatRoomProvider>
+        </ChannelProvider>
     );
 }

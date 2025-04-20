@@ -1,4 +1,4 @@
-import sui from "./sui.config";
+import sui from "./suiConfig";
 import ably from "./ablyClient";
 
 export default {

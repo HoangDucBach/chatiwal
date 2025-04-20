@@ -7,7 +7,7 @@ import { ChatClientProvider } from '@ably/chat/react';
 
 
 import { Provider as UIProvider } from "@/components/ui/provider";
-import suiConfig from "@/utils/sui.config";
+import suiConfig from "@/utils/suiConfig";
 import utils from "@/utils"
 
 const queryClient = new QueryClient();

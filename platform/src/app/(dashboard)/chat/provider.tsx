@@ -1,14 +1,15 @@
 "use client";
 
 import * as Ably from "ably";
-import { AllFeaturesEnabled, ChatClient } from "@ably/chat";
-import { ChatClientProvider, ChatRoomProvider, useChatClient } from "@ably/chat/react";
+import { ChatClient } from "@ably/chat";
+import { ChatClientProvider, useChatClient } from "@ably/chat/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 import { toaster } from "@/components/ui/toaster"
 import utils from "@/utils";
 import { ABLY_API_KEY } from "@/utils/constants";
 import { useEffect } from "react";
+import { AblyProvider } from "ably/react";
 
 
 interface ProviderProps extends React.PropsWithChildren {
@@ -35,13 +36,12 @@ export default function Provider(
         clientId: currentAccount?.address,
         key: ABLY_API_KEY
     });
-    const chatClient = new ChatClient(ablyClient);
 
     return (
-        <ChatClientProvider client={chatClient}>
+        <AblyProvider client={ablyClient}>
             <div>
                 {children}
             </div>
-        </ChatClientProvider>
+        </AblyProvider>
     );
 }

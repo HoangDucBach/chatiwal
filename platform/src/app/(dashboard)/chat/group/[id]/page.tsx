@@ -1,4 +1,4 @@
-import { Messages } from "../_components/Message";
+import { AblyPubSub } from "../_components/Message";
 import Provider from "./provider";
 
 export default async function Page({
@@ -11,7 +11,7 @@ export default async function Page({
     const { id } = await params;
     return (
         <Provider roomId={id}>
-            <Messages />
+            <AblyPubSub channelName={id} />
         </Provider>
     );
 }
