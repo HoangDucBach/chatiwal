@@ -1,5 +1,7 @@
 import { SuiClient } from "@mysten/sui/client";
-import { ClientWithExtensions } from "@mysten/sui/experimental";
+
+export type ObjectId = string;
+export type Address = string;
 
 /**
  * Configuration for the Chatiwal package.
