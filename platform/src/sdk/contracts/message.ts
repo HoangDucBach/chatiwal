@@ -6,7 +6,7 @@ import {
     MOVE_STDLIB_ADDRESS,
     SUI_FRAMEWORK_ADDRESS,
 } from '@mysten/sui/utils';
-import { ObjectId } from '../types';
+import { Address, ObjectId } from '../types';
 
 
 export const MessageOwnerCap = bcs.struct("MessageOwnerCap", {
