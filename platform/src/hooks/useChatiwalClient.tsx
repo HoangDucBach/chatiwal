@@ -35,15 +35,15 @@ export interface IGroupActions {
     ): Promise<void>;
 
     // === Public view functions ===
-    group_get_group_id(group: string): string;
+    group_get_group_id(group: string): Promise<Uint8Array>;
 
-    group_get_group_member(group: string): string[]; // list of Sui addresses
+    group_get_group_member(group: string): Promise<number[]>; // list of Sui addresses
 
-    group_get_group_metadata_blob_id(group: string): string;
+    group_get_group_metadata_blob_id(group: string): Promise<string>;
 
-    group_cap_get_group_id(group_cap: string): string;
+    group_cap_get_group_id(group_cap: string): Promise<Uint8Array>;
 
-    group_cap_get_id(group_cap: string): string;
+    group_cap_get_id(group_cap: string): Promise<string>;
 
     is_member(group: string, addr: string): boolean;
 }
@@ -154,51 +154,120 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     transactionBlock: tx,
                     sender: account?.address,
                 });
-                
-                console.log("Transaction result:", res);
             } catch (error) {
                 throw error;
             }
         },
 
-        // group_get_group_id: (group: string) => {
-        //     try {
-        //         if (!account) throw new Error("Please connect your wallet");
-        //         const tx = await client.groupGetGroupId(group);
-        //         const res = await suiClient.devInspectTransactionBlock({
-        //             transactionBlock: tx,
-        //             sender: account?.address,
-        //         });
+        group_get_group_id: async (group: string): Promise<Uint8Array> => {
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const tx = await client.groupGetGroupId(group);
+                const res = await suiClient.devInspectTransactionBlock({
+                    transactionBlock: tx,
+                    sender: account?.address,
+                });
 
-        //         if (!res || !res.results) {
-        //             throw new Error("No results found");
-        //         }
+                if (!res || !res.results) {
+                    throw new Error("No results found");
+                }
 
-        //         const groupId = res.results[0];
-        //         console.log("Group ID:", groupId);
-        //         return groupId.returnValues;
-        //     }
-        // },
+                const groupId = res.results[0];
 
-        // group_get_group_member: (group: string) => {
-        //     return client.group.getGroupMember(group);
-        // },
+                return new Uint8Array(groupId.returnValues![0][0]);
+            } catch (error) {
+                throw error;
+            }
+        },
 
-        // group_get_group_metadata_blob_id: (group: string) => {
-        //     return client.group.getGroupMetadataBlobId(group);
-        // },
+        group_get_group_member: async (group: string): Promise<number[]> => {
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const tx = await client.groupGetGroupMember(group);
+                const res = await suiClient.devInspectTransactionBlock({
+                    transactionBlock: tx,
+                    sender: account?.address,
+                });
 
-        // group_cap_get_group_id: (group_cap: string) => {
-        //     return client.group.getGroupCapGroupId(group_cap);
-        // },
+                if (!res || !res.results) {
+                    throw new Error("No results found");
+                }
 
-        // group_cap_get_id: (group_cap: string) => {
-        //     return client.group.getGroupCapId(group_cap);
-        // },
+                const groupMembers = res.results[0];
+                console.log("Group members:", res);
 
-        // is_member: (group: string, addr: string) => {
-        //     return client.group.isMember(group, addr);
-        // }
+                return groupMembers.returnValues![0][0];
+            } catch (error) {
+                throw error;
+            }
+        },
+
+        group_get_group_metadata_blob_id: async (group: string): Promise<Uint8Array> => {
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const tx = await client.groupGetGroupMetadataBlobId(group);
+                const res = await suiClient.devInspectTransactionBlock({
+                    transactionBlock: tx,
+                    sender: account?.address,
+                });
+                if (!res || !res.results) {
+                    throw new Error("No results found");
+                }
+                return new Uint8Array(res.results[0].returnValues![0][0]);
+            } catch (error) {
+                throw error;
+            }
+        },
+
+        group_cap_get_group_id: async (group_cap: string): Promise<Uint8Array> => {
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const tx = await client.groupCapGetGroupId(group_cap);
+                const res = await suiClient.devInspectTransactionBlock({
+                    transactionBlock: tx,
+                    sender: account?.address,
+                });
+                if (!res || !res.results) {
+                    throw new Error("No results found");
+                }
+                return new Uint8Array(res.results[0].returnValues![0][0]);
+            } catch (error) {
+                throw error;
+            }
+        },
+
+        group_cap_get_id: async (group_cap: string): Promise<Uint8Array> => {
+            try {
+                if (!account) throw new Error("Please connect your wallet");
+                const tx = await client.groupCapGetId(group_cap);
+                const res = await suiClient.devInspectTransactionBlock({
+                    transactionBlock: tx,
+                    sender: account?.address,
+                });
+                if (!res || !res.results) {
+                    throw new Error("No results found");
+                }
+                return new Uint8Array(res.results[0].returnValues![0][0]);
+            } catch (error) {
+                throw error;
+            }
+        },
+
+        is_member: async (group: string, addr: string): Promise<boolean> => {
+            if (!account) throw new Error("Please connect your wallet");
+            const tx = await client.isMember({
+                groupId: group,
+                address: addr,
+            });
+            const res = await suiClient.devInspectTransactionBlock({
+                transactionBlock: tx,
+                sender: account?.address,
+            });
+            if (!res || !res.results) {
+                throw new Error("No results found");
+            }
+            return res.results[0].returnValues![0][0] as unknown as boolean;
+        }
 
     } as any;
 }

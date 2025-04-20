@@ -1,8 +1,9 @@
 "use client";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
+import { RadioGroupItemHiddenInput } from "@chakra-ui/react";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
-import { fromHex } from "@mysten/sui/utils";
+import { fromHex, toHex } from "@mysten/sui/utils";
 
 export function Test() {
     const client = useChatiwalClient();
@@ -32,8 +33,8 @@ export function Test() {
                 return object.group_id === groupId;
             });
 
-            const tx= await client.seal_approve(fromHex(client.client.getPackageConfig().chatiwalId), groupId);
-            console.log("Group ID:", groupCaps);
+            const tx= await client.group_get_group_member(groupId);
+            console.log("Group ID:", tx);
             console.log("Test successful");
         }
         catch (error) {
