@@ -3,8 +3,7 @@
 import { useMemo } from "react";
 import { ChatiwalClient, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
 import { ChatiwalClientConfig, GroupCap } from "@/sdk/types";
-import { useCurrentAccount, useSuiClient, useSuiClientQuery } from "@mysten/dapp-kit";
-import { Transaction } from "@mysten/sui/transactions";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { InvalidGroupCapError } from "@/sdk/errors";
 
 export interface IGroupActions {
