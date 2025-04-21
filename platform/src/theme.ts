@@ -1,4 +1,4 @@
-import { createSystem, defaultConfig, defineConfig, defineSemanticTokens, defineTokens } from "@chakra-ui/react"
+import { createSystem, defaultConfig, defineConfig, defineSemanticTokens, defineTextStyles, defineTokens } from "@chakra-ui/react"
 
 const tokens = defineTokens({
     colors: {
@@ -68,9 +68,28 @@ const semanticTokens = defineSemanticTokens({
         danger: { value: "{colors.red}" },
         bg: {
             DEFAULT: { value: "#151613" },
+            100: { value: "#1A1A1A" },
+            200: { value: "#242424" },
+            300: { value: "#2E2E2E" },
+            400: { value: "#383838" },
+            500: { value: "#474747" },
+            600: { value: "#606060" },
+            700: { value: "#707070" },
+            800: { value: "#828282" },
+            900: { value: "#949494" },
         },
         fg: {
             DEFAULT: { value: "#FFFFFF" },
+            50: { value: "#151515" },
+            100: { value: "#1A1A1A" },
+            200: { value: "#242424" },
+            300: { value: "#2E2E2E" },
+            400: { value: "#383838" },
+            500: { value: "#474747" },
+            600: { value: "#606060" },
+            700: { value: "#707070" },
+            800: { value: "#828282" },
+            900: { value: "#949494" },
         },
         default: {
             solid: { value: "{colors.default.500}" },
@@ -101,10 +120,19 @@ const semanticTokens = defineSemanticTokens({
         }
     }
 })
+
+const textStyles = defineTextStyles({
+    body: {
+        value: {
+            fontFamily: "Poppins"
+        }
+    }
+})
 const config = defineConfig({
     theme: {
         tokens,
-        semanticTokens
+        semanticTokens,
+        textStyles
     },
 })
 

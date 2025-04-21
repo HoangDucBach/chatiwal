@@ -2,6 +2,7 @@ import { MessageBase } from '@/sdk';
 import { NETWORK } from '@/utils/constants';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { WalrusClient } from '@mysten/walrus';
+import { useMemo } from 'react';
 
 interface StoreMessageOptions {
     deletable?: boolean;
@@ -12,6 +13,7 @@ interface IWalrusClientActions {
     storeMessage: (message: MessageBase, options?: StoreMessageOptions) => Promise<MessageBase>;
     readMessage: (blobId: string) => Promise<any>;
     deleteMessage: (blobId: string) => Promise<void>;
+    client: WalrusClient;
 }
 
 export const useWalrusClient = (): IWalrusClientActions => {
@@ -132,5 +134,14 @@ export const useWalrusClient = (): IWalrusClientActions => {
         }
 
     };
-    return { storeMessage, readMessage, deleteMessage };
+
+    return useMemo(
+        () => ({
+            storeMessage,
+            readMessage,
+            deleteMessage,
+            client: walrusClient,
+        }),
+        [storeMessage, readMessage, deleteMessage, walrusClient],
+    );
 }

@@ -31,7 +31,7 @@ function MenuAccount() {
     return (
         <Menu.Root>
             <Menu.Trigger asChild>
-                <Button variant="outline" colorPalette={"primary"} size="sm">
+                <Button variant="outline" colorPalette={"primary"} size="md">
                     {shortenAddress(account.address)}
                 </Button>
             </Menu.Trigger>
