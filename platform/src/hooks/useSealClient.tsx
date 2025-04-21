@@ -6,7 +6,7 @@ import { Transaction } from "@mysten/sui/transactions";
 
 import { MessageBase, MessageDataInline, MessageDataType, MessageType, SuperMessageNoPolicy } from "@/sdk";
 import { useChatiwalClient } from "./useChatiwalClient";
-import { useSessionKeys } from "./useSessionKeys";
+import { useSessionKeys } from "./useSessionKeysStore";
 
 function getSealApproveTarget(packageId: string, message: SuperMessageNoPolicy): string {
     switch (message.getType()) {
@@ -52,6 +52,8 @@ function getSealApproveArguments(
 interface ISealActions {
     encryptMessage: (message: MessageBase) => Promise<MessageBase>;
     decryptMessage: (encryptedMessage: MessageBase) => Promise<MessageBase>;
+    createGroupSessionKey: (groupId: string) => Promise<SessionKey>;
+    createMessageSessionKey: (messageId: string) => Promise<SessionKey>;
 }
 
 export function useSealClient(): ISealActions {
@@ -89,7 +91,42 @@ export function useSealClient(): ISealActions {
         };
     }
 
-    // use call back for encryptMessage and decryptMessage
+    const createGroupSessionKey = useCallback(async (groupId: string): Promise<SessionKey> => {
+        if (!currentAccount) {
+            throw new Error("Not connected");
+        }
+
+        const sender = currentAccount.address;
+        const groupKey = new SessionKey({
+            address: sender,
+            packageId: packageId,
+            ttlMin: 10,
+        });
+
+        const signResult = await signPersonalMessage({ message: groupKey.getPersonalMessage() });
+        await groupKey.setPersonalMessageSignature(signResult.signature);
+
+        return groupKey;
+    }, [currentAccount, packageId, signPersonalMessage]);
+
+    const createMessageSessionKey = useCallback(async (messageId: string): Promise<SessionKey> => {
+        if (!currentAccount) {
+            throw new Error("Not connected");
+        }
+
+        const sender = currentAccount.address;
+        const messageKey = new SessionKey({
+            address: sender,
+            packageId: packageId,
+            ttlMin: 10,
+        });
+
+        const signResult = await signPersonalMessage({ message: messageKey.getPersonalMessage() });
+        await messageKey.setPersonalMessageSignature(signResult.signature);
+
+        return messageKey;
+    }, [currentAccount, packageId, signPersonalMessage]);
+
     const encryptMessage = useCallback(async (message: MessageBase): Promise<MessageBase> => {
         const messageAsString = JSON.stringify(message);
         const messageAsUint8Array = new TextEncoder().encode(messageAsString);
@@ -113,14 +150,10 @@ export function useSealClient(): ISealActions {
         if (!currentAccount) {
             throw new Error("Not connected");
         }
-
-
-        const sender = currentAccount.address;
         const encryptedData = encryptedMessage.getData();
-        let inlineData = encryptedData as MessageDataInline;
+        const inlineData = encryptedData as MessageDataInline;
         const encryptedObjectBytes = Uint8Array.from(Object.values(inlineData.content));
         const encryptedObject = EncryptedObject.parse(encryptedObjectBytes);
-        const id = encryptedMessage.getId();
         const groupId = encryptedMessage.getGroupId();
         const messageType = encryptedMessage.getType();
 
@@ -128,20 +161,11 @@ export function useSealClient(): ISealActions {
             let groupKey = getGroupKey(groupId);
 
             if (!groupKey || groupKey.isExpired()) {
-                const newGroupSessionKey = new SessionKey({
-                    address: sender,
-                    packageId: packageId,
-                    ttlMin: 10,
-                });
-                const signResult = await signPersonalMessage({ message: newGroupSessionKey.getPersonalMessage() });
-                await newGroupSessionKey.setPersonalMessageSignature(signResult.signature);
-                groupKey = newGroupSessionKey;
+                groupKey = await createGroupSessionKey(groupId);
             }
-
 
             const tx = new Transaction();
             let ids = [encryptedObject.id];
-            console.log("ids", ids);
             ids.forEach((id) => {
                 if (messageType === MessageType.NoPolicy) {
                     groupSealApprove(packageId)(tx, encryptedMessage);
@@ -181,6 +205,8 @@ export function useSealClient(): ISealActions {
 
     return useMemo(() => ({
         encryptMessage,
-        decryptMessage
+        decryptMessage,
+        createGroupSessionKey,
+        createMessageSessionKey,
     }), [encryptMessage, decryptMessage]);
 }

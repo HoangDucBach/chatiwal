@@ -11,12 +11,6 @@ interface SessionKeyStore {
     setMessageKey: (messageId: string, key: SessionKey) => void;
     getMessageKey: (messageId: string) => SessionKey | undefined;
 
-        // | ChatiwalMessageNoPolicy
-        // | ChatiwalMessageTimeLock
-        // | ChatiwalMessageLimitedRead
-        // | ChatiwalMessageFeeBased<CoinType>
-        // | ChatiwalMessageCompound<CoinType>;
-
     clearAll: () => void;
 }
 
