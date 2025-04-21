@@ -1,4 +1,4 @@
-import { ChatiwalMessageType, type ChatiwalEncryptedMessage, type ChatiwalMessage, type ChatiwalSuperMessageBase } from "@/types";
+import { ChatiwalMessageType, type ChatiwalEncryptedMessage, type ChatiwalMessage, type ChatiwalMessageBase } from "@/types";
 import { useChatiwalClient } from "./useChatiwalClient";
 import { EncryptedObject, SealClient, SessionKey, getAllowlistedKeyServers } from "@mysten/seal";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage, useSuiClient } from "@mysten/dapp-kit";
@@ -50,7 +50,7 @@ function getSealApproveArguments(
 }
 
 interface ISealActions {
-    encryptMessage: (message: ChatiwalSuperMessageBase) => Promise<ChatiwalEncryptedMessage>;
+    encryptMessage: (message: ChatiwalMessageBase) => Promise<ChatiwalEncryptedMessage>;
     decryptMessage: (encryptedMessage: ChatiwalEncryptedMessage) => Promise<ChatiwalMessage>;
 }
 
@@ -87,7 +87,7 @@ export function useSealClient(): ISealActions {
     }
 
     // use call back for encryptMessage and decryptMessage
-    const encryptMessage = useCallback(async (message: ChatiwalSuperMessageBase): Promise<ChatiwalEncryptedMessage> => {
+    const encryptMessage = useCallback(async (message: ChatiwalMessageBase): Promise<ChatiwalEncryptedMessage> => {
         const messageAsString = JSON.stringify(message);
         const messageAsUint8Array = new TextEncoder().encode(messageAsString);
         const nonce = crypto.getRandomValues(new Uint8Array(5));
@@ -127,7 +127,7 @@ export function useSealClient(): ISealActions {
         try {
             let groupKey = getGroupKey(encryptedMessage.groupId);
 
-            if (!groupKey) {
+            if (!groupKey || groupKey.isExpired()) {
                 const newGroupSessionKey = new SessionKey({
                     address: sender,
                     packageId: packageId,
