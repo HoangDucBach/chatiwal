@@ -1,11 +1,12 @@
-import { ChatiwalMessageType, type ChatiwalEncryptedMessage, type ChatiwalMessage, type ChatiwalMessageBase } from "@/types";
+import { ChatiwalMessageType, type ChatiwalEncryptedMessage, type ChatiwalMessage, type ChatiwalSuperMessageBase } from "@/types";
 import { useChatiwalClient } from "./useChatiwalClient";
 import { EncryptedObject, SealClient, SessionKey, getAllowlistedKeyServers } from "@mysten/seal";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSignPersonalMessage, useSuiClient } from "@mysten/dapp-kit";
-import { fromHex, toHex } from "@mysten/sui/utils";
+import { fromHex, SUI_CLOCK_OBJECT_ID, toHex } from "@mysten/sui/utils";
 import { useSessionKeys } from "./useSessionKeys";
 import { Transaction } from "@mysten/sui/transactions";
 import { SuiObjectResponse } from "@mysten/sui/client";
+import { useCallback, useMemo } from "react";
 
 
 function getSealApproveTarget(packageId: string, messageType: ChatiwalMessageType): string {
@@ -23,10 +24,36 @@ function getSealApproveTarget(packageId: string, messageType: ChatiwalMessageTyp
     }
 }
 
+function getSealApproveArguments(
+    tx: Transaction,
+    messageType: ChatiwalMessageType,
+    id: string,
+    messageId: string,
+    groupId: string
+) {
+    switch (messageType) {
+        case ChatiwalMessageType.TIME_LOCK:
+            return [
+                tx.pure.vector('u8', fromHex(id)),
+                tx.object(messageId),
+                tx.object(groupId),
+                tx.object(SUI_CLOCK_OBJECT_ID),
+            ]
+        default:
+            return [
+                tx.pure.vector('u8', fromHex(id)),
+                tx.object(messageId),
+                tx.object(groupId),
+            ]
+
+    }
+}
+
 interface ISealActions {
-    encryptMessage: (message: ChatiwalMessageBase) => Promise<ChatiwalEncryptedMessage>;
+    encryptMessage: (message: ChatiwalSuperMessageBase) => Promise<ChatiwalEncryptedMessage>;
     decryptMessage: (encryptedMessage: ChatiwalEncryptedMessage) => Promise<ChatiwalMessage>;
 }
+
 export function useSealClient(): ISealActions {
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
@@ -45,11 +72,7 @@ export function useSealClient(): ISealActions {
         return (tx: Transaction, id: string, messageId: string, groupId: string) => {
             tx.moveCall({
                 target: getSealApproveTarget(packageId, messageType),
-                arguments: [
-                    tx.pure.vector('u8', fromHex(id)),
-                    tx.object(messageId),
-                    tx.object(groupId),
-                ],
+                arguments: getSealApproveArguments(tx, messageType, id, messageId, groupId),
             });
         };
     }
@@ -63,7 +86,8 @@ export function useSealClient(): ISealActions {
         };
     }
 
-    const encryptMessage = async (message: ChatiwalMessageBase): Promise<ChatiwalEncryptedMessage> => {
+    // use call back for encryptMessage and decryptMessage
+    const encryptMessage = useCallback(async (message: ChatiwalSuperMessageBase): Promise<ChatiwalEncryptedMessage> => {
         const messageAsString = JSON.stringify(message);
         const messageAsUint8Array = new TextEncoder().encode(messageAsString);
         const nonce = crypto.getRandomValues(new Uint8Array(5));
@@ -85,9 +109,9 @@ export function useSealClient(): ISealActions {
             encryptedData: encryptedObject,
             createdAt: message.createdAt,
         } satisfies ChatiwalEncryptedMessage;
-    };
+    }, [packageId, sealClient]);
 
-    const decryptMessage = async (encryptedMessage: ChatiwalEncryptedMessage): Promise<ChatiwalMessage> => {
+    const decryptMessage = useCallback(async (encryptedMessage: ChatiwalEncryptedMessage): Promise<ChatiwalMessage> => {
         if (!currentAccount) {
             throw new Error("Not connected");
         }
@@ -112,6 +136,7 @@ export function useSealClient(): ISealActions {
                 const signResult = await signPersonalMessage({ message: newGroupSessionKey.getPersonalMessage() });
                 await newGroupSessionKey.setPersonalMessageSignature(signResult.signature);
                 groupKey = newGroupSessionKey;
+                console.log("groupKey", groupKey);
             }
 
 
@@ -148,115 +173,10 @@ export function useSealClient(): ISealActions {
         } catch (error) {
             throw error;
         }
-    };
+    }, [currentAccount, packageId, sealClient, getGroupKey, setGroupKey]);
 
-    // const encryptMessage = async (message: ChatiwalMessage): Promise<ChatiwalEncryptedMessage> => {
-    //     // Implement encryption logic here
-    //     const messageAsString = JSON.stringify(message);
-    //     console.log("Encrypting message 1", message);
-    //     const messageAsUint8Array = new TextEncoder().encode(messageAsString);
-    //     const nonce = crypto.getRandomValues(new Uint8Array(5));
-
-    //     const { encryptedObject } = await sealClient.encrypt({
-    //         id: message.groupId,
-    //         packageId: client.getPackageConfig().chatiwalId,
-    //         threshold: 2,
-    //         data: messageAsUint8Array,
-    //     });
-
-    //     return {
-    //         id: message.id,
-    //         groupId: message.groupId,
-    //         encryptedData: encryptedObject,
-    //         createdAt: message.createdAt,
-    //         type: message.type,
-    //     } satisfies ChatiwalEncryptedMessage;
-    // };
-
-    // const decryptMessage = async (message: ChatiwalEncryptedMessage): Promise<ChatiwalMessage> => {
-    //     if (!currentAccount) {
-    //         throw new Error("Not connected");
-    //     }
-    //     let object = Uint8Array.from(Object.values(message.encryptedData));
-    //     console.log("Decrypting message", message);
-    //     console.log("Encrypted data:", object);
-    //     console.log("Encrypted data type:", typeof object);
-    //     console.log("Encrypted data length:", object.byteLength);
-    //     const encryptedObject = EncryptedObject.parse(object);
-    //     console.log("Encrypted object 123:", encryptedObject);
-    //     const groupId = message.groupId;
-
-    //     let groupKey = getGroupKey(groupId);
-    //     // if (groupKey) {
-    //     //     const tx = new Transaction();
-    //     //     const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
-    //     //     let ids = [encryptedObject.id];
-    //     //     ids.forEach((id) => constructMoveCall(client.getPackageConfig().chatiwalId)(tx, id));
-    //     //     await sealClient.fetchKeys({
-    //     //         ids,
-    //     //         txBytes,
-    //     //         sessionKey: groupKey,
-    //     //         threshold: 2
-    //     //     });
-    //     //     const decryptedMessage = await sealClient.decrypt({
-    //     //         data: message.encryptedData,
-    //     //         sessionKey: groupKey,
-    //     //         txBytes: txBytes,
-    //     //     });
-    //     //     console.log("Decrypted ss:", decryptedMessage);
-    //     //     const decryptedMessageAsString = new TextDecoder().decode(decryptedMessage);
-    //     //     return JSON.parse(decryptedMessageAsString);
-    //     // }
-
-    //     let res: ChatiwalMessage | undefined;
-    //     const newGroupSessionKey = new SessionKey({
-    //         address: currentAccount?.address,
-    //         packageId: client.getPackageConfig().chatiwalId,
-    //         ttlMin: 10,
-    //     });
-    //     try {
-    //         if (!groupKey) {
-    //             const result = await signPersonalMessage({ message: newGroupSessionKey.getPersonalMessage() });
-    //             await newGroupSessionKey.setPersonalMessageSignature(result.signature);
-    //             groupKey = newGroupSessionKey;
-    //             setGroupKey(groupId, groupKey);
-    //         }
-    //         const tx = new Transaction();
-    //         let ids = [encryptedObject.id];
-    //         ids.forEach((id) => groupSealApprove(client.getPackageConfig().chatiwalId)(tx, message.id, groupId));
-    //         const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
-    //         await sealClient.fetchKeys({
-    //             ids,
-    //             txBytes,
-    //             sessionKey: groupKey,
-    //             threshold: 2
-    //         });
-    //         console.log("Key servers", getAllowlistedKeyServers("testnet"));
-    //         const decryptedMessage = await sealClient.decrypt({
-    //             data: object,
-    //             sessionKey: groupKey,
-    //             txBytes: txBytes,
-    //         });
-
-    //         let decryptedMessageAsString = new TextDecoder().decode(decryptedMessage);
-    //         console.log("Decrypted message as string:", decryptedMessageAsString);
-    //         res = JSON.parse(decryptedMessageAsString) satisfies ChatiwalMessage;
-    //         // console.log("Decrypted message:", decryptedMessage);
-
-    //     }
-    //     catch (error) {
-    //         console.error("Error decrypting message:", error);
-    //         throw error;
-    //     }
-
-    //     if (!res) {
-    //         throw new Error("Failed to decrypt message");
-    //     }
-    //     return res;
-    // };
-
-    return {
+    return useMemo(() => ({
         encryptMessage,
-        decryptMessage,
-    };
+        decryptMessage
+    }), [encryptMessage, decryptMessage]);
 }

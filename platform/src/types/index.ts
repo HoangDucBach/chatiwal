@@ -6,15 +6,11 @@ export enum ChatiwalMediaType {
     GIF = 'gif'
 }
 
-export interface OnchainObject {
-    id: string;
-}
 
 export interface ChatiwalMediaContent {
     id: string;
     type: ChatiwalMediaType;
     url: string;
-    thumbnailUrl?: string;
     name?: string;
     size?: number;
     duration?: number;
@@ -24,6 +20,8 @@ export interface ChatiwalMediaContent {
     };
     mimeType?: string;
 }
+
+// === Chatiwal Types ===
 
 export enum ChatiwalMessageType {
     NO_POLICY = 'no-policy',
@@ -36,7 +34,7 @@ export enum ChatiwalMessageType {
 export interface ChatiwalMessageBase {
     id: string;
     type?: ChatiwalMessageType;
-    address: string;
+    owner: string;
     groupId: string;
     messageBlobId?: string;
     content: {
@@ -44,7 +42,6 @@ export interface ChatiwalMessageBase {
         media?: ChatiwalMediaContent[];
     };
     createdAt: Date;
-    metadata?: Record<string, any>;
 }
 
 export interface ChatiwalEncryptedMessage {
@@ -54,6 +51,8 @@ export interface ChatiwalEncryptedMessage {
     encryptedData: Uint8Array;
     createdAt: Date;
 }
+
+// === Onchain Types ===
 
 export interface MessageNoPolicy extends ChatiwalMessageBase {
     type: ChatiwalMessageType.NO_POLICY;
