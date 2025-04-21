@@ -17,22 +17,11 @@ export enum MessageType {
     Compound = "Compound",
 }
 
-export enum MessageDataType {
-    BlobReference = "BlobReference",
-    Inline = "Inline",
-}
 
-export interface MessageDataBlobReference {
-    type: MessageDataType.BlobReference;
-    blobId: string;
-}
-
-export interface MessageDataInline {
-    type: MessageDataType.Inline;
-    content: any;
-}
-
-export type MessageData = MessageDataBlobReference | MessageDataInline;
+export type MessageData = {
+    content?: any;
+    blobId?: string;
+};
 
 interface MessageOptionsBase {
     id?: ID;
@@ -80,7 +69,7 @@ export abstract class MessageBase {
     protected owner: Address;
 
     constructor(options: MessageOptions) {
-        const nonce =random(5);
+        const nonce = random(5);
         const groupIdToBytes = fromHex(options.groupId);
         const id = toHex(new Uint8Array([...groupIdToBytes, ...nonce]));
 
