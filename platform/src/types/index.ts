@@ -1,4 +1,6 @@
-export enum ChatiwalMediaType {
+import { MessageBase } from "@/sdk";
+
+export enum MediaType {
     IMAGE = 'image',
     VIDEO = 'video',
     AUDIO = 'audio',
@@ -7,9 +9,9 @@ export enum ChatiwalMediaType {
 }
 
 
-export interface ChatiwalMediaContent {
+export interface MediaContent {
     id: string;
-    type: ChatiwalMediaType;
+    type: MediaType;
     url: string;
     name?: string;
     size?: number;
@@ -20,8 +22,6 @@ export interface ChatiwalMediaContent {
     };
     mimeType?: string;
 }
-
-// === Chatiwal Types ===
 
 export enum ChatiwalMessageType {
     NO_POLICY = 'no-policy',
@@ -39,18 +39,14 @@ export interface ChatiwalMessageBase {
     messageBlobId?: string;
     content: {
         text?: string;
-        media?: ChatiwalMediaContent[];
+        media?: MediaContent[];
     };
     createdAt: Date;
 }
 
-export interface ChatiwalEncryptedMessage {
-    id: string; //random it not be stored, else it will be used as messageId
-    groupId: string;
-    type: ChatiwalMessageType;
-    encryptedData: Uint8Array;
-    createdAt: Date;
-}
+// export interface ChatiwalEncryptedMessage extends MessageBase {
+//     encryptedData: Uint8Array;
+// }
 
 // === Onchain Types ===
 
@@ -109,15 +105,3 @@ export type ChatiwalMessage<CoinType = string> =
     | MessageLimitedRead
     | MessageFeeBased<CoinType>
     | ChatiwalMessageCompound<CoinType>;
-
-export interface ChatiwalMessagesSnapshot {
-    id: string;
-    groupId: string;
-    messagesBlobId: string;
-    createdAt: Date;
-}
-
-export interface ChatiwalMessageOwnerCap {
-    id: string;
-    messageId: string;
-}
