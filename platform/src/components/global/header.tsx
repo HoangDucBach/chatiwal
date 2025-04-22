@@ -49,7 +49,7 @@ const NavLinks = () => {
     return (
         <HStack flexGrow={"1"} align={"center"} justify={"center"} flex={"1 0"}>
             {siteConfig.navLinks.map((link) => (
-                <Link asChild key={link.href} variant={"plain"} color={"fg.700"} _hover={{ color: "fg", transition: "color ease-in-out 0.5s" }}>
+                <Link asChild key={link.href} variant={"plain"} color={"fg.800"} _hover={{ color: "fg", transition: "color ease-in-out 0.5s" }}>
                     <NextLink href={link.href}>
                         {link.name}
                     </NextLink>
