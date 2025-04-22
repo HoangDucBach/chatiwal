@@ -1,14 +1,14 @@
 
 "use client"
 
-import { chakra, Heading, VStack, Text, Image, Highlight, Box, Span, HStack } from "@chakra-ui/react";
+import { chakra, Heading, VStack, Text, Image, Highlight, Box, Span, HStack, Center } from "@chakra-ui/react";
 import NextImage from "next/image";
 import { ChatNowButton } from "./ChatNowButton";
 import { Tag } from "@/components/ui/tag";
 import { siteConfig } from "@/config/site";
 import { motion } from "framer-motion";
 
-const MotionTag = motion(Tag);
+const MotionTag = motion.create(Tag);
 
 interface HeroSectionProps extends React.HTMLAttributes<HTMLElement> {
 }
@@ -60,22 +60,24 @@ export default function HeroSection(props: HeroSectionProps) {
                         </Highlight>
                     </Text>
                 </VStack>
-                <ChatNowButton />
+                <Center w={"full"} flex={"1 0"}>
+                    <ChatNowButton />
+                </Center>
+                <HStack justify={"space-between"} w={"full"}>
+                    {siteConfig.hotFeatures.map((feature, i) => (
+                        <MotionTag key={feature} colorPalette={["yellow", "white", "secondary", "primary"][i % 4]} fontSize={"lg"} fontWeight={"semibold"} whileHover={{
+                            rotateZ: -7.5,
+                            transition: {
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 20,
+                            },
+                        }}>
+                            {feature}
+                        </MotionTag>
+                    ))}
+                </HStack>
             </VStack>
-            <HStack justify={"space-between"} w={"full"} pos={"sticky"} bottom={"1"}>
-                {siteConfig.hotFeatures.map((feature, i) => (
-                    <MotionTag key={feature} colorPalette={["yellow", "white", "secondary", "primary"][i % 4]} fontSize={"lg"} fontWeight={"semibold"} whileHover={{
-                        rotateZ: -7.5,
-                        transition: {
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 20,
-                        },
-                    }}>
-                        {feature}
-                    </MotionTag>
-                ))}
-            </HStack>
         </chakra.section>
     )
 }

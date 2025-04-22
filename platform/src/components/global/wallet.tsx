@@ -2,23 +2,21 @@
 
 import { Menu, chakra, Portal } from "@chakra-ui/react"
 import { ConnectModal, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
-import { Button } from "../ui/button";
+import { Button, ButtonProps } from "../ui/button";
 import { shortenAddress } from "@/libs";
 import { Icon } from "@chakra-ui/react"
 import { TbLogout } from "react-icons/tb";
 
-interface Props { }
-export function ConnectButton({ }: Props) {
+interface Props extends ButtonProps { }
+export function ConnectButton(props: Props) {
     const account = useCurrentAccount();
 
     return (
-        <chakra.div>
-            <ConnectModal
-                trigger={
-                    account ? <MenuAccount /> : <Button colorPalette={"primary"} size="sm">Connect</Button>
-                }
-            />
-        </chakra.div>
+        <ConnectModal
+            trigger={
+                account ? <MenuAccount /> : <Button colorPalette={"primary"} size="sm" {...props}>Connect</Button>
+            }
+        />
     )
 }
 

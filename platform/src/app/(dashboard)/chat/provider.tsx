@@ -1,8 +1,6 @@
 "use client";
 
 import * as Ably from "ably";
-import { ChatClient } from "@ably/chat";
-import { ChatClientProvider, useChatClient } from "@ably/chat/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 import { toaster } from "@/components/ui/toaster"

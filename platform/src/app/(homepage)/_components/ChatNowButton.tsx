@@ -3,7 +3,8 @@
 import { Button, ButtonProps } from "@/components/ui/button";
 import { Box, HStack, Icon, Span } from "@chakra-ui/react";
 import { IoChatbubbles } from "react-icons/io5";
-import { motion, Variants } from "framer-motion"; // 1. Import motion
+import { motion, Variants } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 interface ChatNowButtonProps extends ButtonProps {
 }
@@ -51,6 +52,8 @@ const textVariants: Variants = {
 export function ChatNowButton({
     ...props
 }: ChatNowButtonProps) {
+    const router = useRouter();
+
     return (
         <motion.div
             variants={buttonWrapperVariants}
@@ -65,6 +68,9 @@ export function ChatNowButton({
                     colorScheme={"primary"}
                     flexDirection={"column"}
                     size={"2xl"}
+                    onClick={() => {
+                        router.push("/chat");
+                    }}
                     {...props}
                 >
                     <Span bg={"primary/25"} backdropBlur={"2xl"} rounded={"full"} pos={"relative"} w={"fit"} aspectRatio={"square"} p={"2"} borderBottomWidth={"1px"} borderBottomColor={"fg"}>
