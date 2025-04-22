@@ -69,7 +69,7 @@ export function ChatNowButton({
                     flexDirection={"column"}
                     size={"2xl"}
                     onClick={() => {
-                        router.push("/chat");
+                        router.push("/dashboard/chat");
                     }}
                     {...props}
                 >

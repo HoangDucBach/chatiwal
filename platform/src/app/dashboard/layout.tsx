@@ -2,9 +2,7 @@ import { Provider } from "./provider";
 
 export default function Layout({
     children,
-}: Readonly<{
-    children: React.ReactNode;
-}>) {
+}: React.PropsWithChildren) {
     return (
         <Provider>
             {children}

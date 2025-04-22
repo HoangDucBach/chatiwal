@@ -1,7 +1,7 @@
 import { MessageBase } from '@/sdk';
 import { NETWORK } from '@/utils/constants';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
-import { WalrusClient } from '@mysten/walrus';
+import { WalrusClient, TESTNET_WALRUS_PACKAGE_CONFIG } from '@mysten/walrus';
 import { useMemo } from 'react';
 
 interface StoreMessageOptions {

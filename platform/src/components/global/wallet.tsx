@@ -6,15 +6,17 @@ import { Button, ButtonProps } from "../ui/button";
 import { shortenAddress } from "@/libs";
 import { Icon } from "@chakra-ui/react"
 import { TbLogout } from "react-icons/tb";
+import { useEffect } from "react";
 
 interface Props extends ButtonProps { }
 export function ConnectButton(props: Props) {
     const account = useCurrentAccount();
+    const { mutate: disconnect } = useDisconnectWallet();
 
     return (
         <ConnectModal
             trigger={
-                account ? <MenuAccount /> : <Button colorPalette={"primary"} size="sm" {...props}>Connect</Button>
+                account ? <Button colorPalette={"danger"} size="sm" onClick={()=>{disconnect}} {...props}>Disconnect</Button> : <Button colorPalette={"primary"} size="sm" {...props}>Connect</Button>
             }
         />
     )
@@ -29,7 +31,7 @@ function MenuAccount() {
     return (
         <Menu.Root>
             <Menu.Trigger asChild>
-                <Button variant="outline" colorPalette={"primary"} size="md">
+                <Button variant="outline" colorPalette={"primary"} size="sm">
                     {shortenAddress(account.address)}
                 </Button>
             </Menu.Trigger>

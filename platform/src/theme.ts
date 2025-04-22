@@ -92,7 +92,7 @@ const semanticTokens = defineSemanticTokens({
             900: { value: "#949494" },
         },
         default: {
-            solid: { value: "{colors.default.500}" },
+            solid: { value: "#FFFFFF" },
             contrast: { value: "{colors.default.100}" },
             fg: { value: "{colors.default.700}" },
             muted: { value: "{colors.default.100}" },
@@ -103,10 +103,10 @@ const semanticTokens = defineSemanticTokens({
         primary: {
             solid: { value: "{colors.primary.500}" },
             contrast: { value: "{colors.primary.100}" },
-            fg: { value: "{colors.primary.700}" },
-            muted: { value: "{colors.primary.100}" },
-            subtle: { value: "{colors.primary.200}" },
-            emphasized: { value: "{colors.primary.300}" },
+            fg: { value: "#08525E" },
+            muted: { value: "{colors.primary.300}" },
+            subtle: { value: "{colors.primary.400}" },
+            emphasized: { value: "{colors.primary.700}" },
             focusRing: { value: "{colors.primary.500}" },
         },
         secondary: {

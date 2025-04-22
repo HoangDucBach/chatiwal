@@ -1,0 +1,70 @@
+"use client";
+import { ChatiwalMascotIcon } from "@/components/global/icons";
+import { ConnectButton } from "@/components/global/wallet";
+import { HStack, Icon, Skeleton, StackProps, Text, VStack } from "@chakra-ui/react";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
+import { formatAddress } from "@mysten/sui/utils";
+import { useQuery } from "@tanstack/react-query";
+
+function generateColorFromAddress(addr: string): string {
+    const clean = addr.startsWith('0x') ? addr.slice(2) : addr;
+    const hash = parseInt(clean.slice(0, 6), 16);
+    const hue = hash % 360;
+    const saturation = 60 + (hash % 20); // 60–80%
+    const lightness = 50 + (hash % 20); // 50–70%
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+interface Props extends StackProps { }
+export function UserControlPanel(props: Props) {
+    const suiClient = useSuiClient();
+    const currentAccount = useCurrentAccount();
+
+    const { data: balances, isLoading } = useQuery({
+        queryKey: ["user::control-panel"],
+        queryFn: async () => {
+            if (!currentAccount) return [];
+
+            const suiBalance = await suiClient.getBalance({
+                owner: currentAccount?.address,
+            });
+
+            const suiTotalBalance = BigInt(suiBalance.totalBalance);
+
+            return [
+                {
+                    label: "SUI",
+                    value: suiTotalBalance / 1_000_000_000n,
+                },
+                {
+                    label: "WAL",
+                    value: "0",
+                }
+            ]
+        }
+    })
+
+    if (!currentAccount) return null;
+
+
+    return (
+        <HStack w={"full"} p={"2"} bg={"bg.100"} shadow={"sm"} rounded={"2xl"}>
+            <Icon color={generateColorFromAddress(currentAccount?.address)}>
+                <ChatiwalMascotIcon size={32} />
+            </Icon>
+            <VStack flex={"1 1"} align={"start"}>
+                <Text fontSize={"sm"}>{formatAddress(currentAccount?.address)}</Text>
+                <HStack>
+                    {isLoading && <Skeleton w={"full"} h={"5"} rounded={"full"} />}
+                    {balances?.map((balance) => (
+                        <HStack key={balance.label} gap={"1"}>
+                            <Text fontWeight={"medium"} fontSize={"xs"}>{balance.value}</Text>
+                            <Text color={"fg.800"} fontSize={"xs"}>{balance.label}</Text>
+                        </HStack>
+                    ))}
+                </HStack>
+            </VStack>
+            <ConnectButton size={"sm"} />
+        </HStack>
+    );
+}

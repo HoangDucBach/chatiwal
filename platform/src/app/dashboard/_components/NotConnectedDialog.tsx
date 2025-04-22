@@ -4,19 +4,19 @@ import { Center, DialogHeader, DialogRootProps, Icon, Text, VStack } from "@chak
 import { DialogBody, DialogContent, DialogRoot, DialogTrigger } from "@/components/ui/dialog";
 import { ConnectButton } from "@/components/global/wallet";
 import { TbPlugConnected } from "react-icons/tb";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 
 interface Props {
-    open?: boolean;
-    onOpenChange?: (details: any) => void;
 }
 export function NotConnectedDialog({
-    open,
     ...props
 }: Props) {
+    const currentAccount = useCurrentAccount();
+    if(currentAccount) return null;
+    
     return (
         <DialogRoot
-            open={open}
-            onOpenChange={props.onOpenChange}
+            open={!currentAccount}
             size={"xs"}
             placement={"center"}
         >

@@ -2,17 +2,18 @@
 
 import { useMemo } from "react";
 import { ChatiwalClient, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
-import { ChatiwalClientConfig, GroupCap } from "@/sdk/types";
+import { ChatiwalClientConfig } from "@/sdk/types";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { InvalidGroupCapError } from "@/sdk/errors";
 import { Address, ObjectId } from "@/sdk/types";
+import { Transaction } from "@mysten/sui/transactions";
 
 export interface IGroupActions {
-    mint_group_and_transfer(metadataBlobId: string): Promise<void>;
-    mint_group_cap(group: string, recipient: string): Promise<void>;
-    add_member(group: string, member: string): Promise<void>;
-    remove_member(group: string, member: string): Promise<void>;
-    seal_approve(id: Uint8Array, group: string): Promise<void>;
+    mint_group_and_transfer(metadataBlobId?: string): Promise<Transaction>;
+    mint_group_cap(group: string, recipient: string): Promise<Transaction>;
+    add_member(group: string, member: string): Promise<Transaction>;
+    remove_member(group: string, member: string): Promise<Transaction>;
+    seal_approve(id: Uint8Array, group: string): Promise<Transaction>;
     group_get_group_id(group: string): Promise<Uint8Array>;
     group_get_group_member(group: string): Promise<number[]>;
     group_get_group_metadataBlobId(group: string): Promise<string>;
@@ -22,25 +23,25 @@ export interface IGroupActions {
 }
 
 export interface IMessageActions {
-    mint_messages_snapshot_and_transfer(groupId: string, metadataBlobId: string): Promise<void>;
-    mint_messages_snapshot_cap_and_transfer(messages_snapshot_id: string): Promise<void>;
-    mint_super_message_no_policy_and_transfer(groupId: string, metadataBlobId: string): Promise<void>;
-    read_message_no_policy(messageId: string): Promise<void>;
-    mint_super_message_time_lock_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint): Promise<void>;
-    read_message_time_lock(messageId: string): Promise<void>;
-    mint_super_message_limited_read_and_transfer(groupId: string, metadataBlobId: string, maxReads: number | bigint): Promise<void>; read_message_limited_read(messageId: string): Promise<void>;
-    mint_super_message_fee_based_and_transfer(groupId: string, metadataBlobId: string, fee: number | bigint, recipient: string, coinType: string): Promise<void>;
-    read_message_fee_based(messageId: string, payment_coin_id: string, coinType: string): Promise<void>; withdraw_fees(messageId: string, coinType: string): Promise<void>;
-    mint_super_message_compound_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, coinType: string): Promise<void>;
-    read_message_compound(messageId: string, payment_coin_id: string, coinType: string): Promise<void>;
-    withdraw_fees_compound(messageId: string, coinType: string): Promise<void>;
+    mint_messages_snapshot_and_transfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
+    mint_messages_snapshot_cap_and_transfer(messages_snapshot_id: string): Promise<Transaction>;
+    mint_super_message_no_policy_and_transfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
+    read_message_no_policy(messageId: string): Promise<Transaction>;
+    mint_super_message_time_lock_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint): Promise<Transaction>;
+    read_message_time_lock(messageId: string): Promise<Transaction>;
+    mint_super_message_limited_read_and_transfer(groupId: string, metadataBlobId: string, maxReads: number | bigint): Promise<Transaction>; read_message_limited_read(messageId: string): Promise<Transaction>;
+    mint_super_message_fee_based_and_transfer(groupId: string, metadataBlobId: string, fee: number | bigint, recipient: string, coinType: string): Promise<Transaction>;
+    read_message_fee_based(messageId: string, payment_coin_id: string, coinType: string): Promise<Transaction>; withdraw_fees(messageId: string, coinType: string): Promise<Transaction>;
+    mint_super_message_compound_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, coinType: string): Promise<Transaction>;
+    read_message_compound(messageId: string, payment_coin_id: string, coinType: string): Promise<Transaction>;
+    withdraw_fees_compound(messageId: string, coinType: string): Promise<Transaction>;
 
     // === Seal Integration ===
 
-    seal_approve_super_message_time_lock(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<void>;
-    seal_approve_super_message_limited_read(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<void>;
-    seal_approve_super_message_fee_based(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<void>;
-    seal_approve_super_message_compound(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<void>;
+    seal_approve_super_message_time_lock(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
+    seal_approve_super_message_limited_read(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
+    seal_approve_super_message_fee_based(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<Transaction>;
+    seal_approve_super_message_compound(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<Transaction>;
 
     // === Public view functions (Accessors using devInspect) ===
 
@@ -131,7 +132,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         const groupCap = groupCapsOfOwner.data.find((cap) => {
             const type = cap.data?.content?.dataType;
             if (type !== "moveObject") throw new Error("Invalid type");
-            const object = cap.data?.content?.fields as unknown as GroupCap;
+            const object = cap.data?.content?.fields as unknown as any;
             return object.groupId === group;
         });
 
@@ -146,7 +147,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         return groupCapOfOwner.data.objectId;
     };
 
-    const executeTransaction = async (txBuilder: () => Promise<any>) => {
+    const executeTransaction = async (txBuilder: () => Promise<Transaction>) => {
         try {
             validateAccount();
             return await txBuilder();
@@ -175,15 +176,15 @@ export function useChatiwalClient(): IChatiwalClientActions {
     };
 
     const groupActions: IGroupActions = {
-        mint_group_and_transfer: async (metadataBlobId: string) => {
-            await executeTransaction(() =>
+        mint_group_and_transfer: async (metadataBlobId: string = "") => {
+            return await executeTransaction(() =>
                 client.mintGroupAndTransfer({ metadataBlobId: metadataBlobId })
             );
         },
 
         mint_group_cap: async (group: string, recipient: string) => {
             const groupCapId = await validateGroupCap(group);
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintGroupCap({
                     groupCapId,
                     groupId: group,
@@ -194,7 +195,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         add_member: async (group: string, member: string) => {
             const groupCapId = await validateGroupCap(group);
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.addMember({
                     groupCapId,
                     groupId: group,
@@ -205,7 +206,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         remove_member: async (group: string, member: string) => {
             const groupCapId = await validateGroupCap(group);
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.removeMember({
                     groupCapId,
                     groupId: group,
@@ -215,7 +216,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         seal_approve: async (id: Uint8Array, group: string) => {
-            await executeInspectTransaction(() =>
+            return await executeInspectTransaction(() =>
                 client.sealApprove({
                     id,
                     groupId: group,
@@ -272,7 +273,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
     const messageActions: IMessageActions = {
         // Snapshot management
         mint_messages_snapshot_and_transfer: async (groupId: string, metadataBlobId: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintMessagesSnapshotAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId
@@ -281,7 +282,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         mint_messages_snapshot_cap_and_transfer: async (messages_snapshot_id: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintMessagesSnapshotCapAndTransfer({
                     msgsSnapshotId: messages_snapshot_id
                 })
@@ -290,7 +291,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         // No Policy Messages
         mint_super_message_no_policy_and_transfer: async (groupId: string, metadataBlobId: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintSuperMessageNoPolicyAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId
@@ -299,7 +300,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         read_message_no_policy: async (messageId: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.readMessageNoPolicy({
                     messageId: messageId
                 })
@@ -313,7 +314,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             timeFrom: number | bigint,
             timeTo: number | bigint
         ) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintSuperMessageTimeLockAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
@@ -324,7 +325,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         read_message_time_lock: async (messageId: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.readMessageTimeLock({
                     messageId: messageId
                 })
@@ -337,7 +338,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             metadataBlobId: string,
             maxReads: number | bigint
         ) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintSuperMessageLimitedReadAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
@@ -347,7 +348,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         read_message_limited_read: async (messageId: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.readMessageLimitedRead({
                     messageId: messageId
                 })
@@ -362,7 +363,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             recipient: string,
             coinType: string
         ) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintSuperMessageFeeBasedAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
@@ -374,7 +375,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         read_message_fee_based: async (messageId: string, payment_coin_id: string, coinType: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.readMessageFeeBased({
                     messageId: messageId,
                     paymentCoinId: payment_coin_id,
@@ -384,7 +385,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         withdraw_fees: async (messageId: string, coinType: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.withdrawFees({
                     messageId: messageId,
                     coinType: coinType
@@ -402,7 +403,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             recipient: string,
             coinType: string
         ) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.mintSuperMessageCompoundAndTransfer({
                     groupId: groupId,
                     metadataBlobId: metadataBlobId,
@@ -417,7 +418,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         read_message_compound: async (messageId: string, payment_coin_id: string, coinType: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.readMessageCompound({
                     messageId: messageId,
                     paymentCoinId: payment_coin_id,
@@ -427,7 +428,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         withdraw_fees_compound: async (messageId: string, coinType: string) => {
-            await executeTransaction(() =>
+            return await executeTransaction(() =>
                 client.withdrawFeesCompound({
                     messageId: messageId,
                     coinType: coinType
@@ -438,7 +439,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         // === Seal Integration ===
 
         seal_approve_super_message_time_lock: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
-            await executeInspectTransaction(() =>
+            return await executeInspectTransaction(() =>
                 client.sealApproveSuperMessageTimeLock({
                     id,
                     messageId: messageId,
@@ -447,7 +448,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
         seal_approve_super_message_limited_read: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
-            await executeInspectTransaction(() =>
+            return await executeInspectTransaction(() =>
                 client.sealApproveSuperMessageLimitedRead({
                     id,
                     messageId: messageId,
@@ -456,7 +457,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
         seal_approve_super_message_fee_based: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
-            await executeInspectTransaction(() =>
+            return await executeInspectTransaction(() =>
                 client.sealApproveSuperMessageFeeBased({
                     id,
                     messageId: messageId,
@@ -466,7 +467,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
         seal_approve_super_message_compound: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
-            await executeInspectTransaction(() =>
+            return await executeInspectTransaction(() =>
                 client.sealApproveSuperMessageCompound({
                     id,
                     messageId: messageId,
