@@ -38,7 +38,7 @@ const Brand = () => {
                     {siteConfig.name}
                 </Heading>
                 <Text fontSize={"sm"} color={"fg.700"}>
-                    Y3 Protocol
+                    Y3 Model
                 </Text>
             </VStack>
         </HStack>

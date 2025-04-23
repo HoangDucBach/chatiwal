@@ -1,9 +1,10 @@
 "use client";
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { ConnectButton } from "@/components/global/wallet";
+import { formatBalance } from "@/libs";
 import { HStack, Icon, Skeleton, StackProps, Text, VStack } from "@chakra-ui/react";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import { formatAddress } from "@mysten/sui/utils";
+import { formatAddress, SUI_DECIMALS } from "@mysten/sui/utils";
 import { useQuery } from "@tanstack/react-query";
 
 function generateColorFromAddress(addr: string): string {
@@ -29,16 +30,22 @@ export function UserControlPanel(props: Props) {
                 owner: currentAccount?.address,
             });
 
+            const walBalance = await suiClient.getBalance({
+                owner: currentAccount?.address,
+                coinType: `0x8270feb7375eee355e64fdb69c50abb6b5f9393a722883c1cf45f8e26048810a::wal::WAL`,
+            });
+
+            const walTotalBalance = BigInt(walBalance.totalBalance);
             const suiTotalBalance = BigInt(suiBalance.totalBalance);
 
             return [
                 {
                     label: "SUI",
-                    value: suiTotalBalance / 1_000_000_000n,
+                    value: formatBalance(suiTotalBalance, SUI_DECIMALS),
                 },
                 {
                     label: "WAL",
-                    value: "0",
+                    value: formatBalance(walTotalBalance, 9),
                 }
             ]
         }

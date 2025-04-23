@@ -46,7 +46,7 @@ export default function HeroSection(props: HeroSectionProps) {
             <VStack w="full" h={"full"} justify={"start"} gap={"8"}>
                 <VStack w={"full"} justify={"center"}>
                     <Box borderRadius={"full"} px={"2"} py={"1"} borderWidth={"1.5px"} borderColor={"fg"} w={"fit"} h={"fit"} bg={"bg.emphasized/75"} backdropBlur={"2xl"} textAlign={"center"}>
-                        Y3 Protocol on <Span color={"primary"}>Chatiwal</Span>
+                        Y3 Model on <Span color={"primary"}>Chatiwal</Span>
                     </Box>
                     <Heading as="h1" size={"5xl"} maxW={"1/2"} textAlign={"center"} fontWeight={"semibold"}>
                         Empower Evolving Conversations with E2EE and Full Control
