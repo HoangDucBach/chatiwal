@@ -10,6 +10,7 @@ use chatiwal::events;
 use chatiwal::utils::is_prefix;
 use std::string::String;
 use sui::clock::Clock;
+use sui::table::{Self, Table};
 use sui::vec_set::{Self, VecSet};
 
 // === Error Constants ===
@@ -30,6 +31,17 @@ public struct Group has key {
     id: UID,
     member: VecSet<address>,
     metadata_blob_id: String,
+}
+
+public struct Registry has key {
+    id: UID,
+    user_groups: Table<address, VecSet<ID>>,
+}
+
+// === Initialization ===
+
+fun init(ctx: &mut TxContext) {
+    init_impl(ctx);
 }
 
 // === Entry Functions ===
@@ -53,16 +65,30 @@ public entry fun mint_group_cap(
     transfer::transfer(g_cap, recipient);
 }
 
-public entry fun add_member(group_cap: &GroupCap, g: &mut Group, member: address, c: &Clock) {
+public entry fun add_member(
+    group_cap: &GroupCap,
+    registry: &mut Registry,
+    g: &mut Group,
+    member: address,
+    c: &Clock,
+) {
     assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
     assert!(!vec_set::contains(&g.member, &member), EMemberAlreadyExists);
     do_add_member(g, member, c);
+    registry.register_group_impl(member, g)
 }
 
-public entry fun remove_member(group_cap: &GroupCap, g: &mut Group, member: address, c: &Clock) {
+public entry fun remove_member(
+    group_cap: &GroupCap,
+    registry: &mut Registry,
+    g: &mut Group,
+    member: address,
+    c: &Clock,
+) {
     assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
     assert!(vec_set::contains(&g.member, &member), EMemberNotExists);
     do_remove_member(g, member, c);
+    registry.unregister_group_impl(member, g)
 }
 
 // === Internal Functions ===
@@ -104,6 +130,31 @@ fun remove_member_impl(g: &mut Group, member: address) {
     vec_set::remove(&mut g.member, &member);
 }
 
+fun register_group_impl(registry: &mut Registry, user: address, g: &Group) {
+    let user_groups = &mut registry.user_groups;
+    if (!user_groups.contains(user)) {
+        user_groups.add(user, vec_set::empty());
+    };
+    let groups = user_groups.borrow_mut(user);
+    groups.insert(object::id(g));
+}
+
+fun unregister_group_impl(registry: &mut Registry, user: address, g: &Group) {
+    let user_groups = &mut registry.user_groups;
+    if (user_groups.contains(user)) {
+        let groups = user_groups.borrow_mut(user);
+        groups.remove(object::borrow_id(g));
+    };
+}
+
+fun init_impl(ctx: &mut TxContext) {
+    let registry = Registry {
+        id: object::new(ctx),
+        user_groups: table::new(ctx),
+    };
+    transfer::share_object(registry);
+}
+
 fun mint_group_impl(metadata_blob_id: String, ctx: &mut TxContext): Group {
     Group {
         id: object::new(ctx),
@@ -140,6 +191,10 @@ fun group_cap_has_permission_of_group(group_cap: &GroupCap, g: &Group): bool {
 
 // === Accessors ===
 
+public fun registry_get_user_groups(registry: &Registry, user: address): &VecSet<ID> {
+    registry.user_groups.borrow(user)
+}
+
 public fun group_get_group_id(g: &Group): ID {
     object::id(g)
 }
@@ -162,4 +217,13 @@ public fun group_cap_get_id(group_cap: &GroupCap): ID {
 
 public fun is_member(g: &Group, addr: address): bool {
     vec_set::contains(&g.member, &addr)
+}
+
+#[test_only]
+public fun create_and_share_registry_for_testing(ctx: &mut TxContext) {
+    let registry = Registry {
+        id: object::new(ctx),
+        user_groups: table::new(ctx),
+    };
+    transfer::share_object(registry);
 }
