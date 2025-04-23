@@ -1,23 +1,22 @@
 "use client";
 
-import { ChatiwalMascotIcon } from "@/components/global/icons";
-import { generateColorFromAddress } from "@/libs";
-import { MediaContent, MediaType, TMessageBase } from "@/types";
 import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, chakra, Text, VStack, Float, Circle } from "@chakra-ui/react";
 import { formatAddress } from "@mysten/sui/utils";
 import { useMemo } from "react";
 import ReactPlayer from "react-player";
-import "./styles.css";
 import { useChannel } from "ably/react";
 import { useQuery } from "@tanstack/react-query";
 
-const CustomReactPlayer = chakra(ReactPlayer);
+import { ChatiwalMascotIcon } from "@/components/global/icons";
+import { generateColorFromAddress } from "@/libs";
+import { MediaContent, MediaType, TMessageBase } from "@/types";
 
 interface ContentProps {
     self?: boolean;
     text?: string;
     media?: MediaContent;
 }
+
 export function Content(props: ContentProps) {
     const { text, media, self } = props;
 
@@ -102,7 +101,7 @@ export function MessageBase(props: MessageBaseProps) {
 
     const Avatar = () => {
         return (
-            <ChakraAvatar.Root  variant="subtle">
+            <ChakraAvatar.Root variant="subtle">
                 <Icon color={generateColorFromAddress(message.owner)}>
                     <ChatiwalMascotIcon size={48} />
                 </Icon>

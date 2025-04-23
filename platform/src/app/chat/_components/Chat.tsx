@@ -58,6 +58,7 @@ export function Chat(props: Props) {
                 content: decryptedMessage.getData().content,
                 createdAt: Date.now(),
             }
+            
             setMessages((previousMessages: any) => [...previousMessages, decryptedMessageData]);
         } catch (error) {
             toaster.error({
