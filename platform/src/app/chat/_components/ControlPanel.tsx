@@ -77,7 +77,7 @@ function ControlPanelBody() {
                     key={index}
                     group={{
                         name: "Cyan Group | Beta",
-                        members: [],
+                        members: new Set(["0x1234567890abcdef"]),
                         owner: "0x1234567890abcdef",
                         description: "This is a test group",
                         id: "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff",
