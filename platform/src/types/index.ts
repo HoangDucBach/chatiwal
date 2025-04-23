@@ -22,10 +22,10 @@ export type MediaContent = {
 
 export type TGroup = {
     id: string;
-    name: string;
-    description: string;
+    name?: string;
+    description?: string;
     owner: string;
-    members: string[];
+    members: Set<string>;
 };
 
 export enum TMessageType {

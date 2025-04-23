@@ -30,7 +30,7 @@ export function GroupCard(props: Props) {
         >
             <VStack gap={"0"} alignItems={"start"}>
                 <Text color={"primary.fg"} fontWeight={"medium"}>{group.name || "Cyan Group | Beta"}</Text>
-                <Text color={"primary.contrast"} fontSize={"sm"}>{group.members.length || 3} members</Text>
+                <Text color={"primary.contrast"} fontSize={"sm"}>{group.members.size || 0} members</Text>
             </VStack>
         </HStack>
     )

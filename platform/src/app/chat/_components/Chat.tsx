@@ -12,19 +12,20 @@ import { useSealClient } from "@/hooks/useSealClient";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
 import { SuperMessageNoPolicy } from "@/sdk";
 import { toaster } from "@/components/ui/toaster";
+import { useGroup } from "../_hooks/useGroupId";
 
 const ScrollMotionVStack = motion.create(VStack);
 
 interface Props extends StackProps {
-    channelName: string;
 }
 export function Chat(props: Props) {
-    const { channelName } = props;
+    const { group } = useGroup();
+    const channelName = group.id;
     const currentAccount = useCurrentAccount();
-    const [messages, setMessages] = useState<TMessage[]>([]);
     const { decryptMessage } = useSealClient();
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const { channel } = useChannel({ channelName });
+    const [messages, setMessages] = useState<TMessage[]>([]);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const onMessageSend = async (plainMessage: TMessageBase) => {
         setMessages((previousMessages: any) => [...previousMessages, plainMessage]);
     }
@@ -58,7 +59,7 @@ export function Chat(props: Props) {
                 content: decryptedMessage.getData().content,
                 createdAt: Date.now(),
             }
-            
+
             setMessages((previousMessages: any) => [...previousMessages, decryptedMessageData]);
         } catch (error) {
             toaster.error({

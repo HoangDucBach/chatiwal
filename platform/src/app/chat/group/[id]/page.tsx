@@ -1,7 +1,9 @@
-import { PageLayout } from "@/components/ui/layout";
 import { Chat } from "../../_components/Chat";
-import { AblyPubSub } from "../_components/Message";
 import Provider from "./provider";
+import { GroupProvider } from "../../_hooks/useGroupId";
+import { HStack } from "@chakra-ui/react";
+import { ControlPanel } from "../../_components/ControlPanel";
+import { GroupControlPanel } from "../../_components/GroupControlPanel";
 
 export default async function Page({
     params,
@@ -13,8 +15,14 @@ export default async function Page({
     const { id } = await params;
 
     return (
-        <Provider roomId={id}>
-            <Chat channelName={id} flex={"3 0"}/>
+        <Provider channelName={id}>
+            <GroupProvider id={id}>
+                <HStack w={"full"} h={"full"}>
+                    <ControlPanel flex={"1 0"} />
+                    <Chat flex={"3 0"} />
+                    <GroupControlPanel flex={"1 0"} />
+                </HStack>
+            </GroupProvider>
         </Provider>
     );
 }

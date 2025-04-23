@@ -89,7 +89,7 @@ function ControlPanelBody() {
 }
 function ControlPanelHeader() {
     return (
-        <HStack bg={"bg.200"} w={"full"} px={"4"} py={"2"} rounded={"full"}>
+        <HStack bg={"bg.200"} w={"full"} px={"4"} py={"2"} rounded={"2xl"}>
             <Heading as={"h6"} size={"lg"}>Group</Heading>
         </HStack>
     )

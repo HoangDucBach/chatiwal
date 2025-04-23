@@ -133,7 +133,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             const type = cap.data?.content?.dataType;
             if (type !== "moveObject") throw new Error("Invalid type");
             const object = cap.data?.content?.fields as unknown as any;
-            return object.groupId === group;
+            return object.group_id === group;
         });
 
         return groupCap;
