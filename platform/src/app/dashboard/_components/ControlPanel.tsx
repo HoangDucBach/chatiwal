@@ -24,6 +24,7 @@ export function ControlPanel(props: Props) {
             bg={"bg.100/75"}
             backdropBlur={"2xl"}
             rounded={"4xl"}
+            gap={"6"}
             {...props}
         >
             <Box
@@ -119,7 +120,7 @@ function ControlPanelFooter() {
     }
 
     return (
-        <VStack w={"full"}>
+        <VStack w={"full"} gap={"4"}>
             <Button
                 colorPalette={"default"}
                 w={"full"}
