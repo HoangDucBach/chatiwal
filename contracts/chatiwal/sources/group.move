@@ -29,7 +29,7 @@ public struct GroupCap has key {
 
 public struct Group has key {
     id: UID,
-    member: VecSet<address>,
+    members: VecSet<address>,
     metadata_blob_id: String,
 }
 
@@ -73,7 +73,7 @@ public entry fun add_member(
     c: &Clock,
 ) {
     assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
-    assert!(!vec_set::contains(&g.member, &member), EMemberAlreadyExists);
+    assert!(!vec_set::contains(&g.members, &member), EMemberAlreadyExists);
     do_add_member(g, member, c);
     registry.register_group_impl(member, g)
 }
@@ -86,9 +86,21 @@ public entry fun remove_member(
     c: &Clock,
 ) {
     assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
-    assert!(vec_set::contains(&g.member, &member), EMemberNotExists);
+    assert!(vec_set::contains(&g.members, &member), EMemberNotExists);
     do_remove_member(g, member, c);
     registry.unregister_group_impl(member, g)
+}
+
+public entry fun leave_group(
+    group_cap: &GroupCap,
+    registry: &mut Registry,
+    g: &Group,
+    user: address,
+    c: &Clock,
+) {
+    assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
+    assert!(vec_set::contains(&g.members, &user), EMemberNotExists);
+    do_leave_group(registry, user, g, c)
 }
 
 // === Internal Functions ===
@@ -122,12 +134,25 @@ fun do_remove_member(g: &mut Group, member: address, c: &Clock) {
     events::emit_group_member_removed(object::id(g), member, c.timestamp_ms());
 }
 
+fun do_leave_group(registry: &mut Registry, user: address, g: &Group, c: &Clock) {
+    leave_group_impl(registry, user, g);
+    events::emit_group_member_left(object::id(g), user, c.timestamp_ms());
+}
+
 fun add_member_impl(g: &mut Group, member: address) {
-    vec_set::insert(&mut g.member, member);
+    vec_set::insert(&mut g.members, member);
 }
 
 fun remove_member_impl(g: &mut Group, member: address) {
-    vec_set::remove(&mut g.member, &member);
+    vec_set::remove(&mut g.members, &member);
+}
+
+fun leave_group_impl(registry: &mut Registry, user: address, g: &Group) {
+    let user_groups = &mut registry.user_groups;
+    if (user_groups.contains(user)) {
+        let groups = user_groups.borrow_mut(user);
+        groups.remove(object::borrow_id(g));
+    };
 }
 
 fun register_group_impl(registry: &mut Registry, user: address, g: &Group) {
@@ -158,7 +183,7 @@ fun init_impl(ctx: &mut TxContext) {
 fun mint_group_impl(metadata_blob_id: String, ctx: &mut TxContext): Group {
     Group {
         id: object::new(ctx),
-        member: vec_set::empty(),
+        members: vec_set::empty(),
         metadata_blob_id,
     }
 }
@@ -176,7 +201,7 @@ public(package) fun approve_internal(id: vector<u8>, caller: address, g: &Group)
         return false
     };
 
-    vec_set::contains(&g.member, &caller)
+    vec_set::contains(&g.members, &caller)
 }
 
 public entry fun seal_approve(id: vector<u8>, g: &Group, ctx: &TxContext) {
@@ -200,7 +225,7 @@ public fun group_get_group_id(g: &Group): ID {
 }
 
 public fun group_get_group_member(g: &Group): VecSet<address> {
-    g.member
+    g.members
 }
 
 public fun group_get_group_metadata_blob_id(g: &Group): String {
@@ -216,7 +241,7 @@ public fun group_cap_get_id(group_cap: &GroupCap): ID {
 }
 
 public fun is_member(g: &Group, addr: address): bool {
-    vec_set::contains(&g.member, &addr)
+    vec_set::contains(&g.members, &addr)
 }
 
 #[test_only]
