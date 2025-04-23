@@ -1,14 +1,16 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { TGroup } from "@/types";
 import { HStack, StackProps, Text, VStack } from "@chakra-ui/react"
 import { useState } from "react"
 
 interface Props extends StackProps {
-    group: any;
+    group: TGroup;
 }
 export function GroupCard(props: Props) {
     const { group } = props;
+
     const [isSelected, setIsSelected] = useState(true)
     if (!group) return null;
 
@@ -27,8 +29,8 @@ export function GroupCard(props: Props) {
             {...props}
         >
             <VStack gap={"0"} alignItems={"start"}>
-                <Text color={"primary.fg"} fontWeight={"medium"}>{"Cyan Group | Beta"}</Text>
-                <Text color={"primary.contrast"} fontSize={"sm"}>{3} members</Text>
+                <Text color={"primary.fg"} fontWeight={"medium"}>{group.name || "Cyan Group | Beta"}</Text>
+                <Text color={"primary.contrast"} fontSize={"sm"}>{group.members.length || 3} members</Text>
             </VStack>
         </HStack>
     )

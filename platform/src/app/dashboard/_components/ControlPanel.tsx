@@ -21,7 +21,7 @@ export function ControlPanel(props: Props) {
             zIndex={"0"}
             h={"full"}
             p={"4"}
-            bg={"bg.100/75"}
+            bg={"bg.100"}
             backdropBlur={"2xl"}
             rounded={"4xl"}
             gap={"6"}
@@ -76,7 +76,13 @@ function ControlPanelBody() {
             {ownedGroups?.map((group, index) => (
                 <GroupCard
                     key={index}
-                    group={group}
+                    group={{
+                        name: "Cyan Group | Beta",
+                        members: [],
+                        owner: "0x1234567890abcdef",
+                        description: "This is a test group",
+                        id: "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff",
+                    }}
                 />
             ))}
         </VStack>

@@ -1,20 +1,11 @@
 "use client";
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { ConnectButton } from "@/components/global/wallet";
-import { formatBalance } from "@/libs";
+import { formatBalance, generateColorFromAddress } from "@/libs";
 import { HStack, Icon, Skeleton, StackProps, Text, VStack } from "@chakra-ui/react";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { formatAddress, SUI_DECIMALS } from "@mysten/sui/utils";
 import { useQuery } from "@tanstack/react-query";
-
-function generateColorFromAddress(addr: string): string {
-    const clean = addr.startsWith('0x') ? addr.slice(2) : addr;
-    const hash = parseInt(clean.slice(0, 6), 16);
-    const hue = hash % 360;
-    const saturation = 60 + (hash % 20); // 60–80%
-    const lightness = 50 + (hash % 20); // 50–70%
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
 
 interface Props extends StackProps { }
 export function UserControlPanel(props: Props) {
@@ -71,7 +62,7 @@ export function UserControlPanel(props: Props) {
                     ))}
                 </HStack>
             </VStack>
-            <ConnectButton size={"sm"} />
+            <ConnectButton size={"xs"} />
         </HStack>
     );
 }

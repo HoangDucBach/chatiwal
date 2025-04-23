@@ -1,5 +1,3 @@
-import { MessageBase } from "@/sdk";
-
 export enum MediaType {
     IMAGE = 'image',
     VIDEO = 'video',
@@ -8,8 +6,7 @@ export enum MediaType {
     GIF = 'gif'
 }
 
-
-export interface MediaContent {
+export type MediaContent = {
     id: string;
     type: MediaType;
     url: string;
@@ -21,9 +18,17 @@ export interface MediaContent {
         height: number;
     };
     mimeType?: string;
-}
+};
 
-export enum ChatiwalMessageType {
+export type TGroup = {
+    id: string;
+    name: string;
+    description: string;
+    owner: string;
+    members: string[];
+};
+
+export enum TMessageType {
     NO_POLICY = 'no-policy',
     TIME_LOCK = 'time-lock',
     LIMITED_READ = 'limited-read',
@@ -31,47 +36,39 @@ export enum ChatiwalMessageType {
     COMPOUND = 'compound'
 }
 
-export interface ChatiwalMessageBase {
+export type TMessageBase = {
     id: string;
-    type?: ChatiwalMessageType;
     owner: string;
     groupId: string;
-    messageBlobId?: string;
     content: {
         text?: string;
         media?: MediaContent[];
     };
-    createdAt: Date;
-}
+    createdAt?: number;
+};
 
-// export interface ChatiwalEncryptedMessage extends MessageBase {
-//     encryptedData: Uint8Array;
-// }
+export type TMessageNoPolicy = TMessageBase & {
+    type: TMessageType.NO_POLICY;
+};
 
-// === Onchain Types ===
-
-export interface MessageNoPolicy extends ChatiwalMessageBase {
-    type: ChatiwalMessageType.NO_POLICY;
-}
-
-export interface MessageTimeLock extends ChatiwalMessageBase {
-    type: ChatiwalMessageType.TIME_LOCK;
+export type TMessageTimeLock = TMessageBase & {
+    type: TMessageType.TIME_LOCK;
     policy: {
         from: number;
         to: number;
     };
-}
+};
 
-export interface MessageLimitedRead extends ChatiwalMessageBase {
-    type: ChatiwalMessageType.LIMITED_READ;
+export type TMessageLimitedRead = TMessageBase & {
+    type: TMessageType.LIMITED_READ;
     policy: {
         maxReads: number;
     };
     readers: string[];
-}
+};
 
-export interface MessageFeeBased<CoinType> extends ChatiwalMessageBase {
-    type: ChatiwalMessageType.FEE_BASED;
+export type TMessageFeeBased<CoinType = string> = TMessageBase & {
+    type: TMessageType.FEE_BASED;
     policy: {
         fee: number;
         recipient: string;
@@ -79,10 +76,10 @@ export interface MessageFeeBased<CoinType> extends ChatiwalMessageBase {
     readers: string[];
     feeCollected: number;
     coinType: CoinType;
-}
+};
 
-export interface ChatiwalMessageCompound<CoinType> extends ChatiwalMessageBase {
-    type: ChatiwalMessageType.COMPOUND;
+export type TMessageCompound<CoinType = string> = TMessageBase & {
+    type: TMessageType.COMPOUND;
     timeLockPolicy: {
         from: number;
         to: number;
@@ -97,11 +94,11 @@ export interface ChatiwalMessageCompound<CoinType> extends ChatiwalMessageBase {
     readers: string[];
     feeCollected: number;
     coinType: CoinType;
-}
+};
 
-export type ChatiwalMessage<CoinType = string> =
-    | MessageNoPolicy
-    | MessageTimeLock
-    | MessageLimitedRead
-    | MessageFeeBased<CoinType>
-    | ChatiwalMessageCompound<CoinType>;
+export type TMessage<CoinType = string> =
+    | TMessageNoPolicy
+    | TMessageTimeLock
+    | TMessageLimitedRead
+    | TMessageFeeBased<CoinType>
+    | TMessageCompound<CoinType>;
