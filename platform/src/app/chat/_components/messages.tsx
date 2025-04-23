@@ -3,11 +3,13 @@
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { generateColorFromAddress } from "@/libs";
 import { MediaContent, MediaType, TMessageBase } from "@/types";
-import { Box, BoxProps, Grid, GridItem, HStack, Icon, Image, chakra, Text, VStack } from "@chakra-ui/react";
+import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, chakra, Text, VStack, Float, Circle } from "@chakra-ui/react";
 import { formatAddress } from "@mysten/sui/utils";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import ReactPlayer from "react-player";
 import "./styles.css";
+import { useChannel } from "ably/react";
+import { useQuery } from "@tanstack/react-query";
 
 const CustomReactPlayer = chakra(ReactPlayer);
 
@@ -83,14 +85,36 @@ interface MessageBaseProps extends BoxProps {
 }
 export function MessageBase(props: MessageBaseProps) {
     const { message, self = true } = props;
+    const channelName = message.groupId;
+    const { channel } = useChannel({ channelName })
+    const { data: isOnline } = useQuery({
+        queryKey: ["messages::get", message.id],
+        queryFn: async () => {
+            const res = await channel.presence.get({
+                clientId: message.owner,
+            });
+
+            return res.length > 0;
+        },
+    })
 
     if (!message) return null;
 
     const Avatar = () => {
         return (
-            <Icon>
-                <ChatiwalMascotIcon color={generateColorFromAddress(message.owner)} size={48} />
-            </Icon>
+            <ChakraAvatar.Root  variant="subtle">
+                <Icon color={generateColorFromAddress(message.owner)}>
+                    <ChatiwalMascotIcon size={48} />
+                </Icon>
+                <Float placement="bottom-end" offsetX="1" offsetY="1">
+                    <Circle
+                        bg={isOnline ? "green.500" : "gray.500"}
+                        size="8px"
+                        outline="0.2em solid"
+                        outlineColor="bg"
+                    />
+                </Float>
+            </ChakraAvatar.Root>
         )
     };
 

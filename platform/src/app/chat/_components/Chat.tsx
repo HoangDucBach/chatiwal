@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Input, InputProps, StackProps, VStack } from "@chakra-ui/react";
-import { useChannel } from "ably/react";
+import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 import { MessageBase } from "./messages";
@@ -21,15 +21,19 @@ interface Props extends StackProps {
 export function Chat(props: Props) {
     const { channelName } = props;
     const currentAccount = useCurrentAccount();
-    const { channel } = useChannel({ channelName });
     const [messages, setMessages] = useState<TMessage[]>([]);
-    const { encryptMessage, decryptMessage } = useSealClient();
+    const { decryptMessage } = useSealClient();
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    const onMessageSend = async (plainMessage: TMessageBase, encryptedMessage: TMessageBase) => {
+    const { channel } = useChannel({ channelName });
+    const onMessageSend = async (plainMessage: TMessageBase) => {
         setMessages((previousMessages: any) => [...previousMessages, plainMessage]);
     }
 
+    useConnectionStateListener('connected', () => {
+        if (!currentAccount) return;
+
+        channel.presence.enterClient(currentAccount?.address);
+    });
 
     useChannel({ channelName }, AblyChannelManager.EVENTS.MESSAGE_SEND, async (message) => {
         try {
@@ -56,7 +60,6 @@ export function Chat(props: Props) {
             }
             setMessages((previousMessages: any) => [...previousMessages, decryptedMessageData]);
         } catch (error) {
-            console.error('Error decrypting message:', error);
             toaster.error({
                 title: "Error",
                 description: error,
@@ -80,21 +83,10 @@ export function Chat(props: Props) {
                     message={{
                         id: "msg-001",
                         owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                        groupId: "group-001",
+                        groupId: channelName,
                         content: {
                             text: "Hello! Here's an image and a video.",
                             media: [
-                                // {
-                                //     id: "media-001",
-                                //     type: MediaType.IMAGE,
-                                //     url: "https://placekitten.com/300/200",
-                                //     name: "Cute kitten",
-                                //     dimensions: {
-                                //         width: 300,
-                                //         height: 200,
-                                //     },
-                                //     mimeType: "image/jpeg",
-                                // },
                                 {
                                     id: "media-002",
                                     type: MediaType.VIDEO,
@@ -113,7 +105,7 @@ export function Chat(props: Props) {
                     message={{
                         id: "msg-001",
                         owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                        groupId: "group-001",
+                        groupId: channelName,
                         content: {
                             text: "Hello! Here's an image and a video.",
                             media: [
@@ -137,7 +129,7 @@ export function Chat(props: Props) {
                     message={{
                         id: "msg-001",
                         owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                        groupId: "group-001",
+                        groupId: channelName,
                         content: {
                             text: "A example encrypted message, try it with Chatiwal",
                         },
@@ -147,7 +139,7 @@ export function Chat(props: Props) {
                     message={{
                         id: "msg-001",
                         owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                        groupId: "group-001",
+                        groupId: channelName,
                         content: {
                             text: "Chatiwal ensures secure, encrypted messaging with SEAL, full control over storage on Walrus, and seamless integration with Sui",
                         },
