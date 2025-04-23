@@ -56,7 +56,6 @@ function ControlPanelBody() {
                     showContent: true,
                 }
             });
-            console.log("ownedGroups", res);
             if (res.error) {
                 console.error("Error fetching groups", res.error);
                 return null;

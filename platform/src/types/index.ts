@@ -67,7 +67,7 @@ export type TMessageLimitedRead = TMessageBase & {
     readers: string[];
 };
 
-export type TMessageFeeBased<CoinType = string> = TMessageBase & {
+export type TMessageFeeBased = TMessageBase & {
     type: TMessageType.FEE_BASED;
     policy: {
         fee: number;
@@ -75,10 +75,10 @@ export type TMessageFeeBased<CoinType = string> = TMessageBase & {
     };
     readers: string[];
     feeCollected: number;
-    coinType: CoinType;
+    coinType: string;
 };
 
-export type TMessageCompound<CoinType = string> = TMessageBase & {
+export type TMessageCompound = TMessageBase & {
     type: TMessageType.COMPOUND;
     timeLockPolicy: {
         from: number;
@@ -93,12 +93,12 @@ export type TMessageCompound<CoinType = string> = TMessageBase & {
     };
     readers: string[];
     feeCollected: number;
-    coinType: CoinType;
+    coinType: string;
 };
 
-export type TMessage<CoinType = string> =
+export type TMessage =
     | TMessageNoPolicy
     | TMessageTimeLock
     | TMessageLimitedRead
-    | TMessageFeeBased<CoinType>
-    | TMessageCompound<CoinType>;
+    | TMessageFeeBased
+    | TMessageCompound;

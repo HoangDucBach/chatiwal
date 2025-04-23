@@ -1,3 +1,5 @@
+import { PageLayout } from "@/components/ui/layout";
+import { Chat } from "../../_components/Chat";
 import { AblyPubSub } from "../_components/Message";
 import Provider from "./provider";
 
@@ -9,9 +11,10 @@ export default async function Page({
     }>;
 }>) {
     const { id } = await params;
+
     return (
         <Provider roomId={id}>
-            <AblyPubSub channelName={id} />
+            <Chat channelName={id} flex={"3 0"}/>
         </Provider>
     );
 }

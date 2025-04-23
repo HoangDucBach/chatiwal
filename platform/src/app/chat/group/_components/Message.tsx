@@ -8,6 +8,7 @@ import { MessageBase, SuperMessageNoPolicy } from '@/sdk';
 import { random } from "nanoid";
 import { toHex } from '@mysten/sui/utils';
 import { useWalrusClient } from '@/hooks/useWalrusClient';
+import { AblyChannelManager } from '@/libs/ablyHelpers';
 
 interface AblyPubSubProps {
     channelName: string;
@@ -24,12 +25,13 @@ export function AblyPubSub({ channelName }: AblyPubSubProps) {
 
     // Create a channel called 'get-started' and subscribe to all messages with the name 'first' using the useChannel hook
 
-    const { channel } = useChannel({ channelName }, 'send', async (message) => {
+    const { channel } = useChannel({ channelName }, async (message) => {
         try {
             console.log('Received message:', message);
             // if (message.clientId === currentAccount?.address) {
             //     return;
             // }
+
             const data = JSON.parse(message.data as string);
             const encryptedMessage = new SuperMessageNoPolicy({
                 id: data.id,

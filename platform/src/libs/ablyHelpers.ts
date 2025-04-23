@@ -11,6 +11,7 @@ export class AblyChannelManager {
 
         // Message
         SUPER_MESSAGE_MINTED: 'super-message-minted',
+        MESSAGE_SEND: 'message-send',
         MESSAGE_READ: 'message-read',
 
         // Fee
