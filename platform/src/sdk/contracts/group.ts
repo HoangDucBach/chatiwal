@@ -9,12 +9,12 @@ import {
 import { Address, ObjectId } from '..';
 
 
-export const GroupCap = bcs.struct("GroupCap", {
+export const GroupCapStruct = bcs.struct("GroupCap", {
     id: bcs.Address, // Assuming UID maps to Address/ID
     group_id: bcs.Address, // Assuming ID maps to Address/ID
 });
 
-export const Group = bcs.struct("Group", {
+export const GroupStruct = bcs.struct("Group", {
     id: bcs.Address, // Assuming UID maps to Address/ID
     member: bcs.vector(bcs.Address), // Assuming VecSet<address> maps to vector<address>
     metadata_blob_id: bcs.String,

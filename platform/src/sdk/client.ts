@@ -5,8 +5,8 @@ import { MAINNET_CHATIWAL_PACKAGE_CONFIG, TESTNET_CHATIWAL_PACKAGE_CONFIG } from
 import { ChatiwalClientError } from "./errors";
 
 // Import init functions for both modules
-import { init as initGroup } from "./contracts/group";
-import { init as initMessage } from "./contracts/message"; // Import from message.ts
+import { initGroup } from "./contracts/group";
+import { initMessage } from "./contracts/message";
 
 export class ChatiwalClient {
     protected packageConfig: ChatiwalPackageConfig;
@@ -29,7 +29,7 @@ export class ChatiwalClient {
             }
         } else {
             if (!config.packageConfig) {
-                 throw new ChatiwalClientError("Package config must be provided if network is not specified");
+                throw new ChatiwalClientError("Package config must be provided if network is not specified");
             }
             this.packageConfig = config.packageConfig;
         }
@@ -77,13 +77,13 @@ export class ChatiwalClient {
      * Note: Review if this function truly exists/is needed based on Move code.
      */
     async mintGroupCap({ groupCapId, groupId, recipient }: {
-         // Parameters might need adjustment based on actual Move function
+        // Parameters might need adjustment based on actual Move function
         groupCapId: ObjectId; // ID of the authorizing cap?
         groupId: ObjectId;    // ID of the target group?
         recipient: Address;
     }) {
         const tx = new Transaction();
-         // Verify arguments needed by groupModule.mint_group_cap
+        // Verify arguments needed by groupModule.mint_group_cap
         this.groupModule.mint_group_cap({ arguments: [groupCapId, groupId, recipient] })(tx);
         return tx;
     }

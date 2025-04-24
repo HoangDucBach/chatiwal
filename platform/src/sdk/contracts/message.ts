@@ -9,18 +9,18 @@ import {
 import { Address, ObjectId } from '../types';
 
 
-export const MessageOwnerCap = bcs.struct("MessageOwnerCap", {
+export const MessageOwnerCapStruct = bcs.struct("MessageOwnerCap", {
     id: bcs.Address, // Assuming UID maps to Address/ID
     msg_id: bcs.Address, // Assuming ID maps to Address/ID
 });
 
-export const MessagesSnapshot = bcs.struct("MessagesSnapshot", {
+export const MessagesSnapshotStruct = bcs.struct("MessagesSnapshot", {
     id: bcs.Address,
     group_id: bcs.Address,
     messages_blob_id: bcs.String,
 });
 
-export const MessagesSnapshotCap = bcs.struct("MessagesSnapshotCap", {
+export const MessagesSnapshotCapStruct = bcs.struct("MessagesSnapshotCap", {
     id: bcs.Address,
     messages_snapshot_id: bcs.Address,
 });

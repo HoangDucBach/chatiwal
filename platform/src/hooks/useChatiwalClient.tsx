@@ -8,6 +8,7 @@ import { InvalidGroupCapError } from "@/sdk/errors";
 import { Address, ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
 import { bcs, BcsType } from "@mysten/sui/bcs";
+import { Group } from "@/sdk/contracts";
 
 export interface IGroupActions {
     mint_group_and_transfer(metadataBlobId?: string): Promise<Transaction>;
@@ -598,7 +599,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageNoPolicyGetMessageBlobId({
                     messageId: messageId
                 }),
-                (bytes) => bcs.
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -607,7 +608,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageNoPolicyGetOwner({
                     messageId: messageId
                 }),
-                (bytes) => bcs.
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
