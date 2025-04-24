@@ -7,6 +7,7 @@ import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { InvalidGroupCapError } from "@/sdk/errors";
 import { Address, ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
+import { bcs, BcsType } from "@mysten/sui/bcs";
 
 export interface IGroupActions {
     mint_group_and_transfer(metadataBlobId?: string): Promise<Transaction>;
@@ -107,6 +108,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         return new ChatiwalClient(config);
     }, [suiClient]);
 
+
     if (!suiClient) {
         throw new Error("Sui client is not available");
     }
@@ -146,7 +148,6 @@ export function useChatiwalClient(): IChatiwalClientActions {
         }
         return groupCapOfOwner.data.objectId;
     };
-
     const executeTransaction = async (txBuilder: () => Promise<Transaction>) => {
         try {
             validateAccount();
@@ -156,7 +157,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         }
     };
 
-    const executeInspectTransaction = async (txBuilder: () => Promise<any>, processResult?: (res: any) => any) => {
+    const executeInspectTransaction = async (txBuilder: () => Promise<any>, processResult?: (bytes: Uint8Array) => any) => {
         try {
             const userAccount = validateAccount();
             const tx = await txBuilder();
@@ -168,8 +169,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
             if (!res || !res.results) {
                 throw new Error("No results found");
             }
+            const bytes = new Uint8Array(res.results[0].returnValues![0][0]);
 
-            return processResult ? processResult(res) : res;
+            return processResult ? processResult(bytes) : bytes;
         } catch (error) {
             throw error;
         }
@@ -227,35 +229,35 @@ export function useChatiwalClient(): IChatiwalClientActions {
         group_get_group_id: async (group: string): Promise<Uint8Array> => {
             return executeInspectTransaction(
                 () => client.groupGetGroupId(group),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         group_get_group_member: async (group: string): Promise<number[]> => {
             return executeInspectTransaction(
                 () => client.groupGetGroupMember(group),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.vector(bcs.Address).parse(bytes)
             );
         },
 
         group_get_group_metadataBlobId: async (group: string): Promise<string> => {
             return executeInspectTransaction(
                 () => client.groupGetGroupMetadataBlobId(group),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
         group_cap_get_group_id: async (group_cap: string): Promise<Uint8Array> => {
             return executeInspectTransaction(
                 () => client.groupCapGetGroupId(group_cap),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         group_cap_get_id: async (group_cap: string): Promise<string> => {
             return executeInspectTransaction(
                 () => client.groupCapGetId(group_cap),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -265,7 +267,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     groupId: group,
                     address: addr,
                 }),
-                (res) => res.results[0].returnValues![0][0] as unknown as boolean
+                (bytes) => bcs.Bool.parse(bytes)
             );
         }
     };
@@ -484,7 +486,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.getCurrentReader({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -494,7 +496,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -504,7 +506,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -513,63 +515,63 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.getRemainingReads({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
         is_readable_by_time: async (messageId: ObjectId, timestamp: bigint | number): Promise<boolean> => {
             return executeInspectTransaction(
                 () => client.isReadableByTime({ messageId, timestamp }),
-                (res) => res.results[0].returnValues![0][0] as unknown as boolean
+                (bytes) => bcs.Bool.parse(bytes)
             );
         },
 
         message_cap_get_id: async (capId: ObjectId): Promise<ObjectId> => {
             return executeInspectTransaction(
                 () => client.messageCapGetId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         message_cap_get_message_id: async (capId: ObjectId): Promise<ObjectId> => {
             return executeInspectTransaction(
                 () => client.messageCapGetMessageId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         message_snapshot_cap_get_id: async (capId: ObjectId): Promise<ObjectId> => {
             return executeInspectTransaction(
                 () => client.messageSnapshotCapGetId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         message_snapshot_cap_get_messages_snapshot_id: async (capId: ObjectId): Promise<ObjectId> => {
             return executeInspectTransaction(
                 () => client.messageSnapshotCapGetMessagesSnapshotId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         message_snapshot_get_id: async (snapshotId: ObjectId): Promise<ObjectId> => {
             return executeInspectTransaction(
                 () => client.messageSnapshotGetId({ snapshotId }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         message_snapshot_get_group_id: async (snapshotId: ObjectId): Promise<ObjectId> => {
             return executeInspectTransaction(
                 () => client.messageSnapshotGetGroupId({ snapshotId }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
         message_snapshot_get_messages_blob_id: async (snapshotId: ObjectId): Promise<string> => {
             return executeInspectTransaction(
                 () => client.messageSnapshotGetMessagesBlobId({ snapshotId }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -578,7 +580,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageNoPolicyGetId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -587,7 +589,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageNoPolicyGetGroupId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -596,7 +598,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageNoPolicyGetMessageBlobId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -605,7 +607,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageNoPolicyGetOwner({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -614,7 +616,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageLimitReadGetId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -623,7 +625,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageLimitReadGetGroupId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -632,7 +634,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageLimitReadGetMessageBlobId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -641,7 +643,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageLimitReadGetPolicy({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -650,7 +652,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageLimitReadGetOwner({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -659,7 +661,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageLimitReadGetReaders({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.vector(bcs.Address).parse(bytes)
             );
         },
 
@@ -668,7 +670,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageTimeLockGetId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -677,7 +679,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageTimeLockGetGroupId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -686,7 +688,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageTimeLockGetMessageBlobId({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -695,7 +697,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageTimeLockGetPolicy({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -704,7 +706,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageTimeLockGetOwner({
                     messageId: messageId
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -714,7 +716,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -724,7 +726,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -734,7 +736,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -744,7 +746,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -754,7 +756,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -764,7 +766,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.vector(bcs.Address).parse(bytes)
             );
         },
 
@@ -774,7 +776,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -784,7 +786,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -794,7 +796,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -804,7 +806,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
@@ -814,7 +816,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -824,7 +826,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -834,7 +836,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -844,7 +846,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.Address.parse(bytes)
             );
         },
 
@@ -854,7 +856,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.
             );
         },
 
@@ -864,7 +866,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.vector(bcs.Address).parse(bytes)
             );
         },
 
@@ -874,7 +876,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (res) => res.results[0].returnValues![0][0]
+                (bytes) => bcs.String.parse(bytes)
             );
         }
     };

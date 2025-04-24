@@ -14,6 +14,7 @@ import { useGroup } from "../_hooks/useGroupId";
 import { useChannel } from "ably/react";
 import { useState } from "react";
 import { MemberCard } from "./MemberCard";
+import { Group } from "@/sdk/contracts/group";
 
 interface Props extends StackProps { }
 export function GroupControlPanel(props: Props) {
@@ -49,7 +50,6 @@ export function GroupControlPanel(props: Props) {
 }
 
 function GroupControlPanelBody() {
-    const suiClient = useSuiClient();
     const { group } = useGroup();
     const { channel } = useChannel({ channelName: group.id });
 

@@ -31,6 +31,7 @@ const Brand = () => {
                     alt={siteConfig.name}
                     width={64}
                     height={64}
+                    priority
                 />
             </ChakraImage>
             <VStack align={"start"} gap={0}>

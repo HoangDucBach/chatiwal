@@ -47,6 +47,7 @@ export function ControlPanel(props: Props) {
 
 function ControlPanelBody() {
     const suiClient = useSuiClient();
+    const { group_get_group_member } = useChatiwalClient();
     const { data: ownedGroups } = useQuery({
         queryKey: ["groups::owned"],
         queryFn: async () => {
@@ -56,6 +57,8 @@ function ControlPanelBody() {
                     showContent: true,
                 }
             });
+            const test = await group_get_group_member("0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff");
+            console.log("test", test);
             if (res.error) {
                 console.error("Error fetching groups", res.error);
                 return null;
