@@ -1,7 +1,7 @@
 "use client"
 
 import { Menu, chakra, Portal } from "@chakra-ui/react"
-import { ConnectModal, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
+import { ConnectModal, useAutoConnectWallet, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import { Button, ButtonProps } from "../ui/button";
 import { shortenAddress } from "@/libs";
 import { Icon } from "@chakra-ui/react"
@@ -16,7 +16,7 @@ export function ConnectButton(props: Props) {
     return (
         <ConnectModal
             trigger={
-                account ? <Button colorPalette={"danger"} size="sm" onClick={()=>{disconnect}} {...props}>Disconnect</Button> : <Button colorPalette={"primary"} size="sm" {...props}>Connect</Button>
+                account ? <Button colorPalette={"danger"} size="sm" onClick={() => { disconnect() }} {...props}>Disconnect</Button> : <Button colorPalette={"primary"} size="sm" {...props}>Connect</Button>
             }
         />
     )
