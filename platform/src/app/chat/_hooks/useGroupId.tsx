@@ -19,11 +19,6 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
                 }
             });
 
-            console.log("res", res);
-            if (res.error) {
-                console.error("Error fetching group", res.error);
-                return null;
-            }
 
             if (res.data?.content?.dataType !== "moveObject") {
                 console.error("Error fetching group", "Invalid group");
@@ -34,7 +29,7 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
 
             return {
                 id: res.data?.objectId,
-                members: new Set(group.member.fields.contents),
+                members: new Set(group.members.fields.contents),
                 owner: group.owner,
             } as TGroup;
 

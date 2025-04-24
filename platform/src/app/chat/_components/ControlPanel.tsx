@@ -1,9 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { Box, Heading, HStack, Icon, StackProps, VStack } from "@chakra-ui/react";
+import { Box, Heading, HStack, Icon, Skeleton, StackProps, VStack } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { IoIosAdd } from "react-icons/io";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
@@ -11,6 +11,8 @@ import { toaster } from "@/components/ui/toaster";
 
 import { GroupCard } from "./GroupCard";
 import { UserControlPanel } from "./UserControlPanel";
+import { TGroup } from "@/types";
+import { useParams } from "next/navigation";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
@@ -46,27 +48,25 @@ export function ControlPanel(props: Props) {
 }
 
 function ControlPanelBody() {
-    const suiClient = useSuiClient();
-    const { group_get_group_member } = useChatiwalClient();
-    const { data: ownedGroups } = useQuery({
-        queryKey: ["groups::owned"],
+    const currentAccount = useCurrentAccount();
+    const { id } = useParams();
+    const { registry_get_user_groups, group_get_group_member } = useChatiwalClient();
+    const { data: myGroups, isLoading } = useQuery({
+        queryKey: ["groups::members"],
         queryFn: async () => {
-            const res = await suiClient.getObject({
-                id: "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff",
-                options: {
-                    showContent: true,
-                }
-            });
-            const test = await group_get_group_member("0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff");
-            console.log("test", test);
-            if (res.error) {
-                console.error("Error fetching groups", res.error);
-                return null;
-            }
+            if (!currentAccount) throw new Error("Not connected");
 
-            const ownedGroups = [];
-            ownedGroups.push(res.data?.content);
-            return ownedGroups;
+            const res = await registry_get_user_groups(currentAccount.address);
+            const groups: TGroup[] = [];
+
+            await Promise.all(res.map(async (groupId) => {
+                groups.push({
+                    id: groupId,
+                    members: new Set<string>(await group_get_group_member(groupId))
+                })
+            }))
+
+            return groups;
         },
     })
 
@@ -75,18 +75,20 @@ function ControlPanelBody() {
             w={"full"}
             flex={"1 0"}
         >
-            {ownedGroups?.map((group, index) => (
-                <GroupCard
-                    key={index}
-                    group={{
-                        name: "Cyan Group | Beta",
-                        members: new Set(["0x1234567890abcdef"]),
-                        owner: "0x1234567890abcdef",
-                        description: "This is a test group",
-                        id: "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff",
-                    }}
+            {isLoading ?
+                <Skeleton
+                    h={"full"}
+                    w={"full"}
+                    rounded={"3xl"}
                 />
-            ))}
+                :
+                myGroups?.map((group, index) => (
+                    <GroupCard
+                        key={index}
+                        group={group}
+                        isSelected={group.id === id}
+                    />
+                ))}
         </VStack>
     )
 }

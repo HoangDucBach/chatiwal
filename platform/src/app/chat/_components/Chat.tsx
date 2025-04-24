@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Input, InputProps, StackProps, VStack } from "@chakra-ui/react";
+import { Box, Group, Heading, Input, InputProps, StackProps, Text, VStack } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
@@ -13,6 +13,7 @@ import { AblyChannelManager } from "@/libs/ablyHelpers";
 import { SuperMessageNoPolicy } from "@/sdk";
 import { toaster } from "@/components/ui/toaster";
 import { useGroup } from "../_hooks/useGroupId";
+import { Tag } from "@/components/ui/tag";
 
 const ScrollMotionVStack = motion.create(VStack);
 
@@ -157,6 +158,39 @@ export function Chat(props: Props) {
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>
             <MessageInput channelName={channelName} onMessageSend={onMessageSend} />
+        </VStack>
+    )
+}
+
+export function ChatWelcomePlaceholder(props: Props) {
+    return (
+        <VStack
+            pos={"relative"}
+            bg={"bg.100"}
+            h={"full"}
+            rounded={"4xl"}
+            p={"4"}
+            gap={"4"}
+            justifyContent={"center"}
+            alignItems={"center"}
+            overflow={"hidden"}
+            {...props}
+        >
+            <Heading as="h3" size={"4xl"} fontWeight={"semibold"}>Welcome to Chatiwal</Heading>
+            <Box
+                pos={"absolute"}
+                translateX={"-50%"}
+                translateY={"-50%"}
+                w={"32"}
+                h={"32"}
+                bg={"primary"}
+                borderRadius={"full"}
+                filter={"blur(96px)"}
+            />
+            <Text color={"fg.900"}>Select group to chat and chill</Text>
+            <Tag colorPalette={"white"} fontSize={"lg"} outlineWidth={"8px"} py="1" px={"2"}>
+                Your chat, your key, your storage
+            </Tag>
         </VStack>
     )
 }

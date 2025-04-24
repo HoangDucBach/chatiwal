@@ -115,8 +115,10 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
+            options.arguments[0], // groupCapId
             REGISTRY_OBJECT_ID,
-            ...options.arguments,
+            options.arguments[1], // groupId
+            options.arguments[2], // member
             SUI_CLOCK_OBJECT_ID,
         ];
 
@@ -146,8 +148,10 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
+            options.arguments[0], // groupCapId
             REGISTRY_OBJECT_ID,
-            ...options.arguments,
+            options.arguments[1], // groupId
+            options.arguments[2], // member
             SUI_CLOCK_OBJECT_ID,
         ];
 
@@ -207,6 +211,29 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
     }
 
     // --- View Functions (Transaction Builders) ---
+
+    function registry_get_user_groups(options: {
+        arguments: [
+            user: RawTransactionArgument<Address>, // address
+        ]
+    }) {
+        const moveArgsTypes = [
+            `&${packageId}::group::Registry`,
+            `address`, // user
+        ];
+
+        const args = [
+            REGISTRY_OBJECT_ID,
+            ...options.arguments,
+        ];
+
+        return (tx: Transaction) =>
+            tx.moveCall({
+                target: `${packageId}::group::registry_get_user_groups`,
+                arguments: normalizeMoveArguments(args, moveArgsTypes),
+                typeArguments: []
+            });
+    }
 
     /**
      * Get group ID from the Group object.
@@ -357,6 +384,7 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
         remove_member,
         leave_group,
         seal_approve,
+        registry_get_user_groups,
         group_get_group_id,
         group_get_group_member,
         group_get_group_metadata_blob_id,

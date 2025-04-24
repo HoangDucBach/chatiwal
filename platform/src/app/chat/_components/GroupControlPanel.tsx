@@ -76,7 +76,7 @@ function GroupControlPanelBody() {
             w={"full"}
             flex={"1 0"}
         >
-            {group.members.values().map((member) => (
+            {[...group.members.values()].map((member) => (
                 <MemberCard
                     key={member}
                     member={member}

@@ -24,7 +24,6 @@ export type TGroup = {
     id: string;
     name?: string;
     description?: string;
-    owner: string;
     members: Set<string>;
 };
 

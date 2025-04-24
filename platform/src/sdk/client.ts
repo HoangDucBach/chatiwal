@@ -127,6 +127,12 @@ export class ChatiwalClient {
 
     // --- Group View Methods (as transaction calls) ---
 
+    async registryGetUserGroups({ address }: { address: Address }) {
+        const tx = new Transaction();
+        this.groupModule.registry_get_user_groups({ arguments: [address] })(tx);
+        return tx;
+    }
+
     async groupGetGroupId(groupId: ObjectId) {
         const tx = new Transaction();
         this.groupModule.group_get_group_id({ arguments: [groupId] })(tx);

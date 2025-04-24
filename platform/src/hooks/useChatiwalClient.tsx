@@ -16,9 +16,11 @@ export interface IGroupActions {
     mint_group_cap(group: string, recipient: string): Promise<Transaction>;
     add_member(group: string, member: string): Promise<Transaction>;
     remove_member(group: string, member: string): Promise<Transaction>;
+    leave_group(group: string, member: string): Promise<Transaction>;
     seal_approve(id: Uint8Array, group: string): Promise<Transaction>;
+    registry_get_user_groups(user: string): Promise<string[]>;
     group_get_group_id(group: string): Promise<Uint8Array>;
-    group_get_group_member(group: string): Promise<number[]>;
+    group_get_group_member(group: string): Promise<string[]>;
     group_get_group_metadataBlobId(group: string): Promise<string>;
     group_cap_get_group_id(group_cap: string): Promise<Uint8Array>;
     group_cap_get_id(group_cap: string): Promise<string>;
@@ -219,12 +221,28 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
+        leave_group: async (group: string, member: string) => {
+            return await executeTransaction(() =>
+                client.leaveGroup({
+                    groupId: group,
+                    member,
+                })
+            );
+        },
+
         seal_approve: async (id: Uint8Array, group: string) => {
             return await executeInspectTransaction(() =>
                 client.sealApprove({
                     id,
                     groupId: group,
                 })
+            );
+        },
+
+        registry_get_user_groups: async (user: string): Promise<string[]> => {
+            return executeInspectTransaction(
+                () => client.registryGetUserGroups({ address: user }),
+                (bytes) => bcs.vector(bcs.Address).parse(bytes)
             );
         },
 
