@@ -8,7 +8,7 @@ import { InvalidGroupCapError } from "@/sdk/errors";
 import { Address, ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
 import { bcs, BcsType } from "@mysten/sui/bcs";
-import { Group } from "@/sdk/contracts";
+import { FeeBasedPolicyStruct, Group, LimitedReadPolicyStruct, TimeLockPolicyStruct } from "@/sdk/contracts";
 
 export interface IGroupActions {
     mint_group_and_transfer(metadataBlobId?: string): Promise<Transaction>;
@@ -639,12 +639,12 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        message_limit_read_get_policy: async (messageId: ObjectId): Promise<any> => {
+        message_limit_read_get_policy: async (messageId: ObjectId): Promise<typeof LimitedReadPolicyStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageLimitReadGetPolicy({
                     messageId: messageId
                 }),
-                (bytes) => bcs.
+                (bytes) => LimitedReadPolicyStruct.parse(bytes)
             );
         },
 
@@ -689,16 +689,16 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 () => client.messageTimeLockGetMessageBlobId({
                     messageId: messageId
                 }),
-                (bytes) => bcs.
+                (bytes) => bcs.String.parse(bytes)
             );
         },
 
-        message_time_lock_get_policy: async (messageId: ObjectId): Promise<any> => {
+        message_time_lock_get_policy: async (messageId: ObjectId): Promise<typeof TimeLockPolicyStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageTimeLockGetPolicy({
                     messageId: messageId
                 }),
-                (bytes) => bcs.
+                (bytes) => TimeLockPolicyStruct.parse(bytes)
             );
         },
 
@@ -741,13 +741,13 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        message_fee_based_get_policy: async (messageId: ObjectId, coinType: string): Promise<any> => {
+        message_fee_based_get_policy: async (messageId: ObjectId, coinType: string): Promise<typeof FeeBasedPolicyStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageFeeBasedGetPolicy({
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (bytes) => bcs.
+                (bytes) => FeeBasedPolicyStruct.parse(bytes)
             );
         },
 
@@ -811,7 +811,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        message_compound_get_time_lock: async (messageId: ObjectId, coinType: string): Promise<any> => {
+        message_compound_get_time_lock: async (messageId: ObjectId, coinType: string): Promise<> => {
             return executeInspectTransaction(
                 () => client.messageCompoundGetTimeLock({
                     messageId: messageId,
