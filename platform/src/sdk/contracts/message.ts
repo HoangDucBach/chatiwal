@@ -56,7 +56,7 @@ interface CoinTypeOptions extends BaseOptions {
  * @param packageId The ID of the deployed Chatiwal package
  * @returns Object with all message module functions
  */
-export function init(packageId: ObjectId) {
+function init(packageId: ObjectId) {
 
     // --- Entry Functions ---
 
@@ -497,14 +497,14 @@ export function init(packageId: ObjectId) {
             `vector<u8>`,                                                                   // id
             `&${packageId}::message::SuperMessageFeeBased<${coinType}>`, // msg
             `&${packageId}::group::Group`,                                                // group
-            ];
-            return (tx: Transaction) =>
-                tx.moveCall({
-                    target: `${ packageId }:: message:: seal_approve_super_message_fee_based`,
-                    arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
-                    typeArguments: options.typeArgs,
-                });
-        }
+        ];
+        return (tx: Transaction) =>
+            tx.moveCall({
+                target: `${packageId}:: message:: seal_approve_super_message_fee_based`,
+                arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
+                typeArguments: options.typeArgs,
+            });
+    }
 
     /**
      * Seal approve for SuperMessageCompound.
@@ -519,12 +519,12 @@ export function init(packageId: ObjectId) {
         const coinType = options.typeArgs[0];
         const moveArgsTypes = [
             `vector<u8>`,                                                                     // id
-            `&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `, // msg
-            `&${ packageId}::group::Group`,                                                  // group
+            `&${packageId}:: message:: SuperMessageCompound < ${coinType} > `, // msg
+            `&${packageId}::group::Group`,                                                  // group
         ];
         return (tx: Transaction) =>
             tx.moveCall({
-                target: `${ packageId }:: message:: seal_approve_super_message_compound`,
+                target: `${packageId}:: message:: seal_approve_super_message_compound`,
                 arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
                 typeArguments: options.typeArgs,
             });
@@ -543,11 +543,11 @@ export function init(packageId: ObjectId) {
         ]
     }) {
         const moveArgsTypes = [
-            `&${ packageId }:: message:: SuperMessageLimitedRead`,
+            `&${packageId}:: message:: SuperMessageLimitedRead`,
         ];
         return (tx: Transaction) =>
             tx.moveCall({
-                target: `${ packageId }:: message:: get_current_reader`,
+                target: `${packageId}:: message:: get_current_reader`,
                 arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
                 typeArguments: [],
             });
@@ -563,11 +563,11 @@ export function init(packageId: ObjectId) {
     }) {
         const coinType = options.typeArgs[0];
         const moveArgsTypes = [
-            `&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `,
+            `&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `,
         ];
         return (tx: Transaction) =>
             tx.moveCall({
-                target: `${ packageId }:: message:: get_collected_fees`,
+                target: `${packageId}:: message:: get_collected_fees`,
                 arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
                 typeArguments: options.typeArgs,
             });
@@ -583,11 +583,11 @@ export function init(packageId: ObjectId) {
     }) {
         const coinType = options.typeArgs[0];
         const moveArgsTypes = [
-            `&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `,
+            `&${packageId}:: message:: SuperMessageCompound < ${coinType} > `,
         ];
         return (tx: Transaction) =>
             tx.moveCall({
-                target: `${ packageId }:: message:: get_collected_fees_compound`,
+                target: `${packageId}:: message:: get_collected_fees_compound`,
                 arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
                 typeArguments: options.typeArgs,
             });
@@ -602,11 +602,11 @@ export function init(packageId: ObjectId) {
         ]
     }) {
         const moveArgsTypes = [
-            `&${ packageId }:: message:: SuperMessageLimitedRead`,
+            `&${packageId}:: message:: SuperMessageLimitedRead`,
         ];
         return (tx: Transaction) =>
             tx.moveCall({
-                target: `${ packageId }:: message:: get_remaining_reads`,
+                target: `${packageId}:: message:: get_remaining_reads`,
                 arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
                 typeArguments: [],
             });
@@ -622,12 +622,12 @@ export function init(packageId: ObjectId) {
         ]
     }) {
         const moveArgsTypes = [
-            `&${ packageId }:: message:: SuperMessageTimeLock`,
+            `&${packageId}:: message:: SuperMessageTimeLock`,
             `u64`,
         ];
         return (tx: Transaction) =>
             tx.moveCall({
-                target: `${ packageId }:: message:: is_readable_by_time`,
+                target: `${packageId}:: message:: is_readable_by_time`,
                 arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
                 typeArguments: [],
             });
@@ -641,9 +641,9 @@ export function init(packageId: ObjectId) {
     function message_cap_get_id(options: {
         arguments: [msg_cap: RawTransactionArgument<ObjectId>] // &MessageOwnerCap
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: MessageOwnerCap`];
+        const moveArgsTypes = [`&${packageId}:: message:: MessageOwnerCap`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_cap_get_id`,
+            target: `${packageId}:: message:: message_cap_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -653,11 +653,11 @@ export function init(packageId: ObjectId) {
      * Get the message ID associated with a MessageOwnerCap.
      */
     function message_cap_get_message_id(options: {
-         arguments: [msg_cap: RawTransactionArgument<ObjectId>] // &MessageOwnerCap
+        arguments: [msg_cap: RawTransactionArgument<ObjectId>] // &MessageOwnerCap
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: MessageOwnerCap`];
+        const moveArgsTypes = [`&${packageId}:: message:: MessageOwnerCap`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_cap_get_message_id`,
+            target: `${packageId}:: message:: message_cap_get_message_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -669,9 +669,9 @@ export function init(packageId: ObjectId) {
     function message_snapshot_cap_get_id(options: {
         arguments: [msg_snapshot_cap: RawTransactionArgument<ObjectId>] // &MessagesSnapshotCap
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: MessagesSnapshotCap`];
+        const moveArgsTypes = [`&${packageId}:: message:: MessagesSnapshotCap`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_snapshot_cap_get_id`,
+            target: `${packageId}:: message:: message_snapshot_cap_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -683,9 +683,9 @@ export function init(packageId: ObjectId) {
     function message_snapshot_cap_get_messages_snapshot_id(options: {
         arguments: [msg_snapshot_cap: RawTransactionArgument<ObjectId>] // &MessagesSnapshotCap
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: MessagesSnapshotCap`];
+        const moveArgsTypes = [`&${packageId}:: message:: MessagesSnapshotCap`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_snapshot_cap_get_messages_snapshot_id`,
+            target: `${packageId}:: message:: message_snapshot_cap_get_messages_snapshot_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -697,9 +697,9 @@ export function init(packageId: ObjectId) {
     function message_snapshot_get_id(options: {
         arguments: [msg_snapshot: RawTransactionArgument<ObjectId>] // &MessagesSnapshot
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: MessagesSnapshot`];
+        const moveArgsTypes = [`&${packageId}:: message:: MessagesSnapshot`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_snapshot_get_id`,
+            target: `${packageId}:: message:: message_snapshot_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -711,9 +711,9 @@ export function init(packageId: ObjectId) {
     function message_snapshot_get_group_id(options: {
         arguments: [msg_snapshot: RawTransactionArgument<ObjectId>] // &MessagesSnapshot
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: MessagesSnapshot`];
+        const moveArgsTypes = [`&${packageId}:: message:: MessagesSnapshot`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_snapshot_get_group_id`,
+            target: `${packageId}:: message:: message_snapshot_get_group_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -725,9 +725,9 @@ export function init(packageId: ObjectId) {
     function message_snapshot_get_messages_blob_id(options: {
         arguments: [msg_snapshot: RawTransactionArgument<ObjectId>] // &MessagesSnapshot
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: MessagesSnapshot`];
+        const moveArgsTypes = [`&${packageId}:: message:: MessagesSnapshot`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_snapshot_get_messages_blob_id`,
+            target: `${packageId}:: message:: message_snapshot_get_messages_blob_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -739,9 +739,9 @@ export function init(packageId: ObjectId) {
     function message_no_policy_get_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageNoPolicy
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageNoPolicy`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageNoPolicy`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_no_policy_get_id`,
+            target: `${packageId}:: message:: message_no_policy_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -753,9 +753,9 @@ export function init(packageId: ObjectId) {
     function message_no_policy_get_group_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageNoPolicy
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageNoPolicy`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageNoPolicy`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_no_policy_get_group_id`,
+            target: `${packageId}:: message:: message_no_policy_get_group_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -767,9 +767,9 @@ export function init(packageId: ObjectId) {
     function message_no_policy_get_message_blob_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageNoPolicy
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageNoPolicy`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageNoPolicy`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_no_policy_get_message_blob_id`,
+            target: `${packageId}:: message:: message_no_policy_get_message_blob_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -781,9 +781,9 @@ export function init(packageId: ObjectId) {
     function message_no_policy_get_owner(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageNoPolicy
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageNoPolicy`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageNoPolicy`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_no_policy_get_owner`,
+            target: `${packageId}:: message:: message_no_policy_get_owner`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -795,9 +795,9 @@ export function init(packageId: ObjectId) {
     function message_limit_read_get_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageLimitedRead
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageLimitedRead`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageLimitedRead`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_limit_read_get_id`,
+            target: `${packageId}:: message:: message_limit_read_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -809,9 +809,9 @@ export function init(packageId: ObjectId) {
     function message_limit_read_get_group_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageLimitedRead
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageLimitedRead`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageLimitedRead`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_limit_read_get_group_id`,
+            target: `${packageId}:: message:: message_limit_read_get_group_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -823,9 +823,9 @@ export function init(packageId: ObjectId) {
     function message_limit_read_get_message_blob_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageLimitedRead
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageLimitedRead`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageLimitedRead`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_limit_read_get_message_blob_id`,
+            target: `${packageId}:: message:: message_limit_read_get_message_blob_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -837,9 +837,9 @@ export function init(packageId: ObjectId) {
     function message_limit_read_get_policy(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageLimitedRead
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageLimitedRead`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageLimitedRead`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_limit_read_get_policy`,
+            target: `${packageId}:: message:: message_limit_read_get_policy`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -851,9 +851,9 @@ export function init(packageId: ObjectId) {
     function message_limit_read_get_owner(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageLimitedRead
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageLimitedRead`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageLimitedRead`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_limit_read_get_owner`,
+            target: `${packageId}:: message:: message_limit_read_get_owner`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -865,9 +865,9 @@ export function init(packageId: ObjectId) {
     function message_limit_read_get_readers(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageLimitedRead
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageLimitedRead`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageLimitedRead`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_limit_read_get_readers`,
+            target: `${packageId}:: message:: message_limit_read_get_readers`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -879,9 +879,9 @@ export function init(packageId: ObjectId) {
     function message_time_lock_get_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageTimeLock
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageTimeLock`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageTimeLock`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_time_lock_get_id`,
+            target: `${packageId}:: message:: message_time_lock_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -893,9 +893,9 @@ export function init(packageId: ObjectId) {
     function message_time_lock_get_group_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageTimeLock
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageTimeLock`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageTimeLock`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_time_lock_get_group_id`,
+            target: `${packageId}:: message:: message_time_lock_get_group_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -907,9 +907,9 @@ export function init(packageId: ObjectId) {
     function message_time_lock_get_message_blob_id(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageTimeLock
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageTimeLock`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageTimeLock`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_time_lock_get_message_blob_id`,
+            target: `${packageId}:: message:: message_time_lock_get_message_blob_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -921,9 +921,9 @@ export function init(packageId: ObjectId) {
     function message_time_lock_get_policy(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageTimeLock
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageTimeLock`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageTimeLock`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_time_lock_get_policy`,
+            target: `${packageId}:: message:: message_time_lock_get_policy`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -935,9 +935,9 @@ export function init(packageId: ObjectId) {
     function message_time_lock_get_owner(options: {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageTimeLock
     }) {
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageTimeLock`];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageTimeLock`];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_time_lock_get_owner`,
+            target: `${packageId}:: message:: message_time_lock_get_owner`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: [],
         });
@@ -950,9 +950,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageFeeBased<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_fee_based_get_id`,
+            target: `${packageId}:: message:: message_fee_based_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -965,9 +965,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageFeeBased<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_fee_based_get_group_id`,
+            target: `${packageId}:: message:: message_fee_based_get_group_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -980,9 +980,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageFeeBased<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_fee_based_get_message_blob_id`,
+            target: `${packageId}:: message:: message_fee_based_get_message_blob_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -995,9 +995,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageFeeBased<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_fee_based_get_policy`,
+            target: `${packageId}:: message:: message_fee_based_get_policy`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1010,9 +1010,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageFeeBased<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_fee_based_get_owner`,
+            target: `${packageId}:: message:: message_fee_based_get_owner`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1025,9 +1025,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageFeeBased<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_fee_based_get_readers`,
+            target: `${packageId}:: message:: message_fee_based_get_readers`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1040,9 +1040,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageFeeBased<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageFeeBased < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageFeeBased < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_fee_based_get_fee_collected`,
+            target: `${packageId}:: message:: message_fee_based_get_fee_collected`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1055,9 +1055,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_id`,
+            target: `${packageId}:: message:: message_compound_get_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1070,9 +1070,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_group_id`,
+            target: `${packageId}:: message:: message_compound_get_group_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1085,9 +1085,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_message_blob_id`,
+            target: `${packageId}:: message:: message_compound_get_message_blob_id`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1100,9 +1100,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_time_lock`,
+            target: `${packageId}:: message:: message_compound_get_time_lock`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1115,9 +1115,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_limited_read`,
+            target: `${packageId}:: message:: message_compound_get_limited_read`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1130,9 +1130,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_fee_policy`,
+            target: `${packageId}:: message:: message_compound_get_fee_policy`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1145,9 +1145,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_owner`,
+            target: `${packageId}:: message:: message_compound_get_owner`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1160,9 +1160,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_fee_collected`,
+            target: `${packageId}:: message:: message_compound_get_fee_collected`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1175,9 +1175,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_readers`,
+            target: `${packageId}:: message:: message_compound_get_readers`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1190,9 +1190,9 @@ export function init(packageId: ObjectId) {
         arguments: [msg: RawTransactionArgument<ObjectId>] // &SuperMessageCompound<CoinType>
     }) {
         const coinType = options.typeArgs[0];
-        const moveArgsTypes = [`&${ packageId }:: message:: SuperMessageCompound < ${ coinType } > `];
+        const moveArgsTypes = [`&${packageId}:: message:: SuperMessageCompound < ${coinType} > `];
         return (tx: Transaction) => tx.moveCall({
-            target: `${ packageId }:: message:: message_compound_get_remaining_reads`,
+            target: `${packageId}:: message:: message_compound_get_remaining_reads`,
             arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
             typeArguments: options.typeArgs,
         });
@@ -1269,3 +1269,5 @@ export function init(packageId: ObjectId) {
         message_compound_get_remaining_reads
     };
 }
+
+export const initMessage = init;

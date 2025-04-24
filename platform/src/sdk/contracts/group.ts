@@ -35,7 +35,7 @@ export const GroupErrorCodes = { // Renamed from ErrorCodes for clarity
  * @param packageId The ID of the deployed Chatiwal package
  * @returns Object with all group module functions
  */
-export function init(packageId: ObjectId) {
+function init(packageId: ObjectId) {
 
     /**
      * Mint a group and transfer it to the sender.
@@ -75,18 +75,18 @@ export function init(packageId: ObjectId) {
             `address`,                              // recipient
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`,// c - assuming needed
         ];
-         const args = [
-             ...options.arguments,
+        const args = [
+            ...options.arguments,
             SUI_CLOCK_OBJECT_ID, // Assuming clock is needed
         ];
 
         // Placeholder - Adjust target and args if this function exists in Move
         return (tx: Transaction) =>
-             tx.moveCall({
-                 target: `${packageId}::group::mint_group_cap`, // Adjust function name if needed
-                 arguments: normalizeMoveArguments(args, moveArgsTypes),
-                 typeArguments: []
-             });
+            tx.moveCall({
+                target: `${packageId}::group::mint_group_cap`, // Adjust function name if needed
+                arguments: normalizeMoveArguments(args, moveArgsTypes),
+                typeArguments: []
+            });
         // If the function is meant to transfer an *existing* cap, the signature would be different.
     }
 
@@ -329,3 +329,5 @@ export function init(packageId: ObjectId) {
         namespace,
     };
 }
+
+export const initGroup = init;
