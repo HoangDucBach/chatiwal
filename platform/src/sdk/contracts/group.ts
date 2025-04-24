@@ -153,6 +153,29 @@ function init(packageId: ObjectId) {
             });
     }
 
+    function leave_group(options: {
+        arguments: [
+            user: RawTransactionArgument<Address>,
+            group: RawTransactionArgument<ObjectId>,
+        ]
+    }) {
+        const moveArgsTypes = [
+            `address`,                              // user
+            `&mut ${packageId}::group::Group`,      // group (as mutable reference)
+            `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
+        ];
+        const args = [
+            ...options.arguments,
+            SUI_CLOCK_OBJECT_ID,
+        ];
+
+        return (tx: Transaction) =>
+            tx.moveCall({
+                target: `${packageId}::group::leave_group`,
+                arguments: normalizeMoveArguments(args, moveArgsTypes),
+                typeArguments: []
+            });
+    }
     /**
      * Approve a seal for the given ID if the sender is a member.
      */
