@@ -122,34 +122,22 @@ const semanticTokens = defineSemanticTokens({
     shadows: {
         custom: {
             xs: {
-                value: {
-                    boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.5)",
-                }
+
             },
             sm: {
-                value: {
-                    boxShadow: "0 8px 16px 0 rgba(0, 0, 0, 0.5)",
-                }
+                value: "0 8px 16px 0 rgba(0, 0, 0, 0.5)",
             },
             md: {
-                value: {
-                    boxShadow: "0 16px 32px 0 rgba(0, 0, 0, 0.5)",
-                }
+                value: "0 16px 32px 0 rgba(0, 0, 0, 0.5)",
             },
             lg: {
-                value: {
-                    boxShadow: "0 32px 56px 0 rgba(0, 0, 0, 0.5)",
-                }
+                value: "0 32px 56px 0 rgba(0, 0, 0, 0.5)",
             },
             xl: {
-                value: {
-                    boxShadow: "0 64px 128px 0 rgba(0, 0, 0, 0.5)",
-                }
+                value: "0 64px 128px 0 rgba(0, 0, 0, 0.5)",
             },
             "2xl": {
-                value: {
-                    boxShadow: "0 128px 256px 0 rgba(0, 0, 0, 0.5)",
-                }
+                value: "0 128px 256px 0 rgba(0, 0, 0, 0.5)",
             },
         }
     }

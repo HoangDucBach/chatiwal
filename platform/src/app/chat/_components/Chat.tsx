@@ -75,6 +75,16 @@ export function Chat(props: Props) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    useEffect(() => {
+        if (!currentAccount) return;
+
+        channel.presence.enterClient(currentAccount?.address);
+
+        return () => {
+            channel.presence.leaveClient(currentAccount?.address);
+        }
+    }, [channel, currentAccount]);
+
     return (
         <VStack bg={"bg.100"} h={"full"} rounded={"4xl"} p={"4"} overflowY={"auto"} {...props}>
             <ScrollMotionVStack

@@ -1,9 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { Box, Heading, HStack, Icon, Skeleton, StackProps, VStack } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { Box, Heading, HStack, Icon, Skeleton, StackProps, VStack, Text } from "@chakra-ui/react";
+import { useQuery, Query } from "@tanstack/react-query";
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { IoIosAdd } from "react-icons/io";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
@@ -13,9 +13,34 @@ import { GroupCard } from "./GroupCard";
 import { UserControlPanel } from "./UserControlPanel";
 import { TGroup } from "@/types";
 import { useParams } from "next/navigation";
+import EmptyContent from "@/components/ui/empty-content";
+import { generateColorFromAddress } from "@/libs";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
+    const { registry_get_user_groups, group_get_group_member } = useChatiwalClient();
+    const currentAccount = useCurrentAccount();
+    const myGroupsQuery = useQuery({
+        queryKey: ["groups::members"],
+        queryFn: async () => {
+            if (!currentAccount) throw new Error("Not connected");
+
+            const res = await registry_get_user_groups(currentAccount.address);
+
+            const groups: TGroup[] = [];
+
+
+            await Promise.all(res.map(async (groupId) => {
+                groups.push({
+                    id: groupId,
+                    members: new Set<string>(await group_get_group_member(groupId))
+                })
+            }));
+
+            return groups;
+        },
+    });
+
     return (
         <VStack
             pos={"relative"}
@@ -36,39 +61,36 @@ export function ControlPanel(props: Props) {
                 w={"32"}
                 h={"32"}
                 zIndex={"-1"}
-                bg={"primary"}
+                bg={currentAccount ? generateColorFromAddress(currentAccount.address) : "primary"}
                 borderRadius={"full"}
                 filter={"blur(128px)"}
+                pointerEvents={"none"}
             />
-            <ControlPanelHeader />
-            <ControlPanelBody />
+            <Box
+                pos={"absolute"}
+                bottom={0}
+                left={0}
+                w={"16"}
+                h={"16"}
+                zIndex={"-1"}
+                bg={currentAccount ? generateColorFromAddress(currentAccount.address) : "primary"}
+                borderRadius={"full"}
+                filter={"blur(64px)"}
+                pointerEvents={"none"}
+            />
+            <ControlPanelHeader myGroupsQuery={myGroupsQuery} />
+            <ControlPanelBody myGroupsQuery={myGroupsQuery} />
             <ControlPanelFooter />
         </VStack>
     )
 }
 
-function ControlPanelBody() {
-    const currentAccount = useCurrentAccount();
+interface ControlPanelBodyProps {
+    myGroupsQuery: ReturnType<typeof useQuery<TGroup[]>>,
+}
+function ControlPanelBody({ myGroupsQuery }: ControlPanelBodyProps) {
     const { id } = useParams();
-    const { registry_get_user_groups, group_get_group_member } = useChatiwalClient();
-    const { data: myGroups, isLoading } = useQuery({
-        queryKey: ["groups::members"],
-        queryFn: async () => {
-            if (!currentAccount) throw new Error("Not connected");
-
-            const res = await registry_get_user_groups(currentAccount.address);
-            const groups: TGroup[] = [];
-
-            await Promise.all(res.map(async (groupId) => {
-                groups.push({
-                    id: groupId,
-                    members: new Set<string>(await group_get_group_member(groupId))
-                })
-            }))
-
-            return groups;
-        },
-    })
+    const { data: myGroups, isLoading } = myGroupsQuery;
 
     return (
         <VStack
@@ -82,20 +104,31 @@ function ControlPanelBody() {
                     rounded={"3xl"}
                 />
                 :
-                myGroups?.map((group, index) => (
+                myGroups ? myGroups.map((group, index) => (
                     <GroupCard
                         key={index}
                         group={group}
                         isSelected={group.id === id}
                     />
-                ))}
+                ))
+                    :
+                    <EmptyContent
+                        emptyText={"No groups found"}
+                    />
+            }
         </VStack>
     )
 }
-function ControlPanelHeader() {
+interface ControlPanelHeaderProps {
+    myGroupsQuery: ReturnType<typeof useQuery<TGroup[]>>,
+}
+
+function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
+    const { data: myGroups, isLoading } = myGroupsQuery;
     return (
-        <HStack bg={"bg.200"} w={"full"} px={"4"} py={"2"} rounded={"2xl"}>
+        <HStack bg={"bg.200"} w={"full"} px={"4"} py={"2"} justify={"space-between"} rounded={"2xl"}>
             <Heading as={"h6"} size={"lg"}>Group</Heading>
+            <Text color={"fg.700"}>{myGroups?.length || 0}</Text>
         </HStack>
     )
 }

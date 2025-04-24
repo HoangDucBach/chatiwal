@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Box, Heading, HStack, Icon, StackProps, VStack, Text } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { IoIosAdd } from "react-icons/io";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
@@ -13,6 +13,7 @@ import { GroupCard } from "./GroupCard";
 import { useGroup } from "../_hooks/useGroupId";
 import { useChannel } from "ably/react";
 import { MemberCard } from "./MemberCard";
+import AddMember from "./AddMember";
 
 interface Props extends StackProps { }
 export function GroupControlPanel(props: Props) {
@@ -99,47 +100,9 @@ function GroupControlPanelHeader() {
 }
 
 function GroupControlPanelFooter() {
-    const { group } = useGroup();
-    const { add_member } = useChatiwalClient();
-    const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
-
-    const handleAddMember = async () => {
-        try {
-            const tx = await add_member(group.id, "0xa34034f5a6e9758e540e3f8054c6aebea055f5948bde9e9aba48be015c98cd99");
-            signAndExecuteTransaction({
-                transaction: tx,
-            }, {
-                onSuccess: (res) => {
-                    toaster.success({
-                        title: "Group created successfully",
-                        description: "Your group has been created and you are the owner.",
-                    })
-                },
-                onError: (error) => {
-                    toaster.error({
-                        title: "Error creating group",
-                        description: "There was an error creating your group. Please try again.",
-                        meta: error,
-                    })
-                }
-            })
-        } catch (error) {
-            console.error("Error creating group", error);
-        }
-    }
-
     return (
         <VStack w={"full"} gap={"4"}>
-            <Button
-                colorPalette={"default"}
-                w={"full"}
-                onClick={handleAddMember}
-            >
-                <Icon>
-                    <IoIosAdd />
-                </Icon>
-                Add member
-            </Button>
+            <AddMember w="full" shadow={"custom.md"}/>
         </VStack>
     )
 }
