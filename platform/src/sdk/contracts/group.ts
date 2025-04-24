@@ -10,16 +10,21 @@ import { Address, ObjectId } from '..';
 
 
 export const GroupCapStruct = bcs.struct("GroupCap", {
-    id: bcs.Address, // Assuming UID maps to Address/ID
-    group_id: bcs.Address, // Assuming ID maps to Address/ID
+    id: bcs.Address,
+    group_id: bcs.Address,
 });
 
 export const GroupStruct = bcs.struct("Group", {
-    id: bcs.Address, // Assuming UID maps to Address/ID
-    member: bcs.vector(bcs.Address), // Assuming VecSet<address> maps to vector<address>
+    id: bcs.Address,
+    member: bcs.vector(bcs.Address),
     metadata_blob_id: bcs.String,
 });
 
+
+export const RegistryStruct = bcs.struct("Registry", {
+    id: bcs.Address,
+    user_groups: bcs.Address
+});
 /**
  * Error constants matching the Move module
  */
