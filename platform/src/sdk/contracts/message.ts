@@ -7,6 +7,7 @@ import {
     SUI_FRAMEWORK_ADDRESS,
 } from '@mysten/sui/utils';
 import { Address, ObjectId } from '../types';
+import { TimeLockPolicyStruct, LimitedReadPolicyStruct, FeeBasedPolicyStruct } from './message_policy';
 
 
 export const MessageOwnerCapStruct = bcs.struct("MessageOwnerCap", {
@@ -23,6 +24,52 @@ export const MessagesSnapshotStruct = bcs.struct("MessagesSnapshot", {
 export const MessagesSnapshotCapStruct = bcs.struct("MessagesSnapshotCap", {
     id: bcs.Address,
     messages_snapshot_id: bcs.Address,
+});
+
+export const SuperMessageTimeLockStruct = bcs.struct("SuperMessageTimeLock", {
+    id: bcs.Address,
+    group_id: bcs.Address,
+    message_blob_id: bcs.String,
+    policy: TimeLockPolicyStruct,
+    owner: bcs.Address,
+});
+
+export const SuperMessageLimitedReadStruct = bcs.struct("SuperMessageLimitedRead", {
+    id: bcs.Address,
+    group_id: bcs.Address,
+    message_blob_id: bcs.String,
+    policy: LimitedReadPolicyStruct,
+    owner: bcs.Address,
+    readers: bcs.vector(bcs.Address), // VecSet<address> represented as Vector
+});
+
+export const SuperMessageFeeBasedStruct = bcs.struct("SuperMessageFeeBased", {
+    id: bcs.Address,
+    group_id: bcs.Address,
+    message_blob_id: bcs.String,
+    policy: FeeBasedPolicyStruct,
+    owner: bcs.Address,
+    readers: bcs.vector(bcs.Address),
+    fee_collected: bcs.U64, // Simplified representation of Balance<CoinType>
+});
+
+export const SuperMessageCompoundStruct = bcs.struct("SuperMessageCompound", {
+    id: bcs.Address,
+    group_id: bcs.Address,
+    message_blob_id: bcs.String,
+    time_lock: TimeLockPolicyStruct,
+    limited_read: LimitedReadPolicyStruct,
+    fee_policy: FeeBasedPolicyStruct,
+    owner: bcs.Address,
+    fee_collected: bcs.U64,
+    readers: bcs.vector(bcs.Address),
+});
+
+export const SuperMessageNoPolicyStruct = bcs.struct("SuperMessageNoPolicy", {
+    id: bcs.Address,
+    group_id: bcs.Address,
+    message_blob_id: bcs.String,
+    owner: bcs.Address,
 });
 
 /**
