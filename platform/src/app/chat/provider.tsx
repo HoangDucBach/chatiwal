@@ -1,10 +1,10 @@
 "use client"
 
 import { AblyProvider } from "ably/react";
-import { DashboardGuard } from "./_components/DashboardGuard";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import * as Ably from "ably";
 import { ABLY_API_KEY } from "@/utils/constants";
+import ChatGuard from "./_components/ChatGuard";
 
 export function Provider({
     children,
@@ -13,7 +13,6 @@ export function Provider({
 }>) {
     const currentAccount = useCurrentAccount();
 
-    if (!currentAccount) return null;
 
     const ablyClient = new Ably.Realtime({
         clientId: currentAccount?.address,
@@ -21,10 +20,8 @@ export function Provider({
     });
 
     return (
-        <DashboardGuard>
-            <AblyProvider client={ablyClient}>
-                {children}
-            </AblyProvider>
-        </DashboardGuard>
+        <AblyProvider client={ablyClient}>
+            {children}
+        </AblyProvider>
     );
 }

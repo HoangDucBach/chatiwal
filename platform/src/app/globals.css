@@ -1,17 +1,5 @@
-:root {
-  --background: #151515;
-  --foreground: #ededed;
-}
-
 * {
   font-family: 'Poppins', sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #151515;
-    --foreground: #ededed;
-  }
 }
 
 html,

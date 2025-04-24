@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Box, Group, Heading, Input, InputProps, StackProps, Text, VStack } from "@chakra-ui/react";
+import { Box, Group, Heading, HStack, Input, InputProps, StackProps, Text, VStack } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
@@ -14,6 +14,7 @@ import { SuperMessageNoPolicy } from "@/sdk";
 import { toaster } from "@/components/ui/toaster";
 import { useGroup } from "../_hooks/useGroupId";
 import { Tag } from "@/components/ui/tag";
+import { MintSuperMessage } from "./MintSuperMessage";
 
 const ScrollMotionVStack = motion.create(VStack);
 
@@ -157,7 +158,10 @@ export function Chat(props: Props) {
                 ))}
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>
-            <MessageInput channelName={channelName} onMessageSend={onMessageSend} />
+            <HStack gap={"4"} w={"full"}>
+                <MessageInput channelName={channelName} onMessageSend={onMessageSend} w={"full"} />
+                <MintSuperMessage w={"fit"} />
+            </HStack>
         </VStack>
     )
 }

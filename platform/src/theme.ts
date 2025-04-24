@@ -67,7 +67,7 @@ const semanticTokens = defineSemanticTokens({
     colors: {
         danger: { value: "{colors.red}" },
         bg: {
-            DEFAULT: { value: "#151613" },
+            DEFAULT: { value: "#100F0F" },
             100: { value: "#1A1A1A" },
             200: { value: "#242424" },
             300: { value: "#2E2E2E" },
@@ -118,6 +118,40 @@ const semanticTokens = defineSemanticTokens({
             emphasized: { value: "{colors.secondary.300}" },
             focusRing: { value: "{colors.secondary.500}" },
         }
+    },
+    shadows: {
+        custom: {
+            xs: {
+                value: {
+                    boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.5)",
+                }
+            },
+            sm: {
+                value: {
+                    boxShadow: "0 8px 16px 0 rgba(0, 0, 0, 0.5)",
+                }
+            },
+            md: {
+                value: {
+                    boxShadow: "0 16px 32px 0 rgba(0, 0, 0, 0.5)",
+                }
+            },
+            lg: {
+                value: {
+                    boxShadow: "0 32px 56px 0 rgba(0, 0, 0, 0.5)",
+                }
+            },
+            xl: {
+                value: {
+                    boxShadow: "0 64px 128px 0 rgba(0, 0, 0, 0.5)",
+                }
+            },
+            "2xl": {
+                value: {
+                    boxShadow: "0 128px 256px 0 rgba(0, 0, 0, 0.5)",
+                }
+            },
+        }
     }
 })
 
@@ -134,6 +168,11 @@ const config = defineConfig({
         semanticTokens,
         textStyles
     },
+    globalCss: {
+        body: {
+            bg: "bg",
+        },
+    }
 })
 
 export default createSystem(defaultConfig, config)
