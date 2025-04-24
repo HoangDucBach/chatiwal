@@ -36,7 +36,7 @@ export class ChatiwalClient {
 
         this.suiClient = config.suiClient;
         // Initialize both modules
-        this.groupModule = initGroup(this.packageConfig.chatiwalId);
+        this.groupModule = initGroup(this.packageConfig.chatiwalId, config);
         this.messageModule = initMessage(this.packageConfig.chatiwalId); // Initialize message module
     }
 
@@ -98,6 +98,18 @@ export class ChatiwalClient {
     }) {
         const tx = new Transaction();
         this.groupModule.remove_member({ arguments: [groupCapId, groupId, member] })(tx);
+        return tx;
+    }
+
+    /**
+     * Leaves a group by a member.
+     */
+    async leaveGroup({ groupId, member }: {
+        groupId: ObjectId;
+        member: Address;
+    }) {
+        const tx = new Transaction();
+        this.groupModule.leave_group({ arguments: [groupId, member] })(tx);
         return tx;
     }
 

@@ -6,7 +6,7 @@ import {
     MOVE_STDLIB_ADDRESS,
     SUI_FRAMEWORK_ADDRESS,
 } from '@mysten/sui/utils';
-import { Address, ObjectId } from '..';
+import { Address, ChatiwalClientConfig, ObjectId } from '..';
 
 
 export const GroupCapStruct = bcs.struct("GroupCap", {
@@ -38,9 +38,11 @@ export const GroupErrorCodes = { // Renamed from ErrorCodes for clarity
 /**
  * Initialize the group module with the package ID
  * @param packageId The ID of the deployed Chatiwal package
+ * @param config Optional configuration for the client
  * @returns Object with all group module functions
  */
-function init(packageId: ObjectId) {
+function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
+    const REGISTRY_OBJECT_ID = config?.packageConfig?.registryObjectId;
 
     /**
      * Mint a group and transfer it to the sender.
@@ -107,11 +109,13 @@ function init(packageId: ObjectId) {
     }) {
         const moveArgsTypes = [
             `&${packageId}::group::GroupCap`,       // groupCapId (as reference to the cap object)
+            `&${packageId}::group::Registry`,      // groupId (as reference to the group object)
             `&mut ${packageId}::group::Group`,      // groupId (as mutable reference to group object)
             `address`,                              // member
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
+            REGISTRY_OBJECT_ID,
             ...options.arguments,
             SUI_CLOCK_OBJECT_ID,
         ];
@@ -136,11 +140,13 @@ function init(packageId: ObjectId) {
     }) {
         const moveArgsTypes = [
             `&${packageId}::group::GroupCap`,       // groupCapId (as reference)
+            `&${packageId}::group::Registry`,      // groupId (as reference)
             `&mut ${packageId}::group::Group`,      // groupId (as mutable reference)
             `address`,                              // member
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
+            REGISTRY_OBJECT_ID,
             ...options.arguments,
             SUI_CLOCK_OBJECT_ID,
         ];
@@ -160,11 +166,13 @@ function init(packageId: ObjectId) {
         ]
     }) {
         const moveArgsTypes = [
+            `&mut ${packageId}::group::Registry`, // registry
             `address`,                              // user
             `&mut ${packageId}::group::Group`,      // group (as mutable reference)
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
+            REGISTRY_OBJECT_ID,
             ...options.arguments,
             SUI_CLOCK_OBJECT_ID,
         ];
@@ -347,6 +355,7 @@ function init(packageId: ObjectId) {
         mint_group_cap, // Kept for structural similarity, review based on Move code
         add_member,
         remove_member,
+        leave_group,
         seal_approve,
         group_get_group_id,
         group_get_group_member,
