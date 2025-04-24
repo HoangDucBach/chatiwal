@@ -2,10 +2,20 @@ import { bcs, TypeTagSerializer } from '@mysten/sui/bcs';
 import type { BcsType, TypeTag } from '@mysten/sui/bcs';
 import { isArgument } from '@mysten/sui/transactions';
 import type { TransactionArgument } from '@mysten/sui/transactions';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { fromHex, normalizeSuiAddress, toHex } from '@mysten/sui/utils';
 
 const MOVE_STDLIB_ADDRESS = normalizeSuiAddress('0x1');
 const SUI_FRAMEWORK_ADDRESS = normalizeSuiAddress('0x2');
+
+export const UID = bcs.fixedArray(32, bcs.u8()).transform({
+	input: (id: string) => fromHex(id),
+	output: (id) => toHex(Uint8Array.from(id)),
+});
+
+export const CoinStruct = bcs.struct('Coin', {
+	id: UID,
+	value: bcs.u64(),
+});
 
 export type RawTransactionArgument<T> = T | TransactionArgument;
 

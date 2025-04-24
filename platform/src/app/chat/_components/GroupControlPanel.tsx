@@ -12,9 +12,7 @@ import { toaster } from "@/components/ui/toaster";
 import { GroupCard } from "./GroupCard";
 import { useGroup } from "../_hooks/useGroupId";
 import { useChannel } from "ably/react";
-import { useState } from "react";
 import { MemberCard } from "./MemberCard";
-import { Group } from "@/sdk/contracts/group";
 
 interface Props extends StackProps { }
 export function GroupControlPanel(props: Props) {

@@ -8,7 +8,8 @@ import { InvalidGroupCapError } from "@/sdk/errors";
 import { Address, ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
 import { bcs, BcsType } from "@mysten/sui/bcs";
-import { FeeBasedPolicyStruct, Group, LimitedReadPolicyStruct, TimeLockPolicyStruct } from "@/sdk/contracts";
+import { FeeBasedPolicyStruct, LimitedReadPolicyStruct, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct, TimeLockPolicyStruct } from "@/sdk/contracts";
+import { CoinStruct } from "@/sdk/contracts/utils";
 
 export interface IGroupActions {
     mint_group_and_transfer(metadataBlobId?: string): Promise<Transaction>;
@@ -771,13 +772,13 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        message_fee_based_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<any> => {
+        message_fee_based_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<typeof CoinStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageFeeBasedGetFeeCollected({
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (bytes) => bcs.
+                (bytes) => CoinStruct.parse(bytes)
             );
         },
 
@@ -811,33 +812,33 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        message_compound_get_time_lock: async (messageId: ObjectId, coinType: string): Promise<> => {
+        message_compound_get_time_lock: async (messageId: ObjectId, coinType: string): Promise<typeof SuperMessageCompoundStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageCompoundGetTimeLock({
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (bytes) => bcs.
+                (bytes) => SuperMessageCompoundStruct.parse(bytes)
             );
         },
 
-        message_compound_get_limited_read: async (messageId: ObjectId, coinType: string): Promise<any> => {
+        message_compound_get_limited_read: async (messageId: ObjectId, coinType: string): Promise<typeof SuperMessageLimitedReadStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageCompoundGetLimitedRead({
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (bytes) => bcs.
+                (bytes) => SuperMessageLimitedReadStruct.parse(bytes)
             );
         },
 
-        message_compound_get_fee_policy: async (messageId: ObjectId, coinType: string): Promise<any> => {
+        message_compound_get_fee_policy: async (messageId: ObjectId, coinType: string): Promise<typeof SuperMessageFeeBasedStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageCompoundGetFeePolicy({
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (bytes) => bcs.
+                (bytes) => SuperMessageFeeBasedStruct.parse(bytes)
             );
         },
 
@@ -851,13 +852,13 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        message_compound_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<any> => {
+        message_compound_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<typeof CoinStruct.$inferType> => {
             return executeInspectTransaction(
                 () => client.messageCompoundGetFeeCollected({
                     messageId: messageId,
                     coinType: coinType
                 }),
-                (bytes) => bcs.
+                (bytes) => CoinStruct.parse(bytes)
             );
         },
 
