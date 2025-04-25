@@ -3,7 +3,7 @@ import { Button, ButtonProps } from "@/components/ui/button";
 import { CloseButton } from "@/components/ui/close-button";
 import { DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot } from "@/components/ui/dialog";
 import { DialogBackdrop, DialogTrigger, Field, Icon, Input, Text, useDisclosure } from "@chakra-ui/react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Form, Controller, useForm } from "react-hook-form";
 import { useGroup } from "../_hooks/useGroupId";
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
@@ -36,13 +36,23 @@ export default function AddMember(
         },
     });
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
-    const { add_member } = useChatiwalClient();
+    const { add_member, validate_group_cap } = useChatiwalClient();
     const suiClient = useSuiClient();
+
+    const { data: group_cap, isSuccess } = useQuery({
+        queryKey: ["group::members::group_cap"],
+        queryFn: async () => {
+            if (!group) throw new Error("Group not found");
+            const group_cap = await validate_group_cap(group.id);
+            return group_cap;
+        },
+
+    })
 
     const { mutate: addMember, isPending, isError, error, reset } = useMutation({
         mutationFn: async (params: AddMemberParams) => {
             const { groupId, member } = params;
-            const tx = await add_member(groupId, member);
+            const tx = await add_member(groupId, member, group_cap);
 
             const res = await signAndExecuteTransaction({
                 transaction: tx,
@@ -62,6 +72,7 @@ export default function AddMember(
                 description: error.message,
             });
         },
+
         onSuccess: () => {
             toaster.success({
                 title: "Success",
@@ -83,6 +94,8 @@ export default function AddMember(
             console.error(error);
         }
     }
+    if (!group) return null;
+    if (!group_cap) return null;
 
     return (
         <DialogRoot lazyMount open={open} onOpenChange={(e) => setOpen(e.open)} placement={"center"}>

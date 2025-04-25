@@ -14,7 +14,7 @@ import { CoinStruct } from "@/sdk/contracts/utils";
 export interface IGroupActions {
     mint_group_and_transfer(metadataBlobId?: string): Promise<Transaction>;
     mint_group_cap(group: string, recipient: string): Promise<Transaction>;
-    add_member(group: string, member: string): Promise<Transaction>;
+    add_member(group: string, member: string, group_cap?: string): Promise<Transaction>;
     remove_member(group: string, member: string): Promise<Transaction>;
     leave_group(group: string, member: string): Promise<Transaction>;
     seal_approve(id: Uint8Array, group: string): Promise<Transaction>;
@@ -25,6 +25,7 @@ export interface IGroupActions {
     group_cap_get_group_id(group_cap: string): Promise<Uint8Array>;
     group_cap_get_id(group_cap: string): Promise<string>;
     is_member(group: string, addr: string): Promise<boolean>;
+    validate_group_cap(group: string): Promise<string>;
 }
 
 export interface IMessageActions {
@@ -199,8 +200,8 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        add_member: async (group: string, member: string) => {
-            const groupCapId = await validateGroupCap(group);
+        add_member: async (group: string, member: string, customGroupCapId?: string) => {
+            const groupCapId = customGroupCapId || await validateGroupCap(group);
             return await executeTransaction(() =>
                 client.addMember({
                     groupCapId,
@@ -253,7 +254,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        group_get_group_member: async (group: string): Promise<number[]> => {
+        group_get_group_member: async (group: string): Promise<string[]> => {
             return executeInspectTransaction(
                 () => client.groupGetGroupMember(group),
                 (bytes) => bcs.vector(bcs.Address).parse(bytes)
@@ -289,7 +290,8 @@ export function useChatiwalClient(): IChatiwalClientActions {
                 }),
                 (bytes) => bcs.Bool.parse(bytes)
             );
-        }
+        },
+        validate_group_cap: validateGroupCap
     };
 
     const messageActions: IMessageActions = {
