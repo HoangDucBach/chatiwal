@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Box, Group, Heading, HStack, Input, InputProps, StackProps, Text, VStack } from "@chakra-ui/react";
+import { Box, chakra, Heading, HStack, Input, InputProps, StackProps, Text, VStack, Textarea, TextareaProps, CenterProps, Center } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
@@ -86,7 +86,7 @@ export function Chat(props: Props) {
     }, [channel, currentAccount]);
 
     return (
-        <VStack bg={"bg.100"} h={"full"} rounded={"4xl"} p={"4"} overflowY={"auto"} {...props}>
+        <VStack pos={"relative"} bg={"bg.50"} h={"full"} rounded={"4xl"} p={"4"} overflowY={"auto"} overflowX={"hidden"} zIndex={"0"} {...props}>
             <ScrollMotionVStack
                 h={"full"} overflowY={"auto"}
                 initial={{ opacity: 0, y: 10 }}
@@ -168,10 +168,12 @@ export function Chat(props: Props) {
                 ))}
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>
-            <HStack gap={"4"} w={"full"}>
-                <MessageInput channelName={channelName} onMessageSend={onMessageSend} w={"full"} />
-                <MintSuperMessage w={"fit"} />
-            </HStack>
+            <ComposerInput
+                messageInputProps={{
+                    channelName,
+                    onMessageSend
+                }} />
+            <Effects />
         </VStack>
     )
 }
@@ -209,7 +211,7 @@ export function ChatWelcomePlaceholder(props: Props) {
     )
 }
 
-interface MessageInputProps extends InputProps {
+interface MessageInputProps extends Omit<TextareaProps, 'onChange'> {
     channelName: string;
     onMessageSend: (plainMessage: TMessageBase, encryptedMessage: TMessageBase) => void;
 }
@@ -260,12 +262,14 @@ function MessageInput({ channelName, onMessageSend, ...props }: MessageInputProp
     }
 
     return (
-        <Input
+        <Textarea
             bg={"bg.200"}
+            resize={"none"}
             placeholder="Message"
-            rounded={"full"}
+            rounded={"2xl"}
             variant={"subtle"}
             size={"lg"}
+            shadow={"custom.sm"}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
@@ -276,5 +280,65 @@ function MessageInput({ channelName, onMessageSend, ...props }: MessageInputProp
             }}
             {...props}
         />
+    )
+}
+
+interface ComposerInputProps extends StackProps {
+    messageInputProps: {
+        channelName: string;
+        onMessageSend: (plainMessage: TMessageBase, encryptedMessage: TMessageBase) => void;
+    };
+}
+function ComposerInput({ messageInputProps, ...props }: ComposerInputProps) {
+    return (
+        <VStack
+            w={"full"}
+            p={"3"}
+            bg={"bg.100/75"}
+            backdropBlur={"2xl"}
+            shadow={"custom.sm"}
+            rounded={"3xl"}
+            cursor={"pointer"}
+            {...props}
+        >
+            <MessageInput
+                channelName={messageInputProps.channelName}
+                onMessageSend={messageInputProps.onMessageSend}
+            />
+            <HStack justify={"end"}>
+                <MintSuperMessage />
+            </HStack>
+        </VStack>
+    )
+}
+interface EffectsProps extends CenterProps {
+
+}
+function Effects(props: EffectsProps) {
+    return (
+        <chakra.div
+            pos={"absolute"}
+            bottom={0}
+            left={0}
+            w={"full"}
+            h={"full"}
+            zIndex={"-1"}
+            pointerEvents={"none"}
+            {...props}
+        >
+            <Box
+                pos={"absolute"}
+                w={"full"}
+                h={"32"}
+                bottom={"0"}
+                filter={"blur(32px)"}
+                rounded={"3xl"}
+                bgGradient={"to-t"}
+                gradientFrom={"primary/75"}
+                gradientVia={"primary/10"}
+                gradientTo={"primary/0"}
+            // pointerEvents={"none"}
+            />
+        </chakra.div>
     )
 }

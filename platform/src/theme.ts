@@ -68,6 +68,7 @@ const semanticTokens = defineSemanticTokens({
         danger: { value: "{colors.red}" },
         bg: {
             DEFAULT: { value: "#100F0F" },
+            50: { value: "#151515" },
             100: { value: "#1A1A1A" },
             200: { value: "#242424" },
             300: { value: "#2E2E2E" },

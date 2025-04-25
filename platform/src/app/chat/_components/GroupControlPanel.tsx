@@ -24,7 +24,7 @@ export function GroupControlPanel(props: Props) {
             zIndex={"0"}
             h={"full"}
             p={"4"}
-            bg={"bg.100"}
+            bg={"bg.50"}
             backdropBlur={"2xl"}
             rounded={"4xl"}
             gap={"6"}
