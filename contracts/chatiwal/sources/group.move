@@ -46,9 +46,15 @@ fun init(ctx: &mut TxContext) {
 
 // === Entry Functions ===
 
-public entry fun mint_group_and_transfer(metadata_blob_id: String, c: &Clock, ctx: &mut TxContext) {
-    let g = do_mint_group(metadata_blob_id, c, ctx);
+public entry fun mint_group_and_transfer(
+    registry: &mut Registry,
+    metadata_blob_id: String,
+    c: &Clock,
+    ctx: &mut TxContext,
+) {
+    let mut g = do_mint_group(metadata_blob_id, c, ctx);
     let g_cap = do_mint_group_cap(object::id(&g), c, ctx);
+    do_add_member(registry, &mut g, tx_context::sender(ctx), c);
     transfer::share_object(g);
     transfer::transfer(g_cap, tx_context::sender(ctx));
 }
@@ -74,8 +80,7 @@ public entry fun add_member(
 ) {
     assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
     assert!(!vec_set::contains(&g.members, &member), EMemberAlreadyExists);
-    do_add_member(g, member, c);
-    registry.register_group_impl(member, g)
+    do_add_member(registry, g, member, c);
 }
 
 public entry fun remove_member(
@@ -87,18 +92,10 @@ public entry fun remove_member(
 ) {
     assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
     assert!(vec_set::contains(&g.members, &member), EMemberNotExists);
-    do_remove_member(g, member, c);
-    registry.unregister_group_impl(member, g)
+    do_remove_member(registry, g, member, c);
 }
 
-public entry fun leave_group(
-    group_cap: &GroupCap,
-    registry: &mut Registry,
-    g: &Group,
-    user: address,
-    c: &Clock,
-) {
-    assert!(group_cap_has_permission_of_group(group_cap, g), EInvalidGroupCap);
+public entry fun leave_group(registry: &mut Registry, g: &Group, user: address, c: &Clock) {
     assert!(vec_set::contains(&g.members, &user), EMemberNotExists);
     do_leave_group(registry, user, g, c)
 }
@@ -124,13 +121,15 @@ fun mint_group_cap_impl(g_id: ID, ctx: &mut TxContext): GroupCap {
     }
 }
 
-fun do_add_member(g: &mut Group, member: address, c: &Clock) {
+fun do_add_member(registry: &mut Registry, g: &mut Group, member: address, c: &Clock) {
     add_member_impl(g, member);
+    registry.register_group_impl(member, g);
     events::emit_group_member_added(object::id(g), member, c.timestamp_ms());
 }
 
-fun do_remove_member(g: &mut Group, member: address, c: &Clock) {
+fun do_remove_member(registry: &mut Registry, g: &mut Group, member: address, c: &Clock) {
     remove_member_impl(g, member);
+    registry.unregister_group_impl(member, g);
     events::emit_group_member_removed(object::id(g), member, c.timestamp_ms());
 }
 
@@ -224,7 +223,7 @@ public fun group_get_group_id(g: &Group): ID {
     object::id(g)
 }
 
-public fun group_get_group_member(g: &Group): VecSet<address> {
+public fun group_get_group_members(g: &Group): VecSet<address> {
     g.members
 }
 
