@@ -14,10 +14,12 @@ import { UserControlPanel } from "./UserControlPanel";
 import { TGroup } from "@/types";
 import { useParams } from "next/navigation";
 import EmptyContent from "@/components/ui/empty-content";
+import { useWalrusClient } from "@/hooks/useWalrusClient";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
     const { registry_get_user_groups, group_get_group_member } = useChatiwalClient();
+    const { readMessage } = useWalrusClient();
     const currentAccount = useCurrentAccount();
     const myGroupsQuery = useQuery({
         queryKey: ["groups::members"],
@@ -25,7 +27,6 @@ export function ControlPanel(props: Props) {
             if (!currentAccount) throw new Error("Not connected");
 
             const res = await registry_get_user_groups(currentAccount.address);
-
             const groups: TGroup[] = [];
 
 

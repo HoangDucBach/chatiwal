@@ -11,7 +11,7 @@ interface StoreMessageOptions {
 
 interface IWalrusClientActions {
     storeMessage: (message: MessageBase, options?: StoreMessageOptions) => Promise<MessageBase>;
-    readMessage: (blobId: string) => Promise<any>;
+    readMessage: (blobIds: string[]) => Promise<ArrayBuffer[]>;
     deleteMessage: (blobId: string) => Promise<void>;
     client: WalrusClient;
 }
@@ -24,6 +24,9 @@ export const useWalrusClient = (): IWalrusClientActions => {
     const walrusClient = new WalrusClient({
         network: NETWORK,
         suiClient,
+        storageNodeClientOptions: {
+            timeout: 60_000,
+        }
     });
 
     const storeMessage = async (message: MessageBase, options?: StoreMessageOptions) => {
@@ -32,7 +35,8 @@ export const useWalrusClient = (): IWalrusClientActions => {
         }
 
         const { deletable = true, epochs = 1 } = options || {};
-        const encodedMessage = new TextEncoder().encode(JSON.stringify(message.getData().content));
+        
+        const encodedMessage = Uint8Array.from(message.getData().content);
         const encodedBlob = await walrusClient.encodeBlob(encodedMessage);
 
         const registerBlobTransaction = await walrusClient.registerBlobTransaction({
@@ -94,20 +98,34 @@ export const useWalrusClient = (): IWalrusClientActions => {
             throw new Error('Failed to certify blob');
         }
 
+        message.getData().blobId = blobObject.objectId;
+
         return message;
     }
 
-    const readMessage = async (blobId: string) => {
-        const blob = await walrusClient.readBlob({
-            blobId,
-        });
+    const readMessage = async (blobIds: string[]) => {
+        const aggregators = ['aggregator1', 'aggregator2', 'aggregator3', 'aggregator4', 'aggregator5', 'aggregator6'];
+        const downloadResults = await Promise.all(
+            blobIds.map(async (blobId) => {
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000);
+                    const randomAggregator = aggregators[Math.floor(Math.random() * aggregators.length)];
+                    const aggregatorUrl = `/${randomAggregator}/v1/blobs/${blobId}`;
+                    const response = await fetch(aggregatorUrl, { signal: controller.signal });
+                    clearTimeout(timeout);
+                    if (!response.ok) {
+                        return null;
+                    }
+                    return await response.arrayBuffer();
+                } catch (err) {
+                    console.error(`Blob ${blobId} cannot be retrieved from Walrus`, err);
+                    return null;
+                }
+            }),
+        );
 
-        if (!blob) {
-            throw new Error('Blob not found');
-        }
-        const decodedMessage = new TextDecoder().decode(blob);
-
-        return JSON.parse(decodedMessage) as any;
+        return downloadResults.filter((result): result is ArrayBuffer => result !== null);
     };
 
     const deleteMessage = async (blobId: string) => {
