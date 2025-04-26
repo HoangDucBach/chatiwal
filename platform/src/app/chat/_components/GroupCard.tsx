@@ -26,9 +26,9 @@ export function GroupCard({ isSelected, ...props }: Props) {
             transition="all 0.2s ease-in-out"
             _hover={{
                 translateY: "4",
-                bg: isSelected ? "primary.600" : "bg.300",
+                bg: "bg.300",
             }}
-            bg={isSelected ? "primary" : "bg.200"}
+            bg={isSelected ? "bg.300" : "bg.200"}
             backdropBlur={"2xl"}
             rounded={"2xl"}
             cursor={"pointer"}
@@ -36,8 +36,8 @@ export function GroupCard({ isSelected, ...props }: Props) {
             {...props}
         >
             <VStack gap={"0"} alignItems={"start"}>
-                <Text color={isSelected ? "primary.fg" : "fg"} fontWeight={"medium"}>{group.name || "Cyan Group | Beta"}</Text>
-                <Text color={isSelected ? "primary.contrast" : "fg.900"} fontSize={"sm"}>{group.members.size || 0} members</Text>
+                <Text color={"fg"} fontWeight={"medium"}>{group.name || "Cyan Group | Beta"}</Text>
+                <Text color={"fg.contrast"} fontSize={"sm"}>{group.members.size || 0} members</Text>
             </VStack>
         </HStack>
     )

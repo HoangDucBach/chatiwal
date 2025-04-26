@@ -20,12 +20,11 @@ export function GroupControlPanel(props: Props) {
     return (
         <VStack
             pos={"relative"}
-            overflow={"hidden"}
             zIndex={"0"}
             h={"full"}
             p={"4"}
-            bg={"bg.50"}
-            backdropBlur={"2xl"}
+            bg={"bg.100/75"}
+            backdropFilter={"blur(256px)"}
             rounded={"4xl"}
             gap={"6"}
             {...props}
@@ -102,7 +101,7 @@ function GroupControlPanelHeader() {
 function GroupControlPanelFooter() {
     return (
         <VStack w={"full"} gap={"4"}>
-            <AddMember w="full" shadow={"custom.md"}/>
+            <AddMember w="full" shadow={"custom.md"} />
         </VStack>
     )
 }

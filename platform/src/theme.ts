@@ -5,6 +5,16 @@ const tokens = defineTokens({
         danger: { value: "{colors.red}" },
         bg: {
             DEFAULT: { value: "#151613" },
+            50: { value: "#191919" },
+            100: { value: "#191A1C" },
+            200: { value: "#272729" },
+            300: { value: "#383838" },
+            400: { value: "#545255" },
+            500: { value: "#6A6967" },
+            600: { value: "#807E7C" },
+            700: { value: "#969492" },
+            800: { value: "#ACAAA8" },
+            900: { value: "#C2C0BE" },
         },
         fg: {
             DEFAULT: { value: "#FFFFFF" },
@@ -45,6 +55,7 @@ const tokens = defineTokens({
             700: { value: "#8AE1EB" },
             800: { value: "#BEEFF5" },
             900: { value: "#F2FDFF" },
+
         },
         secondary: {
             DEFAULT: { value: "#89EAC6" },
@@ -60,7 +71,7 @@ const tokens = defineTokens({
             800: { value: "#BBF4DF" },
             900: { value: "#F1FFFA" },
         }
-    }
+    },
 })
 const semanticTokens = defineSemanticTokens({
     colors: {
@@ -79,17 +90,13 @@ const semanticTokens = defineSemanticTokens({
             900: { value: "#C2C0BE" }
         },
         fg: {
-            DEFAULT: { value: "#FFFFFF" },
-            50: { value: "#151515" },
-            100: { value: "#1A1A1A" },
-            200: { value: "#242424" },
-            300: { value: "#2E2E2E" },
-            400: { value: "#383838" },
-            500: { value: "#474747" },
-            600: { value: "#606060" },
-            700: { value: "#707070" },
-            800: { value: "#828282" },
-            900: { value: "#949494" },
+            solid: { value: "{colors.fg.100}" },
+            contrast: { value: "{colors.fg.900}" },
+            fg: { value: "{colors.fg.800}" },
+            muted: { value: "{colors.fg.300}" },
+            subtle: { value: "{colors.fg.200}" },
+            emphasized: { value: "{colors.fg.400}" },
+            focusRing: { value: "{colors.fg.600}" }
         },
         default: {
             solid: { value: "{colors.default.100}" },
@@ -129,25 +136,25 @@ const semanticTokens = defineSemanticTokens({
     shadows: {
         custom: {
             xs: {
-
+                value: "0 0px 4px 0 rgba(0, 0, 0, 0.25)",
             },
             sm: {
-                value: "0 8px 16px 0 rgba(0, 0, 0, 0.5)",
+                value: "0 2px 8px 0 rgba(0, 0, 0, 0.25)",
             },
             md: {
-                value: "0 16px 32px 0 rgba(0, 0, 0, 0.5)",
+                value: "0 4px 16px 0 rgba(0, 0, 0, 0.25)",
             },
             lg: {
-                value: "0 32px 56px 0 rgba(0, 0, 0, 0.5)",
+                value: "0 8px 32px 0 rgba(0, 0, 0, 0.5)",
             },
             xl: {
-                value: "0 64px 128px 0 rgba(0, 0, 0, 0.5)",
+                value: "0 16px 64px 0 rgba(0, 0, 0, 0.5)",
             },
             "2xl": {
-                value: "0 128px 256px 0 rgba(0, 0, 0, 0.5)",
+                value: "0 64px 128px 0 rgba(0, 0, 0, 0.5)",
             },
         }
-    }
+    },
 })
 
 const textStyles = defineTextStyles({

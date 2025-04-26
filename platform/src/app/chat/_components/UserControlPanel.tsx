@@ -46,7 +46,7 @@ export function UserControlPanel(props: Props) {
 
 
     return (
-        <HStack w={"full"} p={"2"} bg={"bg.100/75"} backdropBlur={"2xl"} shadow={"custom.sm"} rounded={"2xl"} cursor={"pointer"} {...props}>
+        <HStack w={"full"} p={"2"} bg={"bg.50/75"} backdropBlur={"2xl"} shadow={"custom.sm"} rounded={"2xl"} cursor={"pointer"} {...props}>
             <Icon color={generateColorFromAddress(currentAccount?.address)}>
                 <ChatiwalMascotIcon size={32} />
             </Icon>

@@ -1,8 +1,10 @@
-import { HStack } from "@chakra-ui/react";
+import { HStack, VStack } from "@chakra-ui/react";
 import { Provider } from "./provider";
 import { ControlPanel } from "./_components/ControlPanel";
 import { Effects } from "./_components/Effects";
 import ChatGuard from "./_components/ChatGuard";
+import { LayoutLayout } from "@/components/ui/layout";
+import { Header } from "./_components/Header";
 
 export default function Layout({
     children,
@@ -10,11 +12,14 @@ export default function Layout({
     return (
         <ChatGuard>
             <Provider>
-                <Effects />
-                <HStack w={"full"} h={"full"} overflow={"auto"}>
-                    <ControlPanel flex={"1 0"} />
-                    {children}
-                </HStack>
+                <LayoutLayout>
+                    <Effects />
+                    <Header />
+                    <HStack gap={"6"} w={"full"} h={"full"}>
+                        <ControlPanel flex={"1"} />
+                        {children}
+                    </HStack>
+                </LayoutLayout>
             </Provider>
         </ChatGuard>
     )

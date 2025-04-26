@@ -43,12 +43,10 @@ export interface LimitedReadOptions extends MessageOptionsBase {
 }
 
 export interface FeeBasedOptions extends MessageOptionsBase {
-    type: MessageType.FeeBased;
     policy: FeeBasedPolicy;
 }
 
 export interface CompoundOptions extends MessageOptionsBase {
-    type: MessageType.Compound;
     timeLock: TimeLockPolicy;
     limitedRead: LimitedReadPolicy;
     feePolicy: FeeBasedPolicy;

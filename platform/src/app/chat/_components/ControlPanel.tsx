@@ -1,8 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { Box, Heading, HStack, Icon, Skeleton, StackProps, VStack, Text } from "@chakra-ui/react";
-import { useQuery, Query } from "@tanstack/react-query";
+import { Heading, HStack, Icon, Skeleton, StackProps, VStack, Text } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { IoIosAdd } from "react-icons/io";
 
@@ -14,7 +14,6 @@ import { UserControlPanel } from "./UserControlPanel";
 import { TGroup } from "@/types";
 import { useParams } from "next/navigation";
 import EmptyContent from "@/components/ui/empty-content";
-import { generateColorFromAddress } from "@/libs";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
@@ -43,41 +42,16 @@ export function ControlPanel(props: Props) {
 
     return (
         <VStack
-            pos={"relative"}
-            overflow={"hidden"}
             zIndex={"0"}
             h={"full"}
-            p={"4"}
-            bg={"bg.50"}
-            backdropBlur={"2xl"}
+            p={"6"}
+            bg={"bg.200/75"}
+            backdropFilter={"blur(256px)"}
             rounded={"4xl"}
             gap={"6"}
+            shadow={"custom.md"}
             {...props}
         >
-            <Box
-                pos={"absolute"}
-                bottom={0}
-                left={0}
-                w={"32"}
-                h={"32"}
-                zIndex={"-1"}
-                bg={currentAccount ? generateColorFromAddress(currentAccount.address) : "primary"}
-                borderRadius={"full"}
-                filter={"blur(128px)"}
-                pointerEvents={"none"}
-            />
-            <Box
-                pos={"absolute"}
-                bottom={0}
-                left={0}
-                w={"16"}
-                h={"16"}
-                zIndex={"-1"}
-                bg={currentAccount ? generateColorFromAddress(currentAccount.address) : "primary"}
-                borderRadius={"full"}
-                filter={"blur(64px)"}
-                pointerEvents={"none"}
-            />
             <ControlPanelHeader myGroupsQuery={myGroupsQuery} />
             <ControlPanelBody myGroupsQuery={myGroupsQuery} />
             <ControlPanelFooter />
@@ -126,9 +100,9 @@ interface ControlPanelHeaderProps {
 function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
     const { data: myGroups, isLoading } = myGroupsQuery;
     return (
-        <HStack bg={"bg.200"} w={"full"} px={"4"} py={"2"} justify={"space-between"} rounded={"2xl"}>
-            <Heading as={"h6"} size={"lg"}>Group</Heading>
-            <Text color={"fg.700"}>{myGroups?.length || 0}</Text>
+        <HStack w={"full"} px={"4"} py={"2"} justify={"space-between"} rounded={"2xl"}>
+            <Heading as={"h6"} size={"2xl"}>Group</Heading>
+            <Text color={"fg.700"} fontSize={"lg"}>{myGroups?.length || 0}</Text>
         </HStack>
     )
 }

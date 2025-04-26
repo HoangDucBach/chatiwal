@@ -1,4 +1,3 @@
-import { HStack } from "@chakra-ui/react";
 import { ChatWelcomePlaceholder } from "./_components/Chat";
 
 export default function Page() {

@@ -1,15 +1,7 @@
-export enum MediaType {
-    IMAGE = 'image',
-    VIDEO = 'video',
-    AUDIO = 'audio',
-    DOCUMENT = 'document',
-    GIF = 'gif'
-}
-
 export type MediaContent = {
     id: string;
-    type: MediaType;
-    url: string;
+    url?: string;
+    raw?: Uint8Array;
     name?: string;
     size?: number;
     duration?: number;
@@ -17,7 +9,7 @@ export type MediaContent = {
         width: number;
         height: number;
     };
-    mimeType?: string;
+    mimeType: string;
 };
 
 export type TGroup = {
@@ -39,10 +31,7 @@ export type TMessageBase = {
     id: string;
     owner: string;
     groupId: string;
-    content: {
-        text?: string;
-        media?: MediaContent[];
-    };
+    content?: MediaContent[];
     createdAt?: number;
 };
 

@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { generateColorFromAddress } from "@/libs";
-import { MediaContent, MediaType, TMessageBase } from "@/types";
+import { MediaContent, TMessageBase } from "@/types";
 
 interface ContentProps {
     self?: boolean;
@@ -23,9 +23,10 @@ export function Content(props: ContentProps) {
     const mediaNode = useMemo(() => {
         if (!media) return null;
 
-        const isImage = media.type === MediaType.IMAGE || media.type === MediaType.GIF;
-        const isVideo = media.type === MediaType.VIDEO;
-        const isAudio = media.type === MediaType.AUDIO;
+        const isImage = media.mimeType.startsWith("image/");
+        const isVideo = media.mimeType.startsWith("video/");
+        const isAudio = media.mimeType.startsWith("audio/");
+        const isText = media.mimeType.startsWith("text/");
 
         if (isImage) {
             return (
@@ -60,20 +61,23 @@ export function Content(props: ContentProps) {
             );
         }
 
+        if (isText) {
+            return (
+                <Text
+                    fontSize={"sm"}
+                    color={"fg"}
+                    w={["full", "full", "full", "fit"]}
+                >
+                    {text}
+                </Text>
+            );
+        }
+
         return null;
     }, [media]);
 
     return (
         <VStack align={"start"} justify={"start"} gap={"1"} w={["full", "full", "fit", "fit"]}>
-            {text && (
-                <Text
-                    fontSize={"sm"}
-                    color={self ? "primary.fg" : "fg"}
-                    w={["full", "full", "full", "fit"]}
-                >
-                    {text}
-                </Text>
-            )}
             {mediaNode}
         </VStack>
     )
@@ -87,7 +91,7 @@ export function MessageBase(props: MessageBaseProps) {
     const channelName = message.groupId;
     const { channel } = useChannel({ channelName })
     const { data: isOnline } = useQuery({
-        queryKey: ["messages::get", message.id],
+        queryKey: ["messages::group::get", message.id],
         queryFn: async () => {
             const res = await channel.presence.get({
                 clientId: message.owner,
@@ -103,12 +107,12 @@ export function MessageBase(props: MessageBaseProps) {
         return (
             <ChakraAvatar.Root variant="subtle">
                 <Icon color={generateColorFromAddress(message.owner)}>
-                    <ChatiwalMascotIcon size={48} />
+                    <ChatiwalMascotIcon size={32} />
                 </Icon>
                 <Float placement="bottom-end" offsetX="1" offsetY="1">
                     <Circle
                         bg={isOnline ? "green.500" : "gray.500"}
-                        size="8px"
+                        size="6px"
                         outline="0.2em solid"
                         outlineColor="bg"
                     />
@@ -119,19 +123,19 @@ export function MessageBase(props: MessageBaseProps) {
 
     const Header = () => {
         return (
-            <HStack>
+            <HStack flexDirection={self ? "row-reverse" : "row"}>
                 {
-                    !self && <Text
+                    <Text
                         fontSize={"md"}
-                        color={self ? "primary.fg" : "fg"}
+                        color={"fg"}
                         fontWeight={"medium"}
                     >
-                        {formatAddress(message.owner)}
+                        {self ? "You" : formatAddress(message.owner)}
                     </Text>
                 }
                 <Text
                     fontSize={"sm"}
-                    color={self ? "primary.400" : "fg.800"}
+                    color={"fg.800"}
                     fontWeight={"medium"}
                 >
                     {new Date(message?.createdAt!).toLocaleString("en-US", {
@@ -162,21 +166,19 @@ export function MessageBase(props: MessageBaseProps) {
                     w={["100%", "80%", "70%", "fit"]}
                     maxW={[undefined, undefined, undefined, "80%"]}
                     h={"fit"}
-                    bg={self ? "primary" : "bg.200"}
-                    rounded={self ? "2xl" : "3xl"}
                     p={"2"}
                     {...props}
                 >
-                    <HStack justify={"start"} align={"start"} >
-                        {self ? null : <Avatar />}
-                        <VStack align={"start"} w={"full"} gap={"1"}>
+                    <VStack justify={"start"} align={self ? "end" : "start"} >
+                        <Avatar />
+                        {/* <VStack align={self ? "end" : "start"} w={"full"} gap={"1"}>
                             <Header />
                             {message.content.text && <Content self={self} text={message.content.text} />}
-                        </VStack>
-                    </HStack>
+                        </VStack> */}
+                    </VStack>
                 </Box>
                 <HStack flexWrap={"wrap"}>
-                    {message.content.media && message.content.media.map((media, index) => (
+                    {message.content && message.content.map((media, index) => (
                         <Content
                             self={self}
                             key={index}

@@ -4,7 +4,6 @@ import { AblyProvider } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import * as Ably from "ably";
 import { ABLY_API_KEY } from "@/utils/constants";
-import ChatGuard from "./_components/ChatGuard";
 
 export function Provider({
     children,
