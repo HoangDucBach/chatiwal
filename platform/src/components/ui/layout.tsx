@@ -13,3 +13,15 @@ export function PageLayout({ children, ...props }: PageLayoutProps) {
         </ chakra.main>
     )
 }
+
+interface LayoutLayoutProps extends CenterProps {
+}
+export function LayoutLayout({ children, ...props }: PageLayoutProps) {
+    return (
+        <chakra.main w={"full"} h={"full"} overflowY={"auto"}>
+            <Center flexDirection={"column"} {...props} w={"full"} h={"full"}>
+                {children}
+            </Center>
+        </ chakra.main>
+    )
+}

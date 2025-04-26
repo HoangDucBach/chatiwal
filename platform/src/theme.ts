@@ -166,6 +166,10 @@ const config = defineConfig({
     globalCss: {
         body: {
             bg: "bg",
+            bgGradient: "to-t",
+            gradientFrom: "bg.50",
+            gradientVia: "bg.200",
+            gradientTo: "bg.300",
         },
     }
 })

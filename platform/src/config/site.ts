@@ -4,9 +4,9 @@ export const siteConfig = {
     description: "Empower Evolving Conversations with E2EE and Full Control",
     hotFeatures: [
         "End-to-End Encryption",
-        "Full Control",
         "Envolving Conversations",
-        "Policy Messages"
+        "Policy Messages",
+        "Full Control"
     ],
     navLinks: [
         {
