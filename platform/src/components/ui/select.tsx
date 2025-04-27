@@ -16,10 +16,10 @@ export const SelectTrigger = React.forwardRef<
   const { children, clearable, ...rest } = props
   return (
     <ChakraSelect.Control {...rest}>
-      <ChakraSelect.Trigger rounded={"full"} ref={ref}>{children}</ChakraSelect.Trigger>
+      <ChakraSelect.Trigger rounded={"2xl"} bg={"bg.300"} ref={ref}>{children}</ChakraSelect.Trigger>
       <ChakraSelect.IndicatorGroup>
         {clearable && <SelectClearTrigger />}
-        <ChakraSelect.Indicator />
+        <ChakraSelect.Indicator color={"fg"}/>
       </ChakraSelect.IndicatorGroup>
     </ChakraSelect.Control>
   )
@@ -54,8 +54,8 @@ export const SelectContent = React.forwardRef<
   const { portalled = true, portalRef, ...rest } = props
   return (
     <Portal disabled={!portalled} container={portalRef}>
-      <ChakraSelect.Positioner>
-        <ChakraSelect.Content rounded={"2xl"} {...rest} ref={ref} />
+      <ChakraSelect.Positioner bg={"transparent"}>
+        <ChakraSelect.Content bg={"bg.300/75"} shadow={"custom.md"} p={"3"} backdropFilter={"blur(16px)"} rounded={"3xl"} {...rest} ref={ref} />
       </ChakraSelect.Positioner>
     </Portal>
   )
@@ -67,9 +67,9 @@ export const SelectItem = React.forwardRef<
 >(function SelectItem(props, ref) {
   const { item, children, ...rest } = props
   return (
-    <ChakraSelect.Item key={item.value} item={item} {...rest} ref={ref}>
+    <ChakraSelect.Item key={item.value} item={item} bg={"transparent"} _hover={{ bg: "bg.400/75" }} p={"3"} rounded={"2xl"} {...rest} ref={ref}>
       {children}
-      <ChakraSelect.ItemIndicator />
+      <ChakraSelect.ItemIndicator color={"fg"} />
     </ChakraSelect.Item>
   )
 })

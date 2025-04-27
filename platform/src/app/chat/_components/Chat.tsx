@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Box, Heading, HStack, StackProps, Text, VStack, Textarea, TextareaProps, Center } from "@chakra-ui/react";
+import { Heading, StackProps, Text, VStack, Center } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
@@ -14,9 +14,7 @@ import { SuperMessageNoPolicy } from "@/sdk";
 import { toaster } from "@/components/ui/toaster";
 import { useGroup } from "../_hooks/useGroupId";
 import { Tag } from "@/components/ui/tag";
-import { ComposerInput } from "./MintSuperMessage";
-import { useChatiwalClient } from "@/hooks/useChatiwalClient";
-import { useForm } from "react-hook-form";
+import { ComposerInput } from "./ComposerInput";
 
 const ScrollMotionVStack = motion.create(VStack);
 
@@ -184,27 +182,18 @@ export function ChatWelcomePlaceholder(props: Props) {
     return (
         <VStack
             pos={"relative"}
-            bg={"bg.100"}
+            bg={"bg.200/75"}
             h={"full"}
             rounded={"4xl"}
             p={"4"}
             gap={"4"}
             justifyContent={"center"}
             alignItems={"center"}
+            backdropFilter={"blur(256px)"}
             overflow={"hidden"}
             {...props}
         >
             <Heading as="h3" size={"4xl"} fontWeight={"semibold"}>Welcome to Chatiwal</Heading>
-            <Box
-                pos={"absolute"}
-                translateX={"-50%"}
-                translateY={"-50%"}
-                w={"32"}
-                h={"32"}
-                bg={"primary"}
-                borderRadius={"full"}
-                filter={"blur(96px)"}
-            />
             <Text color={"fg.900"}>Select group to chat and chill</Text>
             <Tag colorPalette={"white"} fontSize={"lg"} outlineWidth={"8px"} py="1" px={"2"}>
                 Your chat, your key, your storage
@@ -212,231 +201,3 @@ export function ChatWelcomePlaceholder(props: Props) {
         </VStack>
     )
 }
-
-// interface MessageInputProps extends Omit<TextareaProps, 'onChange'> {
-//     channelName: string;
-//     onMessageSend: (plainMessage: TMessageBase, encryptedMessage: TMessageBase) => void;
-// }
-// function MessageInput({ channelName, onMessageSend, ...props }: MessageInputProps) {
-
-//     const { channel } = useChannel({ channelName });
-//     const [message, setMessage] = useState<string>("");
-//     const { encryptMessage } = useSealClient();
-//     const currentAccount = useCurrentAccount();
-
-//     const handlePublish = async () => {
-//         if (!message) return;
-//         if (!currentAccount) return;
-
-//         const messageBase = new SuperMessageNoPolicy({
-//             groupId: channelName,
-//             owner: currentAccount.address,
-//             data: {
-//                 content: {
-//                     text: message,
-//                     media: [],
-//                 },
-//             }
-//         })
-//         const selfMessageData: TMessageBase = {
-//             id: messageBase.getId(),
-//             groupId: channelName,
-//             owner: currentAccount.address,
-//             content: [
-//                 {
-//                     id: "media-001",
-//                     raw: new TextEncoder().encode(message),
-//                     name: "Cute kitten",
-//                     mimeType: "text/plain",
-//                 }
-//             ],
-//             createdAt: Date.now(),
-//         }
-
-//         const encryptedMessage = await encryptMessage(messageBase);
-
-//         const encryptedMessageData: TMessageBase = {
-//             id: encryptedMessage.getId(),
-//             groupId: channelName,
-//             owner: currentAccount.address,
-//             content: messageBase.getData().content,
-//             createdAt: Date.now(),
-//         }
-
-//         channel.publish(AblyChannelManager.EVENTS.MESSAGE_SEND, encryptedMessageData)
-
-//         onMessageSend(selfMessageData, encryptedMessageData);
-//     }
-
-//     return (
-//         <Textarea
-//             bg={"bg.200"}
-//             resize={"none"}
-//             placeholder="Message"
-//             _placeholder={{
-//                 color: "fg.contrast"
-//             }}
-//             rounded={"2xl"}
-//             variant={"subtle"}
-//             size={"lg"}
-//             shadow={"custom.sm"}
-//             value={message}
-//             onChange={(e) => setMessage(e.target.value)}
-//             onKeyDown={(e) => {
-//                 if (e.key === "Enter") {
-//                     handlePublish();
-//                     setMessage("");
-//                 }
-//             }}
-//             {...props}
-//         />
-//     )
-// }
-
-// interface FormValues {
-//     messageText: string;
-//     messageType: string;
-//     metadataBlobId: string;
-//     timeFrom: number;
-//     timeTo: number;
-//     maxReads: number;
-//     fee: number;
-//     recipient: string;
-//     coinType: string;
-// }
-
-
-// interface ComposerInputProps extends StackProps {
-//     messageInputProps: {
-//         channelName: string;
-//         onMessageSend: (plainMessage: TMessageBase, encryptedMessage: TMessageBase) => void;
-//     };
-// }
-// function ComposerInput({ messageInputProps, ...props }: ComposerInputProps) {
-//     const {
-//         mint_super_message_time_lock_and_transfer,
-//         mint_super_message_no_policy_and_transfer,
-//         mint_super_message_fee_based_and_transfer,
-//         mint_super_message_limited_read_and_transfer,
-//         mint_super_message_compound_and_transfer,
-//     } = useChatiwalClient()
-
-//     const {
-//         handleSubmit,
-//         control,
-//         watch,
-//         formState: { errors },
-//         reset: resetForm,
-//         setValue, // To set messageText
-//         getValues // To get messageText during submit if needed (though Controller is better)
-//     } = useForm<FormValues>({
-//         defaultValues: {
-//             messageText: '', // Initialize message text
-//             messageType: 'no_policy', // Default to no policy
-//             metadataBlobId: '',
-//             timeFrom: Math.floor(Date.now() / 1000),
-//             timeTo: Math.floor(Date.now() / 1000) + 86400, // 1 day later
-//             maxReads: 1,
-//             fee: 0,
-//             recipient: '',
-//             coinType: '0x2::sui::SUI', // Default SUI coin type
-//         }
-//     });
-
-//     const messageType = watch('messageType');
-//     const messageText = watch('messageText');
-
-//     // --- Submit Handler ---
-//     const onSubmit = (data: FormValues) => {
-//         // ** Crucial Step: Handle messageText -> metadataBlobId **
-//         // If you need to create a metadata blob from data.messageText here,
-//         // do it now and get the resulting ID. Replace data.metadataBlobId if necessary.
-//         // Example (pseudo-code):
-//         // let finalMetadataBlobId = data.metadataBlobId;
-//         // if (!finalMetadataBlobId && data.messageText) {
-//         //    try {
-//         //       finalMetadataBlobId = await createMetadataBlob(data.messageText); // Your function
-//         //    } catch (blobError) {
-//         //       toaster.error({ title: "Metadata Error", description: "Failed to prepare message metadata." });
-//         //       return;
-//         //    }
-//         // } else if (!finalMetadataBlobId && data.messageType !== 'no_policy') {
-//         //     // Require blob ID if not automatically created and policy needs it
-//         //     toaster.error({ title: "Input Error", description: "Metadata Blob ID is required for this policy." });
-//         //     return;
-//         // }
-
-//         // For now, we proceed assuming data.metadataBlobId is correct or handled implicitly
-
-//         if (!group?.id) {
-//             toaster.error({ title: "Error", description: "Group context is missing." });
-//             return;
-//         }
-
-//         try {
-//             const params: Partial<MintParams> & { type: SuperMessageType, groupId: string, metadataBlobId: string } = {
-//                 type: data.messageType,
-//                 groupId: group.id, // Use group id from hook
-//                 metadataBlobId: data.metadataBlobId, // Use blob ID from form
-//                 // messageContent: data.messageText // Maybe pass text separately if needed by mutation?
-//             };
-
-//             // Add policy-specific parameters, converting to BigInt where needed
-//             switch (data.messageType) {
-//                 case 'time_lock':
-//                     params.timeFrom = BigInt(data.timeFrom);
-//                     params.timeTo = BigInt(data.timeTo);
-//                     break;
-//                 case 'limited_read':
-//                     params.maxReads = BigInt(data.maxReads);
-//                     break;
-//                 case 'fee_based':
-//                     params.fee = BigInt(data.fee); // Already BigInt in mutation, but ensure conversion if needed
-//                     params.recipient = data.recipient;
-//                     params.coinType = data.coinType;
-//                     break;
-//                 case 'compound':
-//                     params.timeFrom = BigInt(data.timeFrom);
-//                     params.timeTo = BigInt(data.timeTo);
-//                     params.maxReads = BigInt(data.maxReads);
-//                     params.fee = BigInt(data.fee); // Already BigInt in mutation
-//                     params.recipient = data.recipient;
-//                     params.coinType = data.coinType;
-//                     break;
-//                 // No extra params for 'no_policy'
-//             }
-
-//             mintSuperMessage(params as MintParams); // Assert as full MintParams
-
-//         } catch (error) {
-//             console.error("Pre-mutation validation error:", error);
-//             toaster.error({
-//                 title: "Validation Error",
-//                 description: error instanceof Error ? error.message : "Invalid input values",
-//                 duration: 5000,
-//             });
-//         }
-//     };
-
-
-//     return (
-//         <VStack
-//             w={"full"}
-//             p={"3"}
-//             bg={"bg.100/75"}
-//             backdropBlur={"2xl"}
-//             shadow={"custom.sm"}
-//             rounded={"3xl"}
-//             cursor={"pointer"}
-//             {...props}
-//         >
-//             <MessageInput
-//                 channelName={messageInputProps.channelName}
-//                 onMessageSend={messageInputProps.onMessageSend}
-//             />
-//             <HStack justify={"end"}>
-//                 <MintSuperMessage />
-//             </HStack>
-//         </VStack>
-//     )
-// }

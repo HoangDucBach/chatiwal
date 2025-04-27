@@ -202,7 +202,6 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                                         )}
                                     />
 
-                                    {/* Tags Field */}
                                     <Controller
                                         name="tags"
                                         control={control}

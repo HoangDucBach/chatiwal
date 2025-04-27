@@ -8,11 +8,14 @@ import {
     HStack,
     Icon,
     CloseButton,
-    FileUpload
+    FileUpload,
+    For,
+    VStack,
 } from "@chakra-ui/react";
-import { HiUpload, HiDocumentText, HiPhotograph, HiFilm } from "react-icons/hi";
+import { HiDocumentText, HiPhotograph, HiFilm } from "react-icons/hi";
+import { ImAttachment } from "react-icons/im";
 import { nanoid } from "nanoid";
-
+import { Tooltip } from "@/components/ui/tooltip";
 export type MediaContent = {
     id: string;
     url?: string;
@@ -27,21 +30,58 @@ export type MediaContent = {
     mimeType: string;
 };
 
+function FileCard({ mediaContent, removeFile }: { mediaContent: MediaContent, removeFile: () => void }) {
+    const getFileIcon = (mimeType: string) => {
+        if (mimeType.startsWith('image/')) return HiPhotograph;
+        if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) return HiFilm;
+        return HiDocumentText;
+    };
+
+    return (
+        <HStack
+            key={mediaContent.id}
+            bg="bg.400"
+            px={"2"}
+            py={"1"}
+            rounded="2xl"
+            justify="space-between"
+            align={"start"}
+            cursor={"pointer"}
+        >
+            <Tooltip content={mediaContent.name} openDelay={100} closeDelay={100}>
+                <HStack align={"start"}>
+                    <Icon as={getFileIcon(mediaContent.mimeType)} boxSize={5} color="accent.500" />
+                    <VStack gap={0} align={"start"}>
+                        <Text fontSize="xs" fontWeight="medium" maxW={"16"} truncate>
+                            {mediaContent.name}
+                        </Text>
+                        {mediaContent.size && (
+                            <Text fontSize="2xs" color="fg.contrast">
+                                {(mediaContent.size / 1024).toFixed(1)} KB
+                            </Text>
+                        )}
+                    </VStack>
+                </HStack>
+            </Tooltip>
+            <CloseButton size="sm" onClick={removeFile} />
+        </HStack>
+    )
+}
 interface MessageInputProps {
     value: string;
-    mediaContent?: MediaContent | null;
     onChange: (value: string, mediaContent?: MediaContent | null) => void;
+    tools?: React.ReactNode;
     [key: string]: any;
 }
 
-function MessageInput({ value, mediaContent, onChange, ...props }: MessageInputProps) {
+function MessageInput({ value, onChange, ...props }: MessageInputProps) {
+    const [mediaContents, setMediaContents] = useState<MediaContent[]>([]);
     const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-        onChange(e.target.value, mediaContent);
+        onChange(e.target.value, mediaContents[0]);
     };
 
     const handleFileChange = useCallback(async (files: File[]) => {
         if (!files || files.length === 0) {
-            // If no files are selected, maintain the current text value but clear media
             onChange(value, null);
             return;
         }
@@ -54,7 +94,6 @@ function MessageInput({ value, mediaContent, onChange, ...props }: MessageInputP
                 const arrayBuffer = event.target.result as ArrayBuffer;
                 const uint8Array = new Uint8Array(arrayBuffer);
 
-                // Create a new MediaContent object with the file data
                 const newMediaContent: MediaContent = {
                     id: nanoid(), // Generate a unique ID
                     raw: uint8Array,
@@ -63,7 +102,6 @@ function MessageInput({ value, mediaContent, onChange, ...props }: MessageInputP
                     mimeType: file.type
                 };
 
-                // If it's an image, try to get dimensions
                 if (file.type.startsWith('image/')) {
                     const img = new Image();
                     img.onload = () => {
@@ -71,21 +109,20 @@ function MessageInput({ value, mediaContent, onChange, ...props }: MessageInputP
                             width: img.width,
                             height: img.height
                         };
-                        // Update the state with dimensions
                         onChange(value, newMediaContent);
+                        URL.revokeObjectURL(objectUrl);
                     };
 
-                    // Create a URL for the image to load dimensions
                     const objectUrl = URL.createObjectURL(file);
                     img.src = objectUrl;
 
                     // Cleanup the URL after loading
-                    return () => URL.revokeObjectURL(objectUrl);
                 } else if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
                     // For video/audio, we could get duration, but that requires more complex handling
                     // This would typically be done with the media element's loadedmetadata event
                     // For simplicity, we're skipping that here
                 }
+                setMediaContents((prev) => [...prev, newMediaContent]);
 
                 // Call onChange with both the current text value and the new media content
                 onChange(value, newMediaContent);
@@ -97,13 +134,8 @@ function MessageInput({ value, mediaContent, onChange, ...props }: MessageInputP
 
     const removeFile = useCallback(() => {
         onChange(value, null);
+        setMediaContents((prev) => prev.filter((mediaContent) => mediaContent.id !== mediaContents[0].id));
     }, [value, onChange]);
-
-    const getFileIcon = (mimeType: string) => {
-        if (mimeType.startsWith('image/')) return HiPhotograph;
-        if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) return HiFilm;
-        return HiDocumentText;
-    };
 
     const acceptedFileTypes = [
         'image/*',     // All image types
@@ -117,65 +149,66 @@ function MessageInput({ value, mediaContent, onChange, ...props }: MessageInputP
     ];
 
     return (
-        <Box w="100%">
-            <Flex direction="column" gap={2}>
-                {mediaContent && (
-                    <HStack
-                        bg="bg.300"
-                        p={2}
-                        rounded="lg"
-                        justify="space-between"
-                    >
-                        <HStack>
-                            <Icon as={getFileIcon(mediaContent.mimeType)} boxSize={5} color="accent.500" />
-                            <Text fontSize="sm" fontWeight="medium">
-                                {mediaContent.name}
-                            </Text>
-                            {mediaContent.size && (
-                                <Text fontSize="xs" color="fg.muted">
-                                    ({(mediaContent.size / 1024).toFixed(1)} KB)
-                                </Text>
-                            )}
-                        </HStack>
-                        <CloseButton size="sm" onClick={removeFile} />
-                    </HStack>
-                )}
+        <VStack gap={0} bg={"bg.300"}
+            _focusWithin={{
+                outline: "1px solid",
+                outlineColor: "fg",
+                outlineOffset: "2px",
+            }}
+            p={2}
+            rounded="3xl"
+        >
+            <Textarea
+                resize="none"
+                focusRing={"none"}
+                border={"none"}
+                bg="transparent"
+                placeholder="Type your message here..."
+                _placeholder={{
+                    color: "fg.contrast"
+                }}
+                variant="subtle"
+                size="sm"
+                // value={value}
+                onChange={handleTextChange}
+                {...props}
+            />
 
-                <Textarea
-                    bg="bg.200"
-                    resize="none"
-                    placeholder="Type your message here..."
-                    _placeholder={{
-                        color: "fg.contrast"
-                    }}
-                    rounded="2xl"
-                    variant="subtle"
-                    size="lg"
-                    shadow="custom.sm"
-                    value={value}
-                    onChange={handleTextChange}
-                    {...props}
-                />
-
-                <Flex justify="flex-end">
-                    <FileUpload.Root accept={acceptedFileTypes} onFileAccept={(acceptFiles) => handleFileChange(acceptFiles.files)}>
-                        <FileUpload.HiddenInput />
-                        <FileUpload.Trigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                colorScheme="teal"
-                            >
-                                <Icon>
-                                    <HiUpload />
-                                </Icon>
-                                Upload file
-                            </Button>
-                        </FileUpload.Trigger>
-                    </FileUpload.Root>
-                </Flex>
-            </Flex>
-        </Box>
+            <HStack w="full">
+                <FileUpload.Root w={"fit"} accept={acceptedFileTypes} onFileAccept={(acceptFiles) => handleFileChange(acceptFiles.files)}>
+                    <FileUpload.HiddenInput />
+                    <FileUpload.Trigger asChild>
+                        <Button
+                            variant="plain"
+                            size="sm"
+                            color={"fg.contrast"}
+                            _hover={{
+                                color: "fg"
+                            }}
+                        >
+                            <Icon>
+                                <ImAttachment />
+                            </Icon>
+                        </Button>
+                    </FileUpload.Trigger>
+                </FileUpload.Root>
+                <HStack gap={"2"} w={"full"}>
+                    <For each={mediaContents} fallback={null}>
+                        {(mediaContent) => (
+                            <FileCard
+                                key={mediaContent.id}
+                                mediaContent={mediaContent}
+                                removeFile={() => {
+                                    setMediaContents((prev) => prev.filter((item) => item.id !== mediaContent.id));
+                                    onChange(value, null);
+                                }}
+                            />
+                        )}
+                    </For>
+                </HStack>
+                {props.tools}
+            </HStack>
+        </VStack>
     );
 }
 

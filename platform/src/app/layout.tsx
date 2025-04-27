@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Center } from "@chakra-ui/react";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import "react-datepicker/dist/react-datepicker.css";
 import '@mysten/dapp-kit/dist/index.css';
 import { Toaster } from "@/components/ui/toaster";
 import { siteConfig } from "@/config/site";
