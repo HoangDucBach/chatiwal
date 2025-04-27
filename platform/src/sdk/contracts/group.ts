@@ -20,13 +20,6 @@ export const GroupStruct = bcs.struct("Group", {
     metadata_blob_id: bcs.String,
 });
 
-
-
-export const RegistryStruct = bcs.struct("Registry", {
-    id: bcs.Address,
-    user_groups: bcs.map(bcs.Address, bcs.vector(bcs.Address))
-});
-
 /**
  * Error constants matching the Move module
  */
@@ -53,12 +46,10 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
         ]
     }) {
         const moveArgsTypes = [
-            `${packageId}::group::Registry`,
             `${MOVE_STDLIB_ADDRESS}::string::String`, // metadataBlobId
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`,   // c
         ];
         const args = [
-            REGISTRY_OBJECT_ID,
             ...options.arguments,
             SUI_CLOCK_OBJECT_ID,
         ];
@@ -111,14 +102,12 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
     }) {
         const moveArgsTypes = [
             `&${packageId}::group::GroupCap`,       // groupCapId (as reference to the cap object)
-            `&${packageId}::group::Registry`,      // groupId (as reference to the group object)
             `&mut ${packageId}::group::Group`,      // groupId (as mutable reference to group object)
             `address`,                              // member
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
             options.arguments[0], // groupCapId
-            REGISTRY_OBJECT_ID,
             options.arguments[1], // groupId
             options.arguments[2], // member
             SUI_CLOCK_OBJECT_ID,
@@ -144,14 +133,12 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
     }) {
         const moveArgsTypes = [
             `&${packageId}::group::GroupCap`,       // groupCapId (as reference)
-            `&${packageId}::group::Registry`,      // groupId (as reference)
             `&mut ${packageId}::group::Group`,      // groupId (as mutable reference)
             `address`,                              // member
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
             options.arguments[0], // groupCapId
-            REGISTRY_OBJECT_ID,
             options.arguments[1], // groupId
             options.arguments[2], // member
             SUI_CLOCK_OBJECT_ID,
@@ -172,13 +159,11 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
         ]
     }) {
         const moveArgsTypes = [
-            `&mut ${packageId}::group::Registry`, // registry
             `address`,                              // user
             `&mut ${packageId}::group::Group`,      // group (as mutable reference)
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
-            REGISTRY_OBJECT_ID,
             ...options.arguments,
             SUI_CLOCK_OBJECT_ID,
         ];
@@ -213,29 +198,6 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
     }
 
     // --- View Functions (Transaction Builders) ---
-
-    function registry_get_user_groups(options: {
-        arguments: [
-            user: RawTransactionArgument<Address>, // address
-        ]
-    }) {
-        const moveArgsTypes = [
-            `&${packageId}::group::Registry`,
-            `address`, // user
-        ];
-
-        const args = [
-            REGISTRY_OBJECT_ID,
-            ...options.arguments,
-        ];
-
-        return (tx: Transaction) =>
-            tx.moveCall({
-                target: `${packageId}::group::registry_get_user_groups`,
-                arguments: normalizeMoveArguments(args, moveArgsTypes),
-                typeArguments: []
-            });
-    }
 
     /**
      * Get group ID from the Group object.
@@ -386,7 +348,6 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
         remove_member,
         leave_group,
         seal_approve,
-        registry_get_user_groups,
         group_get_group_id,
         group_get_group_member,
         group_get_group_metadata_blob_id,

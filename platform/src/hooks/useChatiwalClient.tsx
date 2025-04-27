@@ -8,7 +8,7 @@ import { InvalidGroupCapError } from "@/sdk/errors";
 import { Address, ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
 import { bcs, BcsType } from "@mysten/sui/bcs";
-import { SuperMessageNoPolicyStruct, FeeBasedPolicyStruct, GroupStruct, LimitedReadPolicyStruct, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct, TimeLockPolicyStruct, GroupCapStruct, RegistryStruct } from "@/sdk/contracts";
+import { SuperMessageNoPolicyStruct, FeeBasedPolicyStruct, GroupStruct, LimitedReadPolicyStruct, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct, TimeLockPolicyStruct, GroupCapStruct, SuperMessageTimeLockStruct } from "@/sdk/contracts";
 import { CoinStruct } from "@/sdk/contracts/utils";
 import { SuiGraphQLClient } from '@mysten/sui/graphql';
 import { graphql } from '@mysten/sui/graphql/schemas/latest';
@@ -18,13 +18,13 @@ type GroupCapData = typeof GroupCapStruct.$inferType;
 type TimeLockPolicyData = typeof TimeLockPolicyStruct.$inferType;
 type LimitedReadPolicyData = typeof LimitedReadPolicyStruct.$inferType;
 type FeeBasedPolicyData = typeof FeeBasedPolicyStruct.$inferType;
+type MessageLimitedReadData = typeof LimitedReadPolicyStruct.$inferType;
 type SuperMessageNoPolicyData = typeof SuperMessageNoPolicyStruct.$inferType;
-type SuperMessageTimeLockData = typeof SuperMessageLimitedReadStruct.$inferType;
+type SuperMessageTimeLockData = typeof SuperMessageTimeLockStruct.$inferType;
 type SuperMessageLimitedReadData = typeof SuperMessageLimitedReadStruct.$inferType;
 type SuperMessageFeeBasedData = typeof SuperMessageFeeBasedStruct.$inferType;
 type SuperMessageCompoundData = typeof SuperMessageCompoundStruct.$inferType;
 type CoinData = typeof CoinStruct.$inferType;
-type RegistryData = typeof RegistryStruct.$inferType;
 
 export interface IGroupActions {
     mintGroupAndTransfer(metadataBlobId?: string): Promise<Transaction>;
@@ -67,11 +67,11 @@ export interface IMessageActions {
     // View Functions
 
     getSuperMessageNoPolicyData(messageId: string): Promise<SuperMessageNoPolicyData | undefined>;
-    getTimeLockPolicyData(messageId: string): Promise<SuperMessageNoPolicyData | undefined>;
+    getTimeLockPolicyData(messageId: string): Promise<TimeLockPolicyData | undefined>;
     getSuperMessageTimeLockData(messageId: string): Promise<SuperMessageTimeLockData | undefined>;
-    getLimitedReadPolicyData(messageId: string): Promise<SuperMessageLimitedReadData | undefined>;
+    getLimitedReadPolicyData(messageId: string): Promise<MessageLimitedReadData | undefined>;
     getSuperMessageLimitedReadData(messageId: string): Promise<SuperMessageLimitedReadData | undefined>;
-    getFeeBasedPolicyData(messageId: string): Promise<SuperMessageFeeBasedData | undefined>;
+    getFeeBasedPolicyData(messageId: string): Promise<FeeBasedPolicyData | undefined>;
     getSuperMessageFeeBasedData(messageId: string): Promise<SuperMessageFeeBasedData | undefined>;
     getSuperMessageCompoundData(messageId: string): Promise<SuperMessageCompoundData | undefined>;
     getCoinData(coinId: string): Promise<CoinData | undefined>;
@@ -244,6 +244,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         asMoveObject {
                         contents {
                             json 
+                            bcs
                         }
                         }
                     }
@@ -255,8 +256,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
             });
 
             if (!res) throw new Error("No group found");
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
 
-            return res.data?.object?.asMoveObject?.contents?.json as GroupData;
+            return GroupStruct.fromBase64(bcs!);
         },
 
         getGroupCapData: async (groupCapId) => {
@@ -266,7 +268,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $groupCapId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -279,7 +281,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No group cap found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as GroupCapData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return GroupCapStruct.fromBase64(bcs!);
         },
 
     };
@@ -523,7 +527,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $messageId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -536,7 +540,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No policy found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageTimeLockData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return TimeLockPolicyStruct.fromBase64(bcs!);
         },
 
         getSuperMessageTimeLockData: async (messageId: string) => {
@@ -546,7 +552,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $messageId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -559,7 +565,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No message found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageTimeLockData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return SuperMessageTimeLockStruct.fromBase64(bcs!);
         },
 
         getLimitedReadPolicyData: async (messageId: string) => {
@@ -569,7 +577,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $messageId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -582,7 +590,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No policy found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageLimitedReadData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return LimitedReadPolicyStruct.fromBase64(bcs!);
         },
 
         getSuperMessageLimitedReadData: async (messageId: string) => {
@@ -592,7 +602,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $messageId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -605,7 +615,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No message found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageLimitedReadData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return SuperMessageLimitedReadStruct.fromBase64(bcs!);
         },
 
         getFeeBasedPolicyData: async (messageId: string) => {
@@ -615,7 +627,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $messageId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -628,7 +640,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No policy found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageFeeBasedData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return FeeBasedPolicyStruct.fromBase64(bcs!);
         },
 
         getSuperMessageFeeBasedData: async (messageId: string) => {
@@ -638,7 +652,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $messageId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -651,7 +665,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No message found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageFeeBasedData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return SuperMessageFeeBasedStruct.fromBase64(bcs!);
         },
 
         getSuperMessageCompoundData: async (messageId: string) => {
@@ -661,7 +677,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $messageId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -674,7 +690,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No message found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageCompoundData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return SuperMessageCompoundStruct.fromBase64(bcs!);
         },
 
         getCoinData: async (coinId: string) => {
@@ -684,7 +702,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
                         object(address: $coinId) {
                             asMoveObject {
                                 contents {
-                                    json 
+                                    bcs 
                                 }
                             }
                         }
@@ -697,7 +715,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
             if (!res) throw new Error("No coin found");
 
-            return res.data?.object?.asMoveObject?.contents?.json as CoinData;
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return CoinStruct.fromBase64(bcs!);
         }
     };
 

@@ -1,13 +1,10 @@
 "use client"
 
-import { Button } from "@/components/ui/button";
-import { Heading, HStack, Icon, Skeleton, StackProps, VStack, Text } from "@chakra-ui/react";
+import { Heading, HStack, Skeleton, StackProps, VStack, Text } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
-import { IoIosAdd } from "react-icons/io";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
-import { toaster } from "@/components/ui/toaster";
 
 import { GroupCard } from "./GroupCard";
 import { UserControlPanel } from "./UserControlPanel";
@@ -15,52 +12,42 @@ import { TGroup } from "@/types";
 import { useParams } from "next/navigation";
 import EmptyContent from "@/components/ui/empty-content";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
-import { bcs } from "@mysten/sui/bcs";
-import { SuiGraphQLClient } from "@mysten/sui/graphql";
-import { graphql } from "@mysten/sui/graphql/schemas/latest";
-import { RegistryStruct } from "@/sdk";
+import { useSupabase } from "@/hooks/useSupabase";
+import { MintGroupButton } from "./MintGroupButton";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
-    const { getRegistry, getGroupData } = useChatiwalClient();
+    const { getGroupData } = useChatiwalClient();
+    const { getGroupMemberships } = useSupabase();
+    const suiClient = useSuiClient();
     const { readMessage } = useWalrusClient();
     const currentAccount = useCurrentAccount();
-    const suiClient = useSuiClient();
     const myGroupsQuery = useQuery({
         queryKey: ["groups::members"],
         queryFn: async () => {
             if (!currentAccount) throw new Error("Not connected");
 
-            console.log("fetching")
-            // const registry = await getRegistry();
-            const test = await suiClient.getDynamicFields({
-                parentId: "0x20efe3925dddb7cb5b3ecf050e5b087baf2ef82e31c94353137fa584e971a128"
-            })
-            const test1 = await suiClient.getDynamicFieldObject({
-                parentId: "0x20efe3925dddb7cb5b3ecf050e5b087baf2ef82e31c94353137fa584e971a128",
-                name: {
-                    type: "0x2::table::Table<address, 0x2::vec_set::VecSet<0x2::object::ID>>",
-                    value: "0xdc727e968b6f774ef5374c023fc9d060af613bd5be3dc342cd3eea7073dadea8"
+            const groupMembershipIds = await getGroupMemberships(currentAccount.address);
+            console.log("Group memberships 1:", groupMembershipIds);
+            const groupMemberShips: TGroup[] = [];
+
+            for (const groupId of groupMembershipIds) {
+                console.log("Group membership id:", groupId);
+                const data = await getGroupData(groupId);
+                console.log("Group membership data:", data);
+                if (data) {
+                    groupMemberShips.push({
+                        id: groupId,
+                        members: new Set<string>(data.members),
+                    });
                 }
-            })
-            console.log(test1)
-            console.log(test)
-            // console.log(await getGroupData("0x729b9265519e5e42f79c2d3214306f5dd8d8845c5b78edda3bd1e5ff53b16144"))
+            }
+            // console.log("Group memberships:", groupMemberShips);
 
-            // const groupIds = registry.user_groups.get(currentAccount.address) || [];
-            // const groups = await Promise.all(
-            //     groupIds.map(async (value) => {
-            //         const group = await getGroupData(value);
-            //         if (!group) return null;
-            //         return {
-            //             id: group.id,
-            //             members: new Set<string>(group.members),
-            //         } as TGroup;
-            //     })
-            // );
-
-            return [] as TGroup[];
+            return groupMemberShips;
         },
+        enabled: !!currentAccount,
+        retry: 0,
     });
 
     return (
@@ -101,13 +88,14 @@ function ControlPanelBody({ myGroupsQuery }: ControlPanelBodyProps) {
                     rounded={"3xl"}
                 />
                 :
-                myGroups ? myGroups.map((group, index) => (
-                    <GroupCard
-                        key={index}
-                        group={group}
-                        isSelected={group.id === id}
-                    />
-                ))
+                (myGroups && myGroups?.length) ?
+                    myGroups.map((group, index) => (
+                        <GroupCard
+                            key={index}
+                            group={group}
+                            isSelected={group.id === id}
+                        />
+                    ))
                     :
                     <EmptyContent
                         emptyText={"No groups found"}
@@ -132,46 +120,10 @@ function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
 }
 
 function ControlPanelFooter() {
-    const { mint_group_and_transfer } = useChatiwalClient();
-    const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
-
-    const handleCreateGroup = async () => {
-        try {
-            const tx = await mint_group_and_transfer();
-            signAndExecuteTransaction({
-                transaction: tx,
-            }, {
-                onSuccess: (res) => {
-                    toaster.success({
-                        title: "Group created successfully",
-                        description: "Your group has been created and you are the owner.",
-                    })
-                },
-                onError: (error) => {
-                    toaster.error({
-                        title: "Error creating group",
-                        description: "There was an error creating your group. Please try again.",
-                        meta: error,
-                    })
-                }
-            })
-        } catch (error) {
-            console.error("Error creating group", error);
-        }
-    }
 
     return (
         <VStack w={"full"} gap={"4"}>
-            <Button
-                colorPalette={"default"}
-                w={"full"}
-                onClick={handleCreateGroup}
-            >
-                <Icon>
-                    <IoIosAdd />
-                </Icon>
-                Mint group
-            </Button>
+            <MintGroupButton />
             <UserControlPanel />
         </VStack>
     )

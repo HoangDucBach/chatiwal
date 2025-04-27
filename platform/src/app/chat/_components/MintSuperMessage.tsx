@@ -312,7 +312,6 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                 metadataBlobId: message.getData().blobId || "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff", // Placeholder, replace with actual blob ID
             };
 
-            // Add policy-specific parameters, converting to BigInt where needed
             switch (data.messageType) {
                 case 'time_lock':
                     params.timeFrom = BigInt(data.timeFrom);
