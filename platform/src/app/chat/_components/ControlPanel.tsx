@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Heading, HStack, Icon, Skeleton, StackProps, VStack, Text } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { IoIosAdd } from "react-icons/io";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
@@ -15,40 +15,52 @@ import { TGroup } from "@/types";
 import { useParams } from "next/navigation";
 import EmptyContent from "@/components/ui/empty-content";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
+import { bcs } from "@mysten/sui/bcs";
+import { SuiGraphQLClient } from "@mysten/sui/graphql";
+import { graphql } from "@mysten/sui/graphql/schemas/latest";
+import { RegistryStruct } from "@/sdk";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
-    const { registry_get_user_groups, group_get_group_member, getGroupData } = useChatiwalClient();
+    const { getRegistry, getGroupData } = useChatiwalClient();
     const { readMessage } = useWalrusClient();
     const currentAccount = useCurrentAccount();
+    const suiClient = useSuiClient();
     const myGroupsQuery = useQuery({
         queryKey: ["groups::members"],
         queryFn: async () => {
             if (!currentAccount) throw new Error("Not connected");
 
-            const res = await registry_get_user_groups(currentAccount.address);
-            console.log("User groups", res);
-            const group = await getGroupData(res[0]);
-            console.log("g", group);
-            const groupPromises = res.map(async (groupId) => {
-                return {
-                    id: groupId,
-                    members: new Set<string>()
-                } satisfies TGroup;
-            });
+            console.log("fetching")
+            // const registry = await getRegistry();
+            const test = await suiClient.getDynamicFields({
+                parentId: "0x20efe3925dddb7cb5b3ecf050e5b087baf2ef82e31c94353137fa584e971a128"
+            })
+            const test1 = await suiClient.getDynamicFieldObject({
+                parentId: "0x20efe3925dddb7cb5b3ecf050e5b087baf2ef82e31c94353137fa584e971a128",
+                name: {
+                    type: "0x2::table::Table<address, 0x2::vec_set::VecSet<0x2::object::ID>>",
+                    value: "0xdc727e968b6f774ef5374c023fc9d060af613bd5be3dc342cd3eea7073dadea8"
+                }
+            })
+            console.log(test1)
+            console.log(test)
+            // console.log(await getGroupData("0x729b9265519e5e42f79c2d3214306f5dd8d8845c5b78edda3bd1e5ff53b16144"))
 
-            const groups: TGroup[] = await Promise.all(groupPromises);
-
-            // res.forEach(async (groupId) => {
-            //     groups.push({
-            //         id: groupId,
-            //         members: new Set<string>(await group_get_group_member(groupId))
+            // const groupIds = registry.user_groups.get(currentAccount.address) || [];
+            // const groups = await Promise.all(
+            //     groupIds.map(async (value) => {
+            //         const group = await getGroupData(value);
+            //         if (!group) return null;
+            //         return {
+            //             id: group.id,
+            //             members: new Set<string>(group.members),
+            //         } as TGroup;
             //     })
-            // })
+            // );
 
-            console.log("Groups", groups);
-            return groups;
-        }, 
+            return [] as TGroup[];
+        },
     });
 
     return (

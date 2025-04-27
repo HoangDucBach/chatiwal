@@ -8,7 +8,7 @@ import { InvalidGroupCapError } from "@/sdk/errors";
 import { Address, ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
 import { bcs, BcsType } from "@mysten/sui/bcs";
-import { SuperMessageNoPolicyStruct, FeeBasedPolicyStruct, GroupStruct, LimitedReadPolicyStruct, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct, TimeLockPolicyStruct, GroupCapStruct } from "@/sdk/contracts";
+import { SuperMessageNoPolicyStruct, FeeBasedPolicyStruct, GroupStruct, LimitedReadPolicyStruct, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct, TimeLockPolicyStruct, GroupCapStruct, RegistryStruct } from "@/sdk/contracts";
 import { CoinStruct } from "@/sdk/contracts/utils";
 import { SuiGraphQLClient } from '@mysten/sui/graphql';
 import { graphql } from '@mysten/sui/graphql/schemas/latest';
@@ -24,6 +24,7 @@ type SuperMessageLimitedReadData = typeof SuperMessageLimitedReadStruct.$inferTy
 type SuperMessageFeeBasedData = typeof SuperMessageFeeBasedStruct.$inferType;
 type SuperMessageCompoundData = typeof SuperMessageCompoundStruct.$inferType;
 type CoinData = typeof CoinStruct.$inferType;
+type RegistryData = typeof RegistryStruct.$inferType;
 
 export interface IGroupActions {
     mintGroupAndTransfer(metadataBlobId?: string): Promise<Transaction>;
@@ -32,9 +33,9 @@ export interface IGroupActions {
     removeMember(groupId: string, member: string): Promise<Transaction>;
     leaveGroup(groupId: string, member: string): Promise<Transaction>;
     sealApprove(id: Uint8Array, groupId: string): Promise<Transaction>;
-    registryGetUserGroups(user: string): Promise<string[]>;
     isMember(groupId: string, addr: string): Promise<boolean>;
     validateGroupCap(groupId: string): Promise<string>;
+    getRegistry(): Promise<RegistryData>;
     getGroupData(groupId: string): Promise<GroupData | undefined>;
     getGroupCapData(groupCapId: string): Promise<GroupCapData | undefined>;
 
@@ -167,15 +168,6 @@ export function useChatiwalClient(): IChatiwalClientActions {
         }
     };
 
-    async function queryGraphData<T>({ query, variables }: { query: any, variables: Record<string, any> }): Promise<T | undefined> {
-        const res = await gqlClient.query<T>({
-            query: graphql(query),
-            variables,
-        });
-
-        return res.data;
-    }
-
     const groupIdActions: IGroupActions = {
         mintGroupAndTransfer: async (metadataBlobId: string = "") => {
             return await executeTransaction(() =>
@@ -234,13 +226,6 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        registryGetUserGroups: async (user: string): Promise<string[]> => {
-            return executeInspectTransaction(
-                () => client.registryGetUserGroups({ address: user }),
-                (bytes) => bcs.vector(bcs.Address).parse(bytes)
-            );
-        },
-
         isMember: async (groupId: string, addr: string): Promise<boolean> => {
             return executeInspectTransaction(
                 () => client.isMember({
@@ -253,7 +238,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         validateGroupCap: validateGroupCap,
 
         getGroupData: async (groupId: string) => {
-            return await queryGraphData<GroupData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($groupId: SuiAddress!) {
                     object(address: $groupId) {
@@ -269,25 +254,60 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     groupId
                 }
             });
+
+            if (!res) throw new Error("No group found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as GroupData;
         },
 
         getGroupCapData: async (groupCapId) => {
-            return await queryGraphData<GroupCapData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($groupCapId: SuiAddress!) {
-                    object(address: $groupCapId) {
-                        asMoveObject {
-                        contents {
-                            json 
-                        }
+                        object(address: $groupCapId) {
+                            asMoveObject {
+                                contents {
+                                    json 
+                                }
+                            }
                         }
                     }
-                    }
-                    `),
+                `),
                 variables: {
                     groupCapId
                 }
             });
+
+            if (!res) throw new Error("No group cap found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as GroupCapData;
+        },
+
+
+        getRegistry: async () => {
+            const res = await gqlClient.query({
+                query: graphql(`
+                    query ($registryObjectId: SuiAddress!) {
+                        object(address: $registryObjectId) {
+                            asMoveObject {
+                                contents {
+                                    json 
+                                    bcs
+                                }
+                            }
+                        }
+                    }
+                `),
+                variables: {
+                    registryObjectId: client.getPackageConfig().registryObjectId,
+                }
+            });
+            console.log("Registry data:", res.data?.object?.asMoveObject?.contents?.json as RegistryData);
+            if (!res) {
+                throw new Error("No registry found");
+            }
+
+            return res.data?.object?.asMoveObject?.contents?.json as RegistryData;
         },
 
     };
@@ -500,9 +520,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         // === View Functions ===
-
+        
         getSuperMessageNoPolicyData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageNoPolicyData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -518,10 +538,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No message found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageNoPolicyData;
         },
 
         getTimeLockPolicyData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageTimeLockData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -537,10 +561,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No policy found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageTimeLockData;
         },
 
         getSuperMessageTimeLockData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageTimeLockData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -556,10 +584,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No message found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageTimeLockData;
         },
 
         getLimitedReadPolicyData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageLimitedReadData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -575,10 +607,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No policy found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageLimitedReadData;
         },
 
         getSuperMessageLimitedReadData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageLimitedReadData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -594,10 +630,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No message found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageLimitedReadData;
         },
 
         getFeeBasedPolicyData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageFeeBasedData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -613,10 +653,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No policy found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageFeeBasedData;
         },
 
         getSuperMessageFeeBasedData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageFeeBasedData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -632,10 +676,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No message found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageFeeBasedData;
         },
 
         getSuperMessageCompoundData: async (messageId: string) => {
-            return await queryGraphData<SuperMessageCompoundData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
                         object(address: $messageId) {
@@ -651,10 +699,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     messageId
                 }
             });
+
+            if (!res) throw new Error("No message found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageCompoundData;
         },
 
         getCoinData: async (coinId: string) => {
-            return await queryGraphData<CoinData>({
+            const res = await gqlClient.query({
                 query: graphql(`
                     query ($coinId: SuiAddress!) {
                         object(address: $coinId) {
@@ -670,6 +722,10 @@ export function useChatiwalClient(): IChatiwalClientActions {
                     coinId
                 }
             });
+
+            if (!res) throw new Error("No coin found");
+
+            return res.data?.object?.asMoveObject?.contents?.json as CoinData;
         }
     };
 

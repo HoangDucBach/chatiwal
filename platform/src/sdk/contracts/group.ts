@@ -16,15 +16,17 @@ export const GroupCapStruct = bcs.struct("GroupCap", {
 
 export const GroupStruct = bcs.struct("Group", {
     id: bcs.Address,
-    member: bcs.vector(bcs.Address),
+    members: bcs.vector(bcs.Address),
     metadata_blob_id: bcs.String,
 });
 
 
+
 export const RegistryStruct = bcs.struct("Registry", {
     id: bcs.Address,
-    user_groups: bcs.Address
+    user_groups: bcs.map(bcs.Address, bcs.vector(bcs.Address))
 });
+
 /**
  * Error constants matching the Move module
  */
