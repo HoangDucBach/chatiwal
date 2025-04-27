@@ -18,7 +18,7 @@ import { useWalrusClient } from "@/hooks/useWalrusClient";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
-    const { registry_get_user_groups, group_get_group_member } = useChatiwalClient();
+    const { registry_get_user_groups, group_get_group_member, getGroupData } = useChatiwalClient();
     const { readMessage } = useWalrusClient();
     const currentAccount = useCurrentAccount();
     const myGroupsQuery = useQuery({
@@ -27,18 +27,28 @@ export function ControlPanel(props: Props) {
             if (!currentAccount) throw new Error("Not connected");
 
             const res = await registry_get_user_groups(currentAccount.address);
-            const groups: TGroup[] = [];
-
-
-            await Promise.all(res.map(async (groupId) => {
-                groups.push({
+            console.log("User groups", res);
+            const group = await getGroupData(res[0]);
+            console.log("g", group);
+            const groupPromises = res.map(async (groupId) => {
+                return {
                     id: groupId,
-                    members: new Set<string>(await group_get_group_member(groupId))
-                })
-            }));
+                    members: new Set<string>()
+                } satisfies TGroup;
+            });
 
+            const groups: TGroup[] = await Promise.all(groupPromises);
+
+            // res.forEach(async (groupId) => {
+            //     groups.push({
+            //         id: groupId,
+            //         members: new Set<string>(await group_get_group_member(groupId))
+            //     })
+            // })
+
+            console.log("Groups", groups);
             return groups;
-        },
+        }, 
     });
 
     return (
@@ -100,6 +110,7 @@ interface ControlPanelHeaderProps {
 
 function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
     const { data: myGroups, isLoading } = myGroupsQuery;
+
     return (
         <HStack w={"full"} px={"4"} py={"2"} justify={"space-between"} rounded={"2xl"}>
             <Heading as={"h6"} size={"2xl"}>Group</Heading>

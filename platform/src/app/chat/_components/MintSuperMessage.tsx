@@ -302,7 +302,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         let message = createSuperMessage(data);
 
         message = await encryptMessage(message);
-        // message = await storeMessage(message);
+        message = await storeMessage(message);
+        console.log("Message after minting:", message);
 
         try {
             const params: Partial<MintParams> & { type: SuperMessageType, groupId: string } = {

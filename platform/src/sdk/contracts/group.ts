@@ -53,10 +53,12 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
         ]
     }) {
         const moveArgsTypes = [
+            `${packageId}::group::Registry`,
             `${MOVE_STDLIB_ADDRESS}::string::String`, // metadataBlobId
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`,   // c
         ];
         const args = [
+            REGISTRY_OBJECT_ID,
             ...options.arguments,
             SUI_CLOCK_OBJECT_ID,
         ];
