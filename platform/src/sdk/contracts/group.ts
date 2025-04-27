@@ -44,8 +44,6 @@ export const GroupErrorCodes = { // Renamed from ErrorCodes for clarity
  * @returns Object with all group module functions
  */
 function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
-    const REGISTRY_OBJECT_ID = config?.packageConfig?.registryObjectId;
-
     /**
      * Mint a group and transfer it to the sender.
      */

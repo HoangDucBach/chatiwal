@@ -35,7 +35,6 @@ export interface IGroupActions {
     sealApprove(id: Uint8Array, groupId: string): Promise<Transaction>;
     isMember(groupId: string, addr: string): Promise<boolean>;
     validateGroupCap(groupId: string): Promise<string>;
-    getRegistry(): Promise<RegistryData>;
     getGroupData(groupId: string): Promise<GroupData | undefined>;
     getGroupCapData(groupCapId: string): Promise<GroupCapData | undefined>;
 
@@ -283,33 +282,6 @@ export function useChatiwalClient(): IChatiwalClientActions {
             return res.data?.object?.asMoveObject?.contents?.json as GroupCapData;
         },
 
-
-        getRegistry: async () => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($registryObjectId: SuiAddress!) {
-                        object(address: $registryObjectId) {
-                            asMoveObject {
-                                contents {
-                                    json 
-                                    bcs
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    registryObjectId: client.getPackageConfig().registryObjectId,
-                }
-            });
-            console.log("Registry data:", res.data?.object?.asMoveObject?.contents?.json as RegistryData);
-            if (!res) {
-                throw new Error("No registry found");
-            }
-
-            return res.data?.object?.asMoveObject?.contents?.json as RegistryData;
-        },
-
     };
 
     const messageActions: IMessageActions = {
@@ -520,7 +492,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         },
 
         // === View Functions ===
-        
+
         getSuperMessageNoPolicyData: async (messageId: string) => {
             const res = await gqlClient.query({
                 query: graphql(`

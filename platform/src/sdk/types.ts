@@ -9,7 +9,6 @@ export type Address = string;
  */
 export interface ChatiwalPackageConfig {
     chatiwalId: string;
-    registryObjectId: string
 }
 
 type SuiClientConfig = {
