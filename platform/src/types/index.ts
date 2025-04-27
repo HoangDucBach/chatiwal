@@ -1,3 +1,5 @@
+import { MetadataGroup } from "@/libs/schema";
+
 export type MediaContent = {
     id: string;
     url?: string;
@@ -14,9 +16,8 @@ export type MediaContent = {
 
 export type TGroup = {
     id: string;
-    name?: string;
-    description?: string;
     members: Set<string>;
+    metadata?: MetadataGroup;
 };
 
 export enum TMessageType {

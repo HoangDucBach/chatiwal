@@ -14,35 +14,47 @@ import EmptyContent from "@/components/ui/empty-content";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { useSupabase } from "@/hooks/useSupabase";
 import { MintGroupButton } from "./MintGroupButton";
+import { MetadataGroupSchema } from "@/libs/schema";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
+    const currentAccount = useCurrentAccount();
     const { getGroupData } = useChatiwalClient();
     const { getGroupMemberships } = useSupabase();
-    const suiClient = useSuiClient();
-    const { readMessage } = useWalrusClient();
-    const currentAccount = useCurrentAccount();
+    const { read } = useWalrusClient();
+
     const myGroupsQuery = useQuery({
         queryKey: ["groups::members"],
         queryFn: async () => {
             if (!currentAccount) throw new Error("Not connected");
 
             const groupMembershipIds = await getGroupMemberships(currentAccount.address);
-            console.log("Group memberships 1:", groupMembershipIds);
             const groupMemberShips: TGroup[] = [];
 
-            for (const groupId of groupMembershipIds) {
-                console.log("Group membership id:", groupId);
-                const data = await getGroupData(groupId);
-                console.log("Group membership data:", data);
-                if (data) {
-                    groupMemberShips.push({
-                        id: groupId,
-                        members: new Set<string>(data.members),
-                    });
-                }
-            }
-            // console.log("Group memberships:", groupMemberShips);
+            const groupDataList = await Promise.all(
+                groupMembershipIds.map(async (groupId) => {
+                    const data = await getGroupData(groupId);
+                    if (data) {
+                        groupMemberShips.push({
+                            id: groupId,
+                            members: new Set<string>(data.members),
+                            metadata: null as any,
+                        });
+                        return { index: groupMemberShips.length - 1, metadata_blob_id: data.metadata_blob_id };
+                    }
+                    return null;
+                })
+            );
+
+            await Promise.allSettled(
+                groupDataList.map(async (item) => {
+                    if (item && item.metadata_blob_id) {
+                        const bufferArr = await read([item.metadata_blob_id]);
+                        const metadataStr = new TextDecoder().decode(bufferArr[0]);
+                        groupMemberShips[item.index].metadata = MetadataGroupSchema.parse(JSON.parse(metadataStr));
+                    }
+                })
+            );
 
             return groupMemberShips;
         },
@@ -120,7 +132,6 @@ function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
 }
 
 function ControlPanelFooter() {
-
     return (
         <VStack w={"full"} gap={"4"}>
             <MintGroupButton />

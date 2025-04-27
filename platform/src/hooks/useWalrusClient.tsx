@@ -4,15 +4,16 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@
 import { WalrusClient, TESTNET_WALRUS_PACKAGE_CONFIG } from '@mysten/walrus';
 import { useMemo } from 'react';
 
-interface StoreMessageOptions {
+interface StoreOptions {
     deletable?: boolean;
     epochs?: number;
 }
 
 interface IWalrusClientActions {
-    storeMessage: (message: MessageBase, options?: StoreMessageOptions) => Promise<MessageBase>;
-    readMessage: (blobIds: string[]) => Promise<ArrayBuffer[]>;
+    storeMessage: (message: MessageBase, options?: StoreOptions) => Promise<MessageBase>;
     deleteMessage: (blobId: string) => Promise<void>;
+    store(object: any): Promise<string>;
+    read(blobIds: string[]): Promise<ArrayBuffer[]>;
     client: WalrusClient;
 }
 
@@ -29,20 +30,21 @@ export const useWalrusClient = (): IWalrusClientActions => {
         }
     });
 
-    const storeMessage = async (message: MessageBase, options?: StoreMessageOptions) => {
-        if (!currentAccount) {
-            throw new Error('Not connected');
-        }
-
+    const store = async (object: any, options?: StoreOptions) => {
         const { deletable = true, epochs = 1 } = options || {};
-        
-        const encodedMessage = Uint8Array.from(message.getData().content);
-        const encodedBlob = await walrusClient.encodeBlob(encodedMessage);
+        const jsonString = JSON.stringify(object);
+        const encoder = new TextEncoder();
+        const encoded = encoder.encode(jsonString);
+        const encodedBlob = await walrusClient.encodeBlob(encoded);
+
+        if (!currentAccount) {
+            throw new Error("Not connected");
+        }
 
         const registerBlobTransaction = await walrusClient.registerBlobTransaction({
             blobId: encodedBlob.blobId,
             rootHash: encodedBlob.rootHash,
-            size: encodedMessage.length,
+            size: encoded.length,
             deletable,
             epochs,
             owner: currentAccount?.address,
@@ -98,12 +100,24 @@ export const useWalrusClient = (): IWalrusClientActions => {
             throw new Error('Failed to certify blob');
         }
 
-        message.getData().blobId = blobObject.objectId;
+        return encodedBlob.blobId;
+    }
+
+    const storeMessage = async (message: MessageBase, options?: StoreOptions) => {
+        if (!currentAccount) {
+            throw new Error('Not connected');
+        }
+
+        const { deletable = true, epochs = 1 } = options || {};
+
+        const messageBlobId = await store(message, { deletable, epochs });
+
+        message.getData().blobId = messageBlobId;
 
         return message;
     }
 
-    const readMessage = async (blobIds: string[]) => {
+    const read = async (blobIds: string[]) => {
         const aggregators = ['aggregator1', 'aggregator2', 'aggregator3', 'aggregator4', 'aggregator5', 'aggregator6'];
         const downloadResults = await Promise.all(
             blobIds.map(async (blobId) => {
@@ -125,7 +139,7 @@ export const useWalrusClient = (): IWalrusClientActions => {
             }),
         );
 
-        return downloadResults.filter((result): result is ArrayBuffer => result !== null);
+        return downloadResults.filter((result) => result !== null) as ArrayBuffer[];
     };
 
     const deleteMessage = async (blobId: string) => {
@@ -155,11 +169,12 @@ export const useWalrusClient = (): IWalrusClientActions => {
 
     return useMemo(
         () => ({
+            store,
+            read,
             storeMessage,
-            readMessage,
             deleteMessage,
             client: walrusClient,
         }),
-        [storeMessage, readMessage, deleteMessage, walrusClient],
+        [storeMessage, store, read, deleteMessage, walrusClient],
     );
 }

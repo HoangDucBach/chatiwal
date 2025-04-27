@@ -1,8 +1,12 @@
 "use client"
 
+import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { TGroup } from "@/types";
 import { HStack, StackProps, Text, VStack } from "@chakra-ui/react"
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { MetadataGroupSchema, type MetadataGroup } from "@/libs/schema";
+import { formatAddress } from "@mysten/sui/utils";
 
 interface Props extends StackProps {
     group: TGroup;
@@ -11,6 +15,7 @@ interface Props extends StackProps {
 export function GroupCard({ isSelected, ...props }: Props) {
     const { group, } = props;
     const router = useRouter();
+    const { read } = useWalrusClient();
 
     const handleClick = () => {
         if (!group) return;
@@ -25,10 +30,9 @@ export function GroupCard({ isSelected, ...props }: Props) {
             p={"3"}
             transition="all 0.2s ease-in-out"
             _hover={{
-                translateY: "4",
                 bg: "bg.300",
             }}
-            bg={isSelected ? "bg.300" : "bg.200"}
+            bg={isSelected ? "bg.300" : "transparent"}
             backdropBlur={"2xl"}
             rounded={"2xl"}
             cursor={"pointer"}
@@ -36,7 +40,7 @@ export function GroupCard({ isSelected, ...props }: Props) {
             {...props}
         >
             <VStack gap={"0"} alignItems={"start"}>
-                <Text color={"fg"} fontWeight={"medium"}>{group.name || "Cyan Group | Beta"}</Text>
+                <Text color={"fg"} fontWeight={"medium"}>{group?.metadata?.name || formatAddress(group.id)}</Text>
                 <Text color={"fg.contrast"} fontSize={"sm"}>{group.members.size || 0} members</Text>
             </VStack>
         </HStack>
