@@ -40,8 +40,8 @@ export function GroupCard({ isSelected, ...props }: Props) {
             {...props}
         >
             <VStack gap={"0"} alignItems={"start"}>
-                <Text color={"fg"} fontWeight={"medium"}>{group?.metadata?.name || formatAddress(group.id)}</Text>
-                <Text color={"fg.contrast"} fontSize={"sm"}>{group.members.size || 0} members</Text>
+                <Text color={"fg"} fontSize={"sm"} fontWeight={"medium"}>{group?.metadata?.name || formatAddress(group.id)}</Text>
+                <Text color={"fg.contrast"} fontSize={"xs"}>{group.members.size || 0} members</Text>
             </VStack>
         </HStack>
     )

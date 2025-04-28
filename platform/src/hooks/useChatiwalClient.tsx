@@ -37,8 +37,6 @@ export interface IGroupActions {
     validateGroupCap(groupId: string): Promise<string>;
     getGroupData(groupId: string): Promise<GroupData | undefined>;
     getGroupCapData(groupCapId: string): Promise<GroupCapData | undefined>;
-
-    [key: string]: any;
 }
 
 export interface IMessageActions {

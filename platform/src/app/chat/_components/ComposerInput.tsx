@@ -27,14 +27,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useGroup } from "../_hooks/useGroupId";
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "@/components/ui/select";
-import { TMessageBase } from "@/types";
+import { MediaContent, TMessageBase } from "@/types";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { MessageBase, SuperMessageCompound, SuperMessageFeeBased, SuperMessageLimitedRead, SuperMessageNoPolicy, SuperMessageTimeLock } from "@/sdk";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { useSealClient } from "@/hooks/useSealClient";
-import MessageInput from "./MessageInput";
-import { useState } from "react";
+import { MediaInput, TextInput } from "./MessageInput";
+import { useCallback, useState } from "react";
 import { DatePickerInput } from "@/components/ui/date-picker";
+import { nanoid } from "nanoid";
 
 const MotionVStack = motion.create(VStack);
 
@@ -53,7 +54,8 @@ type MintParams = {
 
 interface FormValues {
     messageType: SuperMessageType;
-    groupId: string;
+    contentAsFiles: File[];
+    contentAsText: string;
     timeFrom: number;
     timeTo: number;
     maxReads: number;
@@ -61,18 +63,6 @@ interface FormValues {
     recipient: string;
     coinType: string;
 }
-
-interface Props extends ButtonProps { }
-interface FormValues {
-    content: string | Uint8Array;
-    timeFrom: number;
-    timeTo: number;
-    maxReads: number;
-    fee: number;
-    recipient: string;
-    coinType: string;
-}
-
 
 interface ComposerInputProps extends StackProps {
     messageInputProps: {
@@ -88,15 +78,15 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
 
     const { onMessageMinted } = props;
     const currentAccount = useCurrentAccount();
-    const { group } = useGroup(); // Assuming group ID comes from here
+    const { group } = useGroup();
     const suiClient = useSuiClient();
     const queryClient = useQueryClient();
     const {
-        mint_super_message_time_lock_and_transfer,
-        mint_super_message_no_policy_and_transfer,
-        mint_super_message_fee_based_and_transfer,
-        mint_super_message_limited_read_and_transfer,
-        mint_super_message_compound_and_transfer,
+        mintSuperMessageTimeLockAndTransfer,
+        mintSuperMessageNoPolicyAndTransfer,
+        mintSuperMessageFeeBasedAndTransfer,
+        mintSuperMessageLimitedReadAndTransfer,
+        mintSuperMessageCompoundAndTransfer,
     } = useChatiwalClient()
     const { encryptMessage } = useSealClient();
     const { storeMessage } = useWalrusClient();
@@ -113,37 +103,36 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                 case 'time_lock':
                     if (!params.timeFrom || !params.timeTo) throw new Error("Missing time parameters for Time Lock");
                     if (!params.metadataBlobId) throw new Error("Missing metadataBlobId for Time Lock");
-                    tx = await mint_super_message_time_lock_and_transfer(group.id, params.metadataBlobId, params.timeFrom, params.timeTo);
+                    tx = await mintSuperMessageTimeLockAndTransfer(group.id, params.metadataBlobId, params.timeFrom, params.timeTo);
                     break
                 case 'limited_read':
                     if (!params.maxReads) throw new Error("Missing maxReads for Limited Read");
                     if (!params.metadataBlobId) throw new Error("Missing metadataBlobId for Limited Read");
-                    tx = await mint_super_message_limited_read_and_transfer(group.id, params.metadataBlobId, params.maxReads);
+                    tx = await mintSuperMessageLimitedReadAndTransfer(group.id, params.metadataBlobId, params.maxReads);
                     break
                 case 'fee_based':
                     if (params.fee === undefined || !params.recipient || !params.coinType) throw new Error("Missing parameters for Fee Based");
                     if (!params.metadataBlobId) throw new Error("Missing metadataBlobId for Fee Based");
-                    tx = await mint_super_message_fee_based_and_transfer(group.id, params.metadataBlobId, BigInt(params.fee), params.recipient, params.coinType); // Ensure fee is BigInt
+                    tx = await mintSuperMessageFeeBasedAndTransfer(group.id, params.metadataBlobId, BigInt(params.fee), params.recipient, params.coinType);
                     break
                 case 'compound':
                     if (!params.timeFrom || !params.timeTo || !params.maxReads || params.fee === undefined || !params.recipient || !params.coinType)
                         throw new Error("Missing parameters for Compound");
                     if (!params.metadataBlobId) throw new Error("Missing metadataBlobId for Compound");
-                    tx = await mint_super_message_compound_and_transfer(
+                    tx = await mintSuperMessageCompoundAndTransfer(
                         group.id,
                         params.metadataBlobId,
                         params.timeFrom,
                         params.timeTo,
                         params.maxReads,
-                        BigInt(params.fee), // Ensure fee is BigInt
+                        BigInt(params.fee),
                         params.recipient,
                         params.coinType
                     );
                     break
                 case 'no_policy':
-                    if (!params.metadataBlobId) throw new Error("Missing metadataBlobId for No Policy"); // Assuming it's still needed
-                    // If 'no_policy' doesn't actually use metadataBlobId, adjust this call:
-                    tx = await mint_super_message_no_policy_and_transfer(group.id, params.metadataBlobId /* or potentially remove if not needed */);
+                    if (!params.metadataBlobId) throw new Error("Missing metadataBlobId for No Policy");
+                    tx = await mintSuperMessageNoPolicyAndTransfer(group.id, params.metadataBlobId);
                     break
             }
 
@@ -188,14 +177,14 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         handleSubmit,
         control,
         watch,
-        formState: { errors },
+        formState: { isSubmitting, errors },
         reset: resetForm,
-        setValue,
         getValues
     } = useForm<FormValues>({
         defaultValues: {
-            content: [],
             messageType: 'no_policy',
+            contentAsFiles: [],
+            contentAsText: '',
             timeFrom: Math.floor(Date.now() / 1000),
             timeTo: Math.floor(Date.now() / 1000) + 86400,
             maxReads: 1,
@@ -206,70 +195,70 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
     });
 
     const messageType = watch('messageType');
-    const content = watch('content');
 
     const createSuperMessage = (data: FormValues): MessageBase => {
-        let message: MessageBase;
-
         if (!currentAccount) {
             throw new Error("Not connected");
         }
 
+        const mediaContentAsText = {
+            id: nanoid(),
+            mimeType: "text/plain",
+            raw: new TextEncoder().encode(data.contentAsText),
+        } satisfies MediaContent;
+
+        const mediaContentAsFiles = data.contentAsFiles.map((file) => {
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            return new Promise<MediaContent>((resolve) => {
+                reader.onload = () => {
+                    const arrayBuffer = reader.result as ArrayBuffer;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    resolve({
+                        id: nanoid(),
+                        mimeType: file.type,
+                        raw: uint8Array,
+                    });
+                };
+            });
+        });
+
+        const content = [mediaContentAsText, ...mediaContentAsFiles];
+        const baseMessageProps = {
+            data: { content },
+            groupId: group.id,
+            owner: currentAccount?.address,
+        };
+
         switch (messageType) {
             case 'no_policy':
-                message = new SuperMessageNoPolicy({
-                    data: {
-                        content: data.content,
-                    },
-                    groupId: group.id,
-                    owner: currentAccount?.address,
-                })
-                break;
+                return new SuperMessageNoPolicy(baseMessageProps);
             case 'limited_read':
-                message = new SuperMessageLimitedRead({
-                    data: {
-                        content: data.content,
-                    },
-                    groupId: group.id,
-                    owner: currentAccount?.address,
+                return new SuperMessageLimitedRead({
+                    ...baseMessageProps,
                     policy: {
                         maxReads: data.maxReads,
                     }
-                })
-                break;
+                });
             case 'fee_based':
-                message = new SuperMessageFeeBased({
-                    data: {
-                        content: data.content,
-                    },
-                    groupId: group.id,
-                    owner: currentAccount?.address,
+                return new SuperMessageFeeBased({
+                    ...baseMessageProps,
                     policy: {
                         feeAmount: BigInt(data.fee),
                         coinType: data.coinType,
-                    },
-                })
-                break;
+                    }
+                });
             case 'time_lock':
-                message = new SuperMessageTimeLock({
-                    data: {
-                        content: data.content,
-                    },
-                    groupId: group.id,
-                    owner: currentAccount?.address,
+                return new SuperMessageTimeLock({
+                    ...baseMessageProps,
                     policy: {
                         endTime: data.timeTo,
                         startTime: data.timeFrom,
                     }
-                })
-                break;
+                });
             case 'compound':
-                message = new SuperMessageCompound({
-                    data: {
-                        content: data.content,
-                    },
-                    groupId: group.id,
-                    owner: currentAccount?.address,
+                return new SuperMessageCompound({
+                    ...baseMessageProps,
                     feePolicy: {
                         feeAmount: BigInt(data.fee),
                         coinType: data.coinType,
@@ -281,21 +270,13 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     limitedRead: {
                         maxReads: data.maxReads,
                     }
-                })
-                break;
+                });
+            default:
+                throw new Error("Failed to create message: Unknown message type");
         }
-
-        if (!message) {
-            throw new Error("Failed to create message");
-        }
-
-        return message;
     }
 
-    // --- Submit Handler ---
     const onSubmit = async (data: FormValues) => {
-        console.log("Form submitted with data:", data);
-        return;
         let message = createSuperMessage(data);
 
         message = await encryptMessage(message);
@@ -305,8 +286,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         try {
             const params: Partial<MintParams> & { type: SuperMessageType, groupId: string } = {
                 type: data.messageType,
-                groupId: group.id, // Use group id from hook
-                metadataBlobId: message.getData().blobId || "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff", // Placeholder, replace with actual blob ID
+                groupId: group.id,
+                metadataBlobId: message.getData().blobId || "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff",
             };
 
             switch (data.messageType) {
@@ -318,7 +299,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     params.maxReads = BigInt(data.maxReads);
                     break;
                 case 'fee_based':
-                    params.fee = BigInt(data.fee); // Already BigInt in mutation, but ensure conversion if needed
+                    params.fee = BigInt(data.fee);
                     params.recipient = data.recipient;
                     params.coinType = data.coinType;
                     break;
@@ -333,7 +314,6 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             }
 
             mintSuperMessage(params as MintParams);
-
         } catch (error) {
             console.error("Pre-mutation validation error:", error);
             toaster.error({
@@ -344,6 +324,97 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         }
     };
 
+    const renderDatePickerField = (name: "timeFrom" | "timeTo", label: string, minDate?: Date, validation?: any) => (
+        <Controller
+            name={name}
+            control={control}
+            rules={validation || { required: `${label} is required` }}
+            render={({ field, fieldState }) => (
+                <Field.Root invalid={!!fieldState.error} required width="50%">
+                    <Field.Label fontSize="sm">{label}</Field.Label>
+                    <DatePicker
+                        selected={field.value ? new Date(field.value * 1000) : null}
+                        onChange={(date: Date | null) => {
+                            const timestamp = date ? Math.floor(date.getTime() / 1000) : 0;
+                            field.onChange(timestamp);
+                        }}
+                        onBlur={field.onBlur}
+                        customInput={<DatePickerInput w={name === "timeFrom" ? "full" : undefined} />}
+                        showTimeSelect
+                        timeFormat="HH:mm"
+                        timeIntervals={15}
+                        dateFormat="yyyy-MM-dd HH:mm"
+                        isClearable
+                        placeholderText={`Select ${label.toLowerCase()}`}
+                        disabled={isPending}
+                        popperPlacement="bottom-start"
+                        minDate={minDate}
+                        filterTime={minDate && name === "timeTo" ? (time) => {
+                            if (!minDate || !field.value || !time) return true;
+                            const selectedDate = new Date(field.value * 1000);
+                            if (selectedDate.toDateString() === minDate.toDateString()) {
+                                return time.getTime() > minDate.getTime();
+                            }
+                            return true;
+                        } : undefined}
+                    />
+                    {fieldState.error && <Text fontSize="xs" color="red.500">{fieldState.error.message}</Text>}
+                </Field.Root>
+            )}
+        />
+    );
+
+    const renderNumberField = (name: "maxReads" | "fee", label: string, helperText?: string, min: number = 0) => (
+        <Controller
+            name={name}
+            control={control}
+            rules={{ required: `${label} is required`, min: { value: min, message: `Must be >= ${min}` } }}
+            render={({ field }) => (
+                <Field.Root flex={name === "fee" ? "1" : undefined} w={name === "maxReads" ? "full" : undefined} invalid={!!errors[name]} required>
+                    <Field.Label fontSize="sm">{label}</Field.Label>
+                    <NumberInput.Root
+                        w={name === "maxReads" || name === "fee" ? "full" : undefined}
+                        variant="subtle"
+                        size="sm"
+                        disabled={isPending}
+                        min={min}
+                        onChange={(value) => field.onChange(value)}
+                    >
+                        {name === "maxReads" ? <NumberInput.Control /> : null}
+                        <NumberInput.Input bg="bg.300" rounded="lg" onBlur={field.onBlur} />
+                    </NumberInput.Root>
+                    {helperText && <Field.HelperText color="fg.contrast">{helperText}</Field.HelperText>}
+                    {errors[name] && <Text fontSize="xs" color="red.500">{errors[name]?.message}</Text>}
+                </Field.Root>
+            )}
+        />
+    );
+
+    const renderTextField = (name: "coinType" | "recipient", label: string, placeholder: string, flex: string, validation?: any) => (
+        <Controller
+            name={name}
+            control={control}
+            rules={validation || { required: `${label} is required` }}
+            render={({ field }) => (
+                <Field.Root flex={flex} invalid={!!errors[name]} required>
+                    <Field.Label fontSize="sm">{label}</Field.Label>
+                    <Input
+                        size="sm"
+                        w="full"
+                        variant="subtle"
+                        bg="bg.300"
+                        rounded="lg"
+                        _placeholder={{ color: "fg.contrast" }}
+                        disabled={isPending}
+                        placeholder={placeholder}
+                        {...field}
+                    />
+                    {errors[name] && <Text fontSize="xs" color="red.500">{errors[name]?.message}</Text>}
+                </Field.Root>
+            )}
+        />
+    );
+
     const renderSpecificInputs = () => {
         const inputStackProps = { gap: 2, w: "full" };
 
@@ -351,186 +422,35 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             case 'time_lock':
                 return (
                     <HStack {...inputStackProps}>
-                        <Controller
-                            name="timeFrom"
-                            control={control}
-                            rules={{ required: "Time From is required" }}
-                            render={({ field }) => (
-                                <Field.Root w={"full"} invalid={!!errors.timeFrom} required width="50%">
-                                    <Field.Label fontSize="sm">From</Field.Label>
-                                    <DatePicker
-                                        selected={field.value ? new Date(field.value * 1000) : null} // Convert timestamp to Date
-                                        onChange={(date: Date | null) => {
-                                            const timestamp = date ? Math.floor(date.getTime() / 1000) : 0;
-                                            field.onChange(timestamp);
-                                        }}
-                                        onBlur={field.onBlur}
-                                        customInput={<DatePickerInput w={"full"} />}
-                                        showTimeSelect
-                                        timeFormat="HH:mm"
-                                        timeIntervals={15}
-                                        dateFormat="yyyy-MM-dd HH:mm"
-                                        isClearable
-                                        placeholderText="Select start date/time"
-                                        disabled={isPending}
-                                        popperPlacement="bottom-start"
-                                    />
-                                    {errors.timeFrom && <Text fontSize="xs" color="red.500">{errors.timeFrom.message}</Text>}
-                                </Field.Root>
-                            )}
-                        />
-                        <Controller
-                            name="timeTo"
-                            control={control}
-                            rules={{
+                        {renderDatePickerField("timeFrom", "From")}
+                        {renderDatePickerField("timeTo", "End Time",
+                            getValues("timeFrom") ? new Date(getValues("timeFrom") * 1000) : new Date(),
+                            {
                                 required: "End date/time is required",
-                                validate: (value) => {
+                                validate: (value: number) => {
                                     const timeFromValue = getValues("timeFrom");
                                     return (typeof value === 'number' && typeof timeFromValue === 'number' && value > timeFromValue) || "End time must be after start time";
                                 }
-                            }}
-                            render={({ field, fieldState }) => {
-                                const timeFromValue = getValues("timeFrom");
-                                const minDate = timeFromValue ? new Date(timeFromValue * 1000) : new Date();
-
-                                return (
-                                    <Field.Root invalid={!!fieldState.error} required width="50%">
-                                        <Field.Label fontSize="sm">End Time</Field.Label>
-                                        <DatePicker
-                                            selected={field.value ? new Date(field.value * 1000) : new Date()}
-                                            onChange={(date: Date | null) => {
-                                                const timestamp = date ? Math.floor(date.getTime() / 1000) : 0;
-                                                field.onChange(timestamp);
-                                            }}
-                                            onBlur={field.onBlur}
-                                            customInput={<DatePickerInput />}
-                                            showTimeSelect
-                                            timeFormat="HH:mm"
-                                            timeIntervals={15}
-                                            dateFormat="yyyy-MM-dd HH:mm"
-                                            isClearable
-                                            placeholderText="Select end date/time"
-                                            disabled={isPending}
-                                            popperPlacement="bottom-start"
-                                            minDate={minDate}
-                                            filterTime={(time) => {
-                                                if (!minDate || !field.value || !time) return true;
-                                                const selectedDate = new Date(field.value * 1000);
-                                                if (selectedDate.toDateString() === minDate.toDateString()) {
-                                                    return time.getTime() > minDate.getTime();
-                                                }
-                                                return true;
-                                            }}
-                                        />
-                                        {fieldState.error && <Text fontSize="xs" color="red.500">{fieldState.error.message}</Text>}
-                                    </Field.Root>
-                                );
-                            }}
-                        />
+                            }
+                        )}
                     </HStack>
                 );
 
             case 'limited_read':
                 return (
                     <Stack {...inputStackProps}>
-                        <Controller
-                            name="maxReads"
-                            control={control}
-                            rules={{ required: "Max Reads is required", min: { value: 1, message: "Must be >= 1" } }}
-                            render={({ field }) => (
-                                <Field.Root invalid={!!errors.maxReads} required>
-                                    <Field.Label fontSize="sm">Max Reads</Field.Label>
-                                    <NumberInput.Root
-                                        variant={"subtle"}
-                                        size="sm"
-                                        disabled={isPending}
-                                        min={1}
-                                        onChange={(value) => field.onChange(value)}
-                                    >
-                                        <NumberInput.Control />
-                                        <NumberInput.Input bg={"bg.300"} rounded={"lg"} onBlur={field.onBlur} />
-                                    </NumberInput.Root>
-                                    <Field.HelperText color={"fg.contrast"}>Min value 1</Field.HelperText>
-                                    {errors.maxReads && <Text fontSize="xs" color="red.500">{errors.maxReads.message}</Text>}
-                                </Field.Root>
-                            )}
-                        />
+                        {renderNumberField("maxReads", "Max Reads", "Min value 1", 1)}
                     </Stack>
                 );
 
             case 'fee_based':
                 return (
-                    <HStack align={"start"} {...inputStackProps}>
-                        <Controller
-                            name="fee"
-                            control={control}
-                            rules={{ required: "Fee is required", min: { value: 0, message: "Must be >= 0" } }}
-                            render={({ field }) => (
-                                <Field.Root flex={"1"} invalid={!!errors.fee} required>
-                                    <Field.Label fontSize="sm">Fee</Field.Label>
-                                    <NumberInput.Root
-                                        w={"full"}
-                                        variant={"subtle"}
-                                        size="sm"
-                                        disabled={isPending}
-                                        min={0}
-                                        onChange={(value) => field.onChange(value)}
-                                    >
-                                        <NumberInput.Input bg={"bg.300"} rounded={"lg"} onBlur={field.onBlur} />
-                                    </NumberInput.Root>
-                                    <Field.HelperText color={"fg.contrast"}>Atomic units</Field.HelperText>
-                                    {errors.fee && <Text fontSize="xs" color="red.500">{errors.fee.message}</Text>}
-                                </Field.Root>
-                            )}
-                        />
-                        <Controller
-                            name="coinType"
-                            control={control}
-                            rules={{ required: "Coin Type is required" }}
-                            render={({ field }) => (
-                                <Field.Root flex={"2"} invalid={!!errors.coinType} required>
-                                    <Field.Label fontSize="sm">Coin Type</Field.Label>
-                                    <Input
-                                        size="sm"
-                                        w={"full"}
-                                        variant={"subtle"}
-                                        bg={"bg.300"}
-                                        rounded={"lg"}
-                                        _placeholder={{
-                                            color: "fg.contrast"
-                                        }}
-                                        disabled={isPending}
-                                        placeholder="e.g., 0x2::sui::SUI"
-                                        {...field}
-                                    />
-                                    {errors.coinType && <Text fontSize="xs" color="red.500">{errors.coinType.message}</Text>}
-                                </Field.Root>
-                            )}
-                        />
-                        <Controller
-                            name="recipient"
-                            control={control}
-                            rules={{ required: "Recipient is required", pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address (0x...64 chars)" } }} // Example: Sui address format
-                            render={({ field }) => (
-                                <Field.Root flex={"3"} invalid={!!errors.recipient} required>
-                                    <Field.Label fontSize="sm">Recipientess</Field.Label>
-                                    <Input
-                                        size="sm"
-                                        w={"full"}
-                                        variant={"subtle"}
-                                        bg={"bg.300"}
-                                        rounded={"lg"}
-                                        _placeholder={{
-                                            color: "fg.contrast"
-                                        }}
-                                        disabled={isPending}
-                                        placeholder="0x..."
-                                        {...field}
-                                    />
-                                    {errors.recipient && <Text fontSize="xs" color="red.500">{errors.recipient.message}</Text>}
-                                </Field.Root>
-                            )}
-                        />
+                    <HStack align="start" {...inputStackProps}>
+                        {renderNumberField("fee", "Fee", "Atomic units")}
+                        {renderTextField("coinType", "Coin Type", "e.g., 0x2::sui::SUI", "2")}
+                        {renderTextField("recipient", "Recipient", "0x...", "3",
+                            { required: "Recipient is required", pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address (0x...64 chars)" } }
+                        )}
                     </HStack>
                 );
 
@@ -539,112 +459,27 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     <Stack {...inputStackProps}>
                         <HStack w="full" align="start">
                             <HStack w="full" align="flex-start">
-                                <Controller name="timeFrom"
-                                    control={control}
-                                    render={
-                                        ({ field, fieldState }) => (
-                                            <Field.Root invalid={!!fieldState.error}
-                                                required width="50%"
-                                            >
-                                                <Field.Label fontSize="sm">Start Time</Field.Label>
-                                                <DatePicker
-                                                    selected={field.value ? new Date(field.value * 1000) : new Date()}
-                                                    onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : 0)}
-                                                    customInput={<DatePickerInput />}
-                                                    showTimeSelect
-                                                    dateFormat="yyyy-MM-dd HH:mm"
-                                                />
-                                                {fieldState.error && <Text fontSize="xs" color="red.500">{fieldState.error.message}</Text>}
-                                            </Field.Root>
-                                        )} />
-                                <Controller name="timeTo" control={control} /* ... */ render={({ field, fieldState }) => {
-                                    const timeFromValue = getValues("timeFrom");
-                                    const minDate = timeFromValue ? new Date(timeFromValue * 1000) : new Date();
-                                    return (
-                                        <Field.Root invalid={!!fieldState.error} required width="50%">
-                                            <Field.Label fontSize="sm">End Time</Field.Label>
-                                            <DatePicker /* ... props giống time_lock ... */
-                                                selected={field.value ? new Date(field.value * 1000) : null}
-                                                onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : 0)}
-                                                customInput={<DatePickerInput />}
-                                                showTimeSelect
-                                                dateFormat="yyyy-MM-dd HH:mm"
-                                                minDate={minDate}
-                                            />
-                                            {fieldState.error && <Text fontSize="xs" color="red.500">{fieldState.error.message}</Text>}
-                                        </Field.Root>
-                                    );
-                                }} />
+                                {renderDatePickerField("timeFrom", "Start Time")}
+                                {renderDatePickerField("timeTo", "End Time", getValues("timeFrom") ? new Date(getValues("timeFrom") * 1000) : new Date())}
                             </HStack>
-                            <Controller
-                                name="maxReads"
-                                control={control}
-                                rules={{ required: "Max Reads is required", min: { value: 1, message: ">= 1" } }}
-                                render={({ field }) => (
-                                    <Field.Root w={"full"} invalid={!!errors.maxReads} required>
-                                        <Field.Label fontSize="sm">Max Reads</Field.Label>
-                                        <NumberInput.Root w={"full"} variant={"subtle"} size="sm" disabled={isPending} min={1} onChange={(value) => field.onChange(value)}>
-                                            <NumberInput.Input rounded={"lg"} bg={"bg.300"} onBlur={field.onBlur} />
-                                        </NumberInput.Root>
-                                        {errors.maxReads && <Text fontSize="xs" color="red.500">{errors.maxReads.message}</Text>}
-                                    </Field.Root>
-                                )}
-                            />
+                            {renderNumberField("maxReads", "Max Reads", undefined, 1)}
                         </HStack>
                         <HStack w="full" align="start">
-                            <Controller
-                                name="fee"
-                                control={control}
-                                rules={{ required: "Fee is required", min: { value: 0, message: ">= 0" } }}
-                                render={({ field }) => (
-                                    <Field.Root flex={"1"} invalid={!!errors.fee} required>
-                                        <Field.Label fontSize="sm">Fee</Field.Label>
-                                        <NumberInput.Root variant={"subtle"}
-                                            size="sm" disabled={isPending} min={0} onChange={(value) => field.onChange(value)}>
-                                            <NumberInput.Input w={"full"} rounded={"lg"} bg={"bg.300"} onBlur={field.onBlur} />
-                                        </NumberInput.Root>
-                                        <Field.HelperText color={"fg.contrast"}>Atomic units</Field.HelperText>
-                                        {errors.fee && <Text fontSize="xs" color="red.500">{errors.fee.message}</Text>}
-                                    </Field.Root>
-                                )}
-                            />
-                            <Controller
-                                name="coinType"
-                                control={control}
-                                rules={{ required: "Coin Type is required" }}
-                                render={({ field }) => (
-                                    <Field.Root flex={"2"} invalid={!!errors.coinType} required>
-                                        <Field.Label fontSize="sm">Coin Type</Field.Label>
-                                        <Input size="sm" w={"full"} rounded={"lg"} bg={"bg.300"} _placeholder={{ color: "fg.contrast" }} disabled={isPending} placeholder="0x2::sui::SUI" {...field} />
-                                        {errors.coinType && <Text fontSize="xs" color="red.500">{errors.coinType.message}</Text>}
-                                    </Field.Root>
-                                )}
-                            />
-                            <Controller
-                                name="recipient"
-                                control={control}
-                                rules={{ required: "Recipient is required", pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } }}
-                                render={({ field }) => (
-                                    <Field.Root flex={"3"} invalid={!!errors.recipient} required>
-                                        <Field.Label fontSize="sm">Recipient</Field.Label>
-                                        <Input w={"full"} size="sm" rounded={"lg"} bg={"bg.300"} _placeholder={{ color: "fg.contrast" }} variant={"subtle"} disabled={isPending} placeholder="0x..." {...field} />
-                                        {errors.recipient && <Text fontSize="xs" color="red.500">{errors.recipient.message}</Text>}
-                                    </Field.Root>
-                                )}
-                            />
+                            {renderNumberField("fee", "Fee", "Atomic units")}
+                            {renderTextField("coinType", "Coin Type", "0x2::sui::SUI", "2")}
+                            {renderTextField("recipient", "Recipient", "0x...", "3",
+                                { required: "Recipient is required", pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } }
+                            )}
                         </HStack>
                     </Stack>
                 );
 
             case 'no_policy':
-                return null;
-
             default:
                 return null;
         }
     };
 
-    // --- Policy Select Options ---
     const policies = createListCollection({
         items: [
             { label: "No Policy", description: "Standard storage message, no access policy", value: "no_policy" as SuperMessageType },
@@ -657,16 +492,16 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
 
     return (
         <VStack
-            as="form" // Use form element for submit handling
-            onSubmit={handleSubmit(onSubmit)} // Handle submit here
-            w={"full"}
-            p={"3"}
-            bg={"bg.100/75"} // Existing styles
-            backdropBlur={"2xl"}
-            shadow={"custom.sm"}
-            rounded={"3xl"}
+            as="form"
+            onSubmit={handleSubmit(onSubmit)}
+            w="full"
+            p="3"
+            bg="bg.100/75"
+            backdropBlur="2xl"
+            shadow="custom.sm"
+            rounded="3xl"
             gap={3}
-            alignItems="stretch" // Ensure children stretch full width
+            alignItems="stretch"
             {...props}
         >
             <HStack align="flex-start" gap={2}>
@@ -685,12 +520,11 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                                 collection={policies}
                                 value={[field.value]}
                                 onValueChange={({ value }) => {
-                                    field.onChange(value[0]),
-                                        setIsSelectExpanded(false)
-                                }
-                                }
+                                    field.onChange(value[0]);
+                                    setIsSelectExpanded(false);
+                                }}
                                 onOpenChange={(d) => {
-                                    setIsSelectExpanded(d.open)
+                                    setIsSelectExpanded(d.open);
                                 }}
                                 onInteractOutside={() => field.onBlur()}
                             >
@@ -705,7 +539,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                                         <SelectItem item={policy} key={policy.value}>
                                             <Stack gap={0}>
                                                 <SelectItemText>{policy.label}</SelectItemText>
-                                                <Span color={"fg.contrast"} fontSize="xs">
+                                                <Span color="fg.contrast" fontSize="xs">
                                                     {policy.description}
                                                 </Span>
                                             </Stack>
@@ -719,40 +553,58 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                 />
             </HStack>
 
-            <Controller
-                name="content"
-                control={control}
-                render={({ field }) => (
-                    <MessageInput
-                        value={field.value.toString()}
-                        onChange={field.onChange}
-                        disabled={isPending}
-                        placeholder={messageType !== 'no_policy' ? "Optional: Add text context for the Super Message..." : "Type your message..."}
-                        tools={
-                            <Stack gap={2} alignItems="flex-end">
-                                {isError && (
-                                    <Text color="red.500" fontSize="sm" w="full" textAlign="left">
-                                        Error: {error instanceof Error ? error.message : "An unknown error occurred"}
-                                    </Text>
-                                )}
+            <VStack
+                pos="relative"
+                gap={0}
+                bg="bg.300"
+                _focusWithin={{
+                    outline: "1px solid",
+                    outlineColor: "fg",
+                    outlineOffset: "2px",
+                }}
+                p={2}
+                rounded="3xl"
+            >
+                <Controller
+                    name="contentAsText"
+                    control={control}
+                    render={({ field }) => (
+                        <TextInput {...field} />
+                    )}
+                />
+                <Controller
+                    name="contentAsFiles"
+                    control={control}
+                    render={({ field }) => (
+                        <MediaInput
+                            onFileAccept={(details) => field.onChange(details.files)}
+                            ref={field.ref}
+                            name={field.name}
+                            disabled={field.disabled}
+                            onBlur={field.onBlur}
+                        />
+                    )}
+                />
 
-                                <Button
-                                    type="submit"
-                                    colorPalette="primary"
-                                    loading={isPending}
-                                    loadingText="Minting..."
-                                    size="sm"
-                                    disabled={isPending || !group?.id}
-                                >
-                                    <FaSuperpowers />
-                                    Mint
-                                </Button>
-                            </Stack>
-                        }
-                    />
-                    // {errors.messageText && <Text fontSize="xs" color="red.500">{errors.messageText.message}</Text>}
-                )}
-            />
+                <Stack pos="absolute" bottom="4" right="4" direction="column" gap={1} alignItems="flex-end">
+                    {isError && (
+                        <Text color="red.500" fontSize="xs" w="full" textAlign="left">
+                            Minting Error: {error instanceof Error ? error.message : "Unknown error"}
+                        </Text>
+                    )}
+                    <Button
+                        type="submit"
+                        colorPalette="primary"
+                        loading={isSubmitting}
+                        loadingText="Minting..."
+                        size="sm"
+                        disabled={isSubmitting || !group?.id}
+                    >
+                        <FaSuperpowers />
+                        Mint Message
+                    </Button>
+                </Stack>
+            </VStack>
 
             {renderSpecificInputs()}
         </VStack>

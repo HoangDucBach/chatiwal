@@ -110,7 +110,7 @@ export const useWalrusClient = (): IWalrusClientActions => {
 
         const { deletable = true, epochs = 1 } = options || {};
 
-        const messageBlobId = await store(message, { deletable, epochs });
+        const messageBlobId = await store(message.getData().content, { deletable, epochs });
 
         message.getData().blobId = messageBlobId;
 

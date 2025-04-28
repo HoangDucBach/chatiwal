@@ -1,45 +1,30 @@
-import { useState, useCallback, ChangeEvent } from "react";
+import { useState, useCallback, forwardRef } from "react";
 import {
     Textarea,
-    Button,
-    Flex,
     Text,
-    Box,
     HStack,
     Icon,
     CloseButton,
     FileUpload,
     For,
     VStack,
+    TextareaProps,
+    FileUploadRootProps,
 } from "@chakra-ui/react";
 import { HiDocumentText, HiPhotograph, HiFilm } from "react-icons/hi";
 import { ImAttachment } from "react-icons/im";
-import { nanoid } from "nanoid";
 import { Tooltip } from "@/components/ui/tooltip";
-export type MediaContent = {
-    id: string;
-    url?: string;
-    raw?: Uint8Array;
-    name?: string;
-    size?: number;
-    duration?: number;
-    dimensions?: {
-        width: number;
-        height: number;
-    };
-    mimeType: string;
-};
 
-function FileCard({ mediaContent, removeFile }: { mediaContent: MediaContent, removeFile: () => void }) {
-    const getFileIcon = (mimeType: string) => {
-        if (mimeType.startsWith('image/')) return HiPhotograph;
-        if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) return HiFilm;
+function FileCard({ file, removeFile }: { file: File, removeFile: () => void }) {
+    const getFileIcon = (type: string) => {
+        if (type.startsWith('image/')) return HiPhotograph;
+        if (type.startsWith('video/') || type.startsWith('audio/')) return HiFilm;
         return HiDocumentText;
     };
 
     return (
         <HStack
-            key={mediaContent.id}
+            key={file.name}
             bg="bg.400"
             px={"2"}
             py={"1"}
@@ -48,16 +33,16 @@ function FileCard({ mediaContent, removeFile }: { mediaContent: MediaContent, re
             align={"start"}
             cursor={"pointer"}
         >
-            <Tooltip content={mediaContent.name} openDelay={100} closeDelay={100}>
+            <Tooltip content={file.name} openDelay={100} closeDelay={100}>
                 <HStack align={"start"}>
-                    <Icon as={getFileIcon(mediaContent.mimeType)} boxSize={5} color="accent.500" />
+                    <Icon as={getFileIcon(file.type)} boxSize={5} color="accent.500" />
                     <VStack gap={0} align={"start"}>
                         <Text fontSize="xs" fontWeight="medium" maxW={"16"} truncate>
-                            {mediaContent.name}
+                            {file.name}
                         </Text>
-                        {mediaContent.size && (
+                        {file.size && (
                             <Text fontSize="2xs" color="fg.contrast">
-                                {(mediaContent.size / 1024).toFixed(1)} KB
+                                {(file.size / 1024).toFixed(1)} KB
                             </Text>
                         )}
                     </VStack>
@@ -67,149 +52,74 @@ function FileCard({ mediaContent, removeFile }: { mediaContent: MediaContent, re
         </HStack>
     )
 }
-interface MessageInputProps {
-    value: string;
-    onChange: (value: string, mediaContent?: MediaContent | null) => void;
-    tools?: React.ReactNode;
-    [key: string]: any;
+interface TextInputProps extends TextareaProps {
 }
 
-function MessageInput({ value, onChange, ...props }: MessageInputProps) {
-    const [mediaContents, setMediaContents] = useState<MediaContent[]>([]);
-    const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-        onChange(e.target.value, mediaContents[0]);
-    };
+export const TextInput = forwardRef<HTMLTextAreaElement, TextInputProps>((props, ref) => {
+    return (
+        <Textarea
+            ref={ref}
+            resize="none"
+            focusRing="none"
+            border="none"
+            bg="transparent"
+            _placeholder={{
+                color: "fg.contrast"
+            }}
+            variant="subtle"
+            size="sm"
+            {...props}
+        />
+    );
+})
 
-    const handleFileChange = useCallback(async (files: File[]) => {
-        if (!files || files.length === 0) {
-            onChange(value, null);
-            return;
-        }
 
-        const file = files[0];
-        const reader = new FileReader();
+interface MediaInputProps extends FileUploadRootProps {
+}
 
-        reader.onload = (event) => {
-            if (event.target && event.target.result) {
-                const arrayBuffer = event.target.result as ArrayBuffer;
-                const uint8Array = new Uint8Array(arrayBuffer);
+export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ ...props }, ref) => {
+    const [files, setFiles] = useState<File[]>([]);
 
-                const newMediaContent: MediaContent = {
-                    id: nanoid(), // Generate a unique ID
-                    raw: uint8Array,
-                    name: file.name,
-                    size: file.size,
-                    mimeType: file.type
-                };
+    const handleFileChange = (file: File) => {
+        setFiles((prev) => [...prev, file]);
+    }
 
-                if (file.type.startsWith('image/')) {
-                    const img = new Image();
-                    img.onload = () => {
-                        newMediaContent.dimensions = {
-                            width: img.width,
-                            height: img.height
-                        };
-                        onChange(value, newMediaContent);
-                        URL.revokeObjectURL(objectUrl);
-                    };
-
-                    const objectUrl = URL.createObjectURL(file);
-                    img.src = objectUrl;
-
-                    // Cleanup the URL after loading
-                } else if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
-                    // For video/audio, we could get duration, but that requires more complex handling
-                    // This would typically be done with the media element's loadedmetadata event
-                    // For simplicity, we're skipping that here
-                }
-                setMediaContents((prev) => [...prev, newMediaContent]);
-
-                // Call onChange with both the current text value and the new media content
-                onChange(value, newMediaContent);
-            }
-        };
-
-        reader.readAsArrayBuffer(file);
-    }, [value, onChange]);
-
-    const removeFile = useCallback(() => {
-        onChange(value, null);
-        setMediaContents((prev) => prev.filter((mediaContent) => mediaContent.id !== mediaContents[0].id));
-    }, [value, onChange]);
+    const removeFile = useCallback((idToRemove: string) => {
+        setFiles((prev) => prev.filter((file) => file.name !== idToRemove));
+    }, []);
 
     const acceptedFileTypes = [
-        'image/*',     // All image types
-        'video/*',     // All video types
-        'audio/*',     // All audio types
-        'text/*',      // All text types
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        // Add more specific MIME types as needed
+        'image/*', 'video/*', 'audio/*', 'text/*', 'application/pdf'
     ];
 
     return (
-        <VStack gap={0} bg={"bg.300"}
-            _focusWithin={{
-                outline: "1px solid",
-                outlineColor: "fg",
-                outlineOffset: "2px",
-            }}
-            p={2}
-            rounded="3xl"
-        >
-            <Textarea
-                resize="none"
-                focusRing={"none"}
-                border={"none"}
-                bg="transparent"
-                placeholder="Type your message here..."
-                _placeholder={{
-                    color: "fg.contrast"
-                }}
-                variant="subtle"
-                size="sm"
-                // value={value}
-                onChange={handleTextChange}
-                {...props}
-            />
-
-            <HStack w="full">
-                <FileUpload.Root w={"fit"} accept={acceptedFileTypes} onFileAccept={(acceptFiles) => handleFileChange(acceptFiles.files)}>
+        <HStack w="full">
+            {files.length === 0 && (
+                <FileUpload.Root
+                    w={"fit"}
+                    accept={acceptedFileTypes}
+                    onFileChange={(files) => handleFileChange(files.acceptedFiles[0])}
+                    maxFiles={1}
+                    {...props}
+                >
                     <FileUpload.HiddenInput />
-                    <FileUpload.Trigger asChild>
-                        <Button
-                            variant="plain"
-                            size="sm"
-                            color={"fg.contrast"}
-                            _hover={{
-                                color: "fg"
-                            }}
-                        >
-                            <Icon>
-                                <ImAttachment />
-                            </Icon>
-                        </Button>
+                    <FileUpload.Trigger>
+                        <Icon as={ImAttachment} />
                     </FileUpload.Trigger>
                 </FileUpload.Root>
-                <HStack gap={"2"} w={"full"}>
-                    <For each={mediaContents} fallback={null}>
-                        {(mediaContent) => (
-                            <FileCard
-                                key={mediaContent.id}
-                                mediaContent={mediaContent}
-                                removeFile={() => {
-                                    setMediaContents((prev) => prev.filter((item) => item.id !== mediaContent.id));
-                                    onChange(value, null);
-                                }}
-                            />
-                        )}
-                    </For>
-                </HStack>
-                {props.tools}
+            )
+            }
+            <HStack gap={"2"} w={"full"}>
+                <For each={files} fallback={null}>
+                    {(file) => (
+                        <FileCard
+                            key={file.name}
+                            file={file}
+                            removeFile={() => removeFile(file.name)}
+                        />
+                    )}
+                </For>
             </HStack>
-        </VStack>
+        </HStack >
     );
-}
-
-export default MessageInput;
+})

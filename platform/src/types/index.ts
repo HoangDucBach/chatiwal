@@ -4,13 +4,6 @@ export type MediaContent = {
     id: string;
     url?: string;
     raw?: Uint8Array;
-    name?: string;
-    size?: number;
-    duration?: number;
-    dimensions?: {
-        width: number;
-        height: number;
-    };
     mimeType: string;
 };
 

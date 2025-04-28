@@ -46,7 +46,7 @@ export function ControlPanel(props: Props) {
                 })
             );
 
-            await Promise.allSettled(
+            await Promise.all(
                 groupDataList.map(async (item) => {
                     if (item && item.metadata_blob_id) {
                         const bufferArr = await read([item.metadata_blob_id]);
@@ -66,7 +66,7 @@ export function ControlPanel(props: Props) {
         <VStack
             zIndex={"0"}
             h={"full"}
-            p={"6"}
+            p={"4"}
             bg={"bg.200/75"}
             backdropFilter={"blur(256px)"}
             rounded={"4xl"}
@@ -125,7 +125,7 @@ function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
 
     return (
         <HStack w={"full"} px={"4"} py={"2"} justify={"space-between"} rounded={"2xl"}>
-            <Heading as={"h6"} size={"2xl"}>Group</Heading>
+            <Heading as={"h6"} size={"lg"}>Group</Heading>
             <Text color={"fg.700"} fontSize={"lg"}>{myGroups?.length || 0}</Text>
         </HStack>
     )
