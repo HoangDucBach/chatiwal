@@ -1,4 +1,4 @@
-import { bcs } from '@mysten/sui/bcs';
+import { bcs, BcsType } from '@mysten/sui/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 import { normalizeMoveArguments, RawTransactionArgument } from './utils'; // Assuming utils/index.ts exists
 import {
@@ -43,23 +43,23 @@ export const SuperMessageLimitedReadStruct = bcs.struct("SuperMessageLimitedRead
     readers: bcs.vector(bcs.Address), // VecSet<address> represented as Vector
 });
 
-export const SuperMessageFeeBasedStruct = bcs.struct("SuperMessageFeeBased", {
+export const SuperMessageFeeBasedStruct = <CoinType extends BcsType<any>>(coinType: CoinType) => bcs.struct(`SuperMessageFeeBased<${coinType.name}>`, {
     id: bcs.Address,
     group_id: bcs.Address,
     message_blob_id: bcs.String,
-    policy: FeeBasedPolicyStruct,
+    policy: FeeBasedPolicyStruct<CoinType>(coinType),
     owner: bcs.Address,
     readers: bcs.vector(bcs.Address),
     fee_collected: bcs.U64, // Simplified representation of Balance<CoinType>
 });
 
-export const SuperMessageCompoundStruct = bcs.struct("SuperMessageCompound", {
+export const SuperMessageCompoundStruct = <CoinType extends BcsType<any>>(coinType: CoinType) => bcs.struct("SuperMessageCompound", {
     id: bcs.Address,
     group_id: bcs.Address,
     message_blob_id: bcs.String,
     time_lock: TimeLockPolicyStruct,
     limited_read: LimitedReadPolicyStruct,
-    fee_policy: FeeBasedPolicyStruct,
+    fee_policy: FeeBasedPolicyStruct<CoinType>(coinType),
     owner: bcs.Address,
     fee_collected: bcs.U64,
     readers: bcs.vector(bcs.Address),

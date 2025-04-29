@@ -3,7 +3,7 @@ import { MetadataGroup } from "@/libs/schema";
 export type MediaContent = {
     id: string;
     url?: string;
-    raw?: Uint8Array;
+    raw?: string | Uint8Array;
     mimeType: string;
 };
 
@@ -26,6 +26,7 @@ export type TMessageBase = {
     owner: string;
     groupId: string;
     content?: MediaContent[];
+    blobId?: string;
     createdAt?: number;
 };
 
@@ -36,15 +37,15 @@ export type TMessageNoPolicy = TMessageBase & {
 export type TMessageTimeLock = TMessageBase & {
     type: TMessageType.TIME_LOCK;
     policy: {
-        from: number;
-        to: number;
+        from: number | bigint | string;
+        to: number | bigint | string;
     };
 };
 
 export type TMessageLimitedRead = TMessageBase & {
     type: TMessageType.LIMITED_READ;
     policy: {
-        maxReads: number;
+        maxReads: number | bigint | string;
     };
     readers: string[];
 };
@@ -52,29 +53,29 @@ export type TMessageLimitedRead = TMessageBase & {
 export type TMessageFeeBased = TMessageBase & {
     type: TMessageType.FEE_BASED;
     policy: {
-        fee: number;
+        fee: bigint | number | string;
         recipient: string;
     };
     readers: string[];
-    feeCollected: number;
+    feeCollected: bigint | number | string;
     coinType: string;
 };
 
 export type TMessageCompound = TMessageBase & {
     type: TMessageType.COMPOUND;
     timeLockPolicy: {
-        from: number;
-        to: number;
+        from: number | bigint | string;
+        to: number | bigint | string;
     };
     limitedReadPolicy: {
-        maxReads: number;
+        maxReads: number | bigint | string;
     };
     feePolicy: {
-        fee: number;
+        fee: number | bigint | string;
         recipient: string;
     };
     readers: string[];
-    feeCollected: number;
+    feeCollected: number | bigint | string;
     coinType: string;
 };
 

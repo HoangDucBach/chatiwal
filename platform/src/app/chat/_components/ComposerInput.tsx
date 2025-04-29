@@ -204,7 +204,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         const mediaContentAsText = {
             id: nanoid(),
             mimeType: "text/plain",
-            raw: new TextEncoder().encode(data.contentAsText),
+            raw: data.contentAsText,
         } satisfies MediaContent;
 
         const mediaContentAsFiles = data.contentAsFiles.map((file) => {
@@ -278,16 +278,16 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
 
     const onSubmit = async (data: FormValues) => {
         let message = createSuperMessage(data);
-
+        console.log("Message created:", message);
         message = await encryptMessage(message);
+        console.log("Message created:", message);
         message = await storeMessage(message);
-        console.log("Message after minting:", message);
 
         try {
             const params: Partial<MintParams> & { type: SuperMessageType, groupId: string } = {
                 type: data.messageType,
                 groupId: group.id,
-                metadataBlobId: message.getData().blobId || "0xdc78ccceb13d754d2989b89b2190497ed6344d22a4304714face0880fb7ddfff",
+                metadataBlobId: message.getData().blobId,
             };
 
             switch (data.messageType) {

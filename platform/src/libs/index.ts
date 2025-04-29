@@ -21,3 +21,17 @@ export function generateColorFromAddress(addr: string): string {
     const lightness = 50 + (hash % 20); // 50–70%
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
+
+export const TypeSuffixRegex = /<([^>]+)>/;
+
+export function encode(object: any) {
+    const buffer = Buffer.from(JSON.stringify(object));
+    const asBytes = new Uint8Array(buffer);
+    return asBytes;
+}
+
+export function decode(bytes: Uint8Array) {
+    const buffer = Buffer.from(bytes);
+    const asString = buffer.toString();
+    return JSON.parse(asString);
+}

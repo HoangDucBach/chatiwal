@@ -6,7 +6,7 @@ import { Heading, StackProps, Text, VStack, Center } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
-import { MessageBase } from "./messages";
+import { MessageBase, SuperMessageFeeBased, SuperMessageLimitedRead } from "./messages";
 import { TMessage, TMessageBase } from "@/types";
 import { useSealClient } from "@/hooks/useSealClient";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
@@ -108,63 +108,16 @@ export function Chat(props: Props) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.1 }}
                 >
-                    <MessageBase
-                        self={false}
-                        message={{
-                            id: "msg-001",
-                            owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                            groupId: channelName,
-                            content: [
-                                {
-                                    id: "media-001",
-                                    url: "https://img.freepik.com/premium-photo/nature-background-people-animal-game-architecture-logo-mockup_1086760-37566.jpg?semt=ais_hybrid&w=740",
-                                    dimensions: {
-                                        width: 300,
-                                        height: 200,
-                                    },
-                                    mimeType: "image/jpeg",
-                                },
-                            ],
-                            createdAt: Date.now(),
-                        }} />
-                    <MessageBase
-                        self={false}
-                        message={{
-                            id: "msg-001",
-                            owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                            groupId: channelName,
-                            createdAt: Date.now(),
-                        }} />
-                    <MessageBase
-                        self={false}
-                        message={{
-                            id: "msg-001",
-                            owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                            groupId: channelName,
-                            createdAt: Date.now(),
-                        }} />
-                    <MessageBase
-                        message={{
-                            id: "msg-001",
-                            owner: "0xffd4f043057226453aeba59732d41c6093516f54823ebc3a16d17f8a77d2f0ad",
-                            groupId: channelName,
-                            content: [
-                                {
-                                    id: "media-001",
-                                    raw: new TextEncoder().encode("Hello world"),
-                                    name: "Cute kitten",
-                                    mimeType: "text/plain",
-                                }
-                            ],
-                            createdAt: Date.now(),
-                        }} />
-                    {messages.map((message: TMessageBase) => (
+                    {/* {messages.map((message: TMessageBase) => (
                         <MessageBase
                             key={message.id}
                             message={message}
                             self={message.owner === currentAccount?.address}
                         />
-                    ))}
+                    ))} */}
+                    <SuperMessageLimitedRead
+                        messageId="0xe685eb1c36e677f59fdcc5e1db6934f064909c5e9d90e5e450ddb4a8cfca6726"
+                    />
                     <div ref={messagesEndRef} />
                 </ScrollMotionVStack>
             </Center>

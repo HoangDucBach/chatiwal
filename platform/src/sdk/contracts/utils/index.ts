@@ -13,8 +13,8 @@ export const UID = bcs.fixedArray(32, bcs.u8()).transform({
 });
 
 export const CoinStruct = bcs.struct('Coin', {
-	id: UID,
-	value: bcs.u64(),
+    id: bcs.struct('UID', { bytes: bcs.Address }),
+    balance: bcs.struct('Balance', { value: bcs.u64() })
 });
 
 export type RawTransactionArgument<T> = T | TransactionArgument;

@@ -1,7 +1,8 @@
+import { encode } from '@/libs';
 import { MessageBase } from '@/sdk';
 import { NETWORK } from '@/utils/constants';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
-import { WalrusClient, TESTNET_WALRUS_PACKAGE_CONFIG } from '@mysten/walrus';
+import { WalrusClient } from '@mysten/walrus';
 import { useMemo } from 'react';
 
 interface StoreOptions {
@@ -32,9 +33,7 @@ export const useWalrusClient = (): IWalrusClientActions => {
 
     const store = async (object: any, options?: StoreOptions) => {
         const { deletable = true, epochs = 1 } = options || {};
-        const jsonString = JSON.stringify(object);
-        const encoder = new TextEncoder();
-        const encoded = encoder.encode(jsonString);
+        const encoded = encode(object);
         const encodedBlob = await walrusClient.encodeBlob(encoded);
 
         if (!currentAccount) {

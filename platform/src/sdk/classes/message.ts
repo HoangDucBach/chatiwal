@@ -19,7 +19,7 @@ export enum MessageType {
 
 
 export type MessageData = {
-    content?: any;
+    content: ArrayBuffer;
     blobId?: string;
 };
 
@@ -29,6 +29,7 @@ interface MessageOptionsBase {
     groupId: ID;
     data: MessageData;
     owner: Address;
+    type?: MessageType;
 }
 
 export interface NoPolicyOptions extends MessageOptionsBase {
@@ -60,11 +61,12 @@ export type MessageOptions =
     | CompoundOptions;
 
 
-export abstract class MessageBase {
+export class MessageBase {
     protected id: ID;
     protected groupId: ID;
     protected data: MessageData;
     protected owner: Address;
+    protected type: MessageType;
 
     constructor(options: MessageOptions) {
         const nonce = random(5);
@@ -75,9 +77,12 @@ export abstract class MessageBase {
         this.groupId = options.groupId;
         this.data = options.data;
         this.owner = options.owner;
+        this.type = options.type || MessageType.NoPolicy;
     }
 
-    abstract getType(): MessageType;
+    getType(): MessageType {
+        return this.type;
+    }
 
     getId(): ID {
         return this.id;
@@ -89,6 +94,16 @@ export abstract class MessageBase {
 
     setData(data: MessageData): MessageBase {
         this.data = data;
+        return this;
+    }
+
+    setBlobId(blobId: string): MessageBase {
+        this.data.blobId = blobId;
+        return this;
+    }
+
+    setContent(content: any): MessageBase {
+        this.data.content = content;
         return this;
     }
 

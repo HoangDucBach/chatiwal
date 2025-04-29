@@ -304,6 +304,7 @@ export class ChatiwalClient {
         coinType: string;
     }) {
         const tx = new Transaction();
+        
         this.messageModule.read_message_fee_based({
             arguments: [messageId, paymentCoinId],
             typeArgs: [coinType]

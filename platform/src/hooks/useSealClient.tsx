@@ -7,6 +7,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { MessageBase, MessageType, SuperMessageNoPolicy } from "@/sdk";
 import { useChatiwalClient } from "./useChatiwalClient";
 import { useSessionKeys } from "./useSessionKeysStore";
+import { encode } from "@/libs";
 
 function getSealApproveTarget(packageId: string, message: SuperMessageNoPolicy): string {
     switch (message.getType()) {
@@ -27,8 +28,8 @@ function getSealApproveTarget(packageId: string, message: SuperMessageNoPolicy):
 function getSealApproveArguments(
     tx: Transaction,
     message: MessageBase,
+    id: string
 ) {
-    const id = message.getId();
     const groupId = message.getGroupId();
 
     switch (message.getType()) {
@@ -51,7 +52,7 @@ function getSealApproveArguments(
 
 interface ISealActions {
     encryptMessage: (message: MessageBase) => Promise<MessageBase>;
-    decryptMessage: (encryptedMessage: MessageBase) => Promise<MessageBase>;
+    decryptMessage: (encryptedMessage: MessageBase, sessionKey: SessionKey) => Promise<MessageBase>;
     createGroupSessionKey: (groupId: string) => Promise<SessionKey>;
     createMessageSessionKey: (messageId: string) => Promise<SessionKey>;
 }
@@ -60,7 +61,7 @@ export function useSealClient(): ISealActions {
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
     const { client } = useChatiwalClient();
-    const { getGroupKey, setGroupKey } = useSessionKeys();
+    const { getGroupKey } = useSessionKeys();
     const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
     const sealClient = new SealClient({
         suiClient,
@@ -71,17 +72,16 @@ export function useSealClient(): ISealActions {
     const packageId = client.getPackageConfig().chatiwalId;
 
     function messageSealApprove(packageId: string) {
-        return (tx: Transaction, message: MessageBase) => {
+        return (tx: Transaction, message: MessageBase, id: string) => {
             tx.moveCall({
                 target: getSealApproveTarget(packageId, message),
-                arguments: getSealApproveArguments(tx, message),
+                arguments: getSealApproveArguments(tx, message, id),
             });
         };
     }
 
     function groupSealApprove(packageId: string) {
-        return (tx: Transaction, message: MessageBase) => {
-            const id = message.getId();
+        return (tx: Transaction, message: MessageBase, id: string) => {
             const groupId = message.getGroupId();
 
             tx.moveCall({
@@ -128,48 +128,48 @@ export function useSealClient(): ISealActions {
     }, [currentAccount, packageId, signPersonalMessage]);
 
     const encryptMessage = useCallback(async (message: MessageBase): Promise<MessageBase> => {
-        const messageAsString = JSON.stringify(message.getData().content);
-        const messageAsUint8Array = new TextEncoder().encode(messageAsString);
-        const id = message.getId();
+        const content = message.getData().content;
+        const contentAsBytes = new Uint8Array(content);
+        const groupObjectBytes = fromHex(message.getGroupId());
+        const id = toHex(new Uint8Array([...groupObjectBytes, ...contentAsBytes]));
 
         const { encryptedObject } = await sealClient.encrypt({
             id,
             packageId,
             threshold: 2,
-            data: messageAsUint8Array,
+            data: contentAsBytes,
         });
 
-        return message.setData({
-            content: encryptedObject,
-        })
+        return message.setContent(encryptedObject);
 
     }, [packageId, sealClient]);
 
-    const decryptMessage = useCallback(async (encryptedMessage: MessageBase): Promise<MessageBase> => {
+    const decryptMessage = useCallback(async (encryptedMessage: MessageBase, sessionKey: SessionKey): Promise<MessageBase> => {
         if (!currentAccount) {
             throw new Error("Not connected");
         }
         try {
             const encryptedData = encryptedMessage.getData();
-            const inlineData = encryptedData;
-            const encryptedObjectBytes = Uint8Array.from(Object.values(inlineData.content));
-            const encryptedObject = EncryptedObject.parse(encryptedObjectBytes);
-            const groupId = encryptedMessage.getGroupId();
+            const contentAsBytes = encryptedData.content;
+            const encryptedObject = EncryptedObject.parse(new Uint8Array(contentAsBytes));
             const messageType = encryptedMessage.getType();
+            let groupKey = sessionKey;
 
-            let groupKey = getGroupKey(groupId);
+            if (!groupKey) {
+                throw new Error("Group key not found, please create a new one");
+            }
 
-            if (!groupKey || groupKey.isExpired()) {
-                groupKey = await createGroupSessionKey(groupId);
+            if (groupKey.isExpired()) {
+                throw new Error("Session key expired, please create a new one");
             }
 
             const tx = new Transaction();
             let ids = [encryptedObject.id];
             ids.forEach((id) => {
                 if (messageType === MessageType.NoPolicy) {
-                    groupSealApprove(packageId)(tx, encryptedMessage);
+                    groupSealApprove(packageId)(tx, encryptedMessage, id);
                 } else {
-                    messageSealApprove(packageId)(tx, encryptedMessage);
+                    messageSealApprove(packageId)(tx, encryptedMessage, id);
                 }
             });
             const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
@@ -181,12 +181,11 @@ export function useSealClient(): ISealActions {
             });
 
             const decryptedBytes = await sealClient.decrypt({
-                data: encryptedObjectBytes,
+                data: contentAsBytes,
                 sessionKey: groupKey,
                 txBytes: txBytes,
             });
 
-            setGroupKey(groupId, groupKey);
 
             const decryptedContentAsString = new TextDecoder().decode(decryptedBytes);
             const decryptedContent = JSON.parse(decryptedContentAsString);
@@ -196,9 +195,10 @@ export function useSealClient(): ISealActions {
 
             return decryptedMessage;
         } catch (error) {
+            console.error("Error decrypting message:", error);
             throw new Error("Failed to decrypt message, please try again.");
         }
-    }, [currentAccount, packageId, sealClient, getGroupKey, setGroupKey]);
+    }, [currentAccount, packageId, sealClient, getGroupKey]);
 
     return useMemo(() => ({
         encryptMessage,
