@@ -1,26 +1,26 @@
 "use client";
 
-import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, chakra, Text, VStack, Float, Circle, For } from "@chakra-ui/react";
+import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For } from "@chakra-ui/react";
 import { formatAddress, fromBase64 } from "@mysten/sui/utils";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import ReactPlayer from "react-player";
-import { useAbly, useChannel } from "ably/react";
+import { useChannel } from "ably/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
-import { decode, encode, generateColorFromAddress, TypeSuffixRegex } from "@/libs";
-import { MediaContent, TMessage, TMessageBase, TMessageCompound, TMessageFeeBased, TMessageLimitedRead, TMessageTimeLock, TMessageType } from "@/types";
+import { generateColorFromAddress, TypeSuffixRegex } from "@/libs";
+import { MediaContent, TMessage, TMessageFeeBased, TMessageLimitedRead, TMessageTimeLock, TMessageType } from "@/types";
+import { NoPolicyOptions, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct } from "@/sdk";
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
-import { MessageOptions, NoPolicyOptions, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct } from "@/sdk";
 import { CoinStruct } from "@/sdk/contracts/utils";
 import { Button } from "@/components/ui/button";
 import { Transaction } from "@mysten/sui/transactions";
 import { toaster } from "@/components/ui/toaster";
 import { useSealClient } from "@/hooks/useSealClient";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
-import { MessageBase as MessageBaseClass, SuperMessageLimitedRead as SuperMessageLimitedReadClass } from "@/sdk";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
+import { MessageBase as MessageBaseClass } from "@/sdk";
 
 interface ContentProps {
     self?: boolean;
@@ -118,35 +118,38 @@ export function MessageBase(props: MessageBaseProps) {
     const channelName = message.groupId;
     const { channel } = useChannel({ channelName })
     const { decryptMessage, createMessageSessionKey } = useSealClient();
-    const { setMessageKey, getMessageKey, messageKeys } = useSessionKeys();
+    const { setMessageKey, getGroupKey, messageKeys } = useSessionKeys();
     const { read } = useWalrusClient();
     const { data: content, isLoading: isDecrypting } = useQuery({
         queryKey: ["messages::group::decypt", message.id],
         queryFn: async () => {
-            const messageBase = new MessageBaseClass({
-                id: message.id,
-                data: {
-                    blobId: message.blobId,
-                },
-                groupId: message.groupId,
-                owner: message.owner
-            } as NoPolicyOptions)
+            // const messageBase = new MessageBaseClass({
+            //     id: message.id,
+            //     data: {
+            //         blobId: message.blobId,
+            //         content: message.content
+            //     },
+            //     groupId: message.groupId,
+            //     owner: message.owner
+            // } as NoPolicyOptions)
 
-            let messageKey = getMessageKey(message.id);
-            if (!messageKey) return null
+            // let messageKey = getGroupKey(message.groupId);
+            // console.log("messageKey", messageKey);
+            // if (!messageKey) return null;
 
-            const blobId = messageBase.getData().blobId;
-            if (!blobId) return null;
-            const decryptedBlob = await read(["e3n0ay6xDJ4de4nzLe7c6o-o8ZkxYrF3MrfmaYU2Qqc"]);
-            console.log("decryptedBlob", decryptedBlob);
-            const test = Buffer.from(decryptedBlob[0]).toString();
-            console.log("test", decryptedBlob[0] instanceof ArrayBuffer);
-            // messageBase.setData({
-            //     content: decode(new Uint8Array(decryptedBlob[0])),
-            // })
-            // const decryptedMessage = await decryptMessage(messageBase, messageKey);
+            // const blobId = messageBase.getData().blobId;
+            // if (blobId) {
+            //     const decryptedBlob = await read(["e3n0ay6xDJ4de4nzLe7c6o-o8ZkxYrF3MrfmaYU2Qqc"]);
+            //     const decryptedMessageBase = await decryptMessage(messageBase, messageKey);
+            // }
 
-            return decryptedMessage.getData().content as MediaContent[];
+            // // messageBase.setData({
+            // //     content: decode(new Uint8Array(decryptedBlob[0])),
+            // // })
+            // const decryptedMessageBase = await decryptMessage(messageBase, messageKey);
+            // console.log("decryptedMessage 123", decryptedMessageBase);
+            // return decryptedMessageBase.getData().content;
+            return message.content;
         },
         enabled: !!message.id && !!messageKeys,
         refetchOnMount: false,

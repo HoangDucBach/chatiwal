@@ -19,7 +19,7 @@ export enum MessageType {
 
 
 export type MessageData = {
-    content: ArrayBuffer;
+    content: ArrayBuffer | Uint8Array;
     blobId?: string;
 };
 

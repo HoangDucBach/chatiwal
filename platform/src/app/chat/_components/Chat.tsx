@@ -7,7 +7,7 @@ import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 import { MessageBase, SuperMessageFeeBased, SuperMessageLimitedRead } from "./messages";
-import { TMessage, TMessageBase } from "@/types";
+import { MediaContent, TMessage, TMessageBase, TMessageNoPolicy, TProtocolMessage } from "@/types";
 import { useSealClient } from "@/hooks/useSealClient";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
 import { SuperMessageNoPolicy } from "@/sdk";
@@ -15,6 +15,8 @@ import { toaster } from "@/components/ui/toaster";
 import { useGroup } from "../_hooks/useGroupId";
 import { Tag } from "@/components/ui/tag";
 import { ComposerInput } from "./ComposerInput";
+import { useSessionKeys } from "@/hooks/useSessionKeysStore";
+import { decode } from "@msgpack/msgpack";
 
 const ScrollMotionVStack = motion.create(VStack);
 
@@ -26,9 +28,12 @@ export function Chat(props: Props) {
     const currentAccount = useCurrentAccount();
     const { decryptMessage } = useSealClient();
     const { channel } = useChannel({ channelName });
-    const [messages, setMessages] = useState<TMessage[]>([]);
+    const [messages, setMessages] = useState<TMessageBase[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const { getGroupKey } = useSessionKeys();
+
     const onMessageSend = async (plainMessage: TMessageBase) => {
+        console.log("Message received", plainMessage);
         setMessages((previousMessages: any) => [...previousMessages, plainMessage]);
     }
 
@@ -39,12 +44,13 @@ export function Chat(props: Props) {
     });
 
     useChannel({ channelName }, AblyChannelManager.EVENTS.MESSAGE_SEND, async (message) => {
+        console.log("Message received", message);
         try {
             if (message.clientId === currentAccount?.address) {
                 return;
             }
 
-            const messageData = message.data as TMessage;
+            const messageData = message.data as TProtocolMessage;
             const encryptedMessage = new SuperMessageNoPolicy({
                 id: messageData.id,
                 data: {
@@ -53,16 +59,21 @@ export function Chat(props: Props) {
                 groupId: messageData.groupId,
                 owner: messageData.owner,
             });
-            const decryptedMessage = await decryptMessage(encryptedMessage);
+
+            const sessionKey = getGroupKey(messageData.groupId);
+            if (!sessionKey) {
+                throw new Error("Session key not found");
+            }
+            const decryptedMessage = await decryptMessage(encryptedMessage, sessionKey);
             const decryptedMessageData: TMessageBase = {
                 id: decryptedMessage.getId(),
                 groupId: messageData.groupId,
                 owner: messageData.owner,
-                content: decryptedMessage.getData().content,
+                content: decode(decryptedMessage.getData().content) as MediaContent[],
                 createdAt: Date.now(),
             }
 
-            setMessages((previousMessages: any) => [...previousMessages, decryptedMessageData]);
+            setMessages((previousMessages) => [...previousMessages, decryptedMessageData]);
         } catch (error) {
             toaster.error({
                 title: "Error",
@@ -108,16 +119,16 @@ export function Chat(props: Props) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.1 }}
                 >
-                    {/* {messages.map((message: TMessageBase) => (
+                    {messages.map((message: TMessageBase) => (
                         <MessageBase
                             key={message.id}
-                            message={message}
+                            message={message as TMessageNoPolicy}
                             self={message.owner === currentAccount?.address}
                         />
-                    ))} */}
-                    <SuperMessageLimitedRead
+                    ))}
+                    {/* <SuperMessageLimitedRead
                         messageId="0xe685eb1c36e677f59fdcc5e1db6934f064909c5e9d90e5e450ddb4a8cfca6726"
-                    />
+                    /> */}
                     <div ref={messagesEndRef} />
                 </ScrollMotionVStack>
             </Center>

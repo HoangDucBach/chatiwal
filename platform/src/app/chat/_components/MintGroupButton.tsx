@@ -15,13 +15,13 @@ import { useState } from "react";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTrigger } from "@/components/ui/dialog";
+import { z } from "zod";
 
 interface MintGroupFormData {
-    name: string;
+    name?: string;
     description?: string;
     tags?: string[];
 }
-
 
 interface Props extends ButtonProps {
     onSuccess?: (groupId: string) => void;
@@ -62,8 +62,8 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
             const newGroupData = groupMintedEvent.parsedJson as { id: string };
             onSuccess?.(newGroupData.id);
             await addGroupMembership(currentAccount?.address!, newGroupData.id);
+            
             return newGroupData.id;
-
         },
         onSuccess: async (groupId: string) => {
             toaster.success({
@@ -111,6 +111,10 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
 
         mint(metadataBlobId);
     };
+
+    const handleMintGroupWithoutMetadata = () => {
+        mint(undefined);
+    }
 
     const handleMetadataToggle = (event: any) => {
         const isEnabled = event.checked;
@@ -160,7 +164,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                                         name="name"
                                         control={control}
                                         render={({ field, fieldState }) => (
-                                            <Field.Root required invalid={!!fieldState.error}>
+                                            <Field.Root invalid={!!fieldState.error}>
                                                 <Field.Label fontSize="sm">
                                                     Group Name
                                                     <Field.RequiredIndicator />
@@ -258,7 +262,8 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
 
                     <DialogFooter>
                         <Button
-                            type="submit"
+                            type={isMetadataEnabled ? "submit" : "button"}
+                            onClick={isMetadataEnabled ? undefined : handleMintGroupWithoutMetadata}
                             colorScheme="primary"
                             loading={isPending || isSubmitting}
                             loadingText="Minting..."

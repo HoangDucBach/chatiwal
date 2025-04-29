@@ -13,7 +13,11 @@ export type TGroup = {
     metadata?: MetadataGroup;
 };
 
-export enum TMessageType {
+export enum MessageType {
+    BASE = 'base',
+
+    // Contract Policies
+
     NO_POLICY = 'no-policy',
     TIME_LOCK = 'time-lock',
     LIMITED_READ = 'limited-read',
@@ -25,17 +29,17 @@ export type TMessageBase = {
     id: string;
     owner: string;
     groupId: string;
-    content?: MediaContent[];
+    content: Uint8Array;
     blobId?: string;
     createdAt?: number;
 };
 
 export type TMessageNoPolicy = TMessageBase & {
-    type: TMessageType.NO_POLICY;
+    type: MessageType.NO_POLICY;
 };
 
 export type TMessageTimeLock = TMessageBase & {
-    type: TMessageType.TIME_LOCK;
+    type: MessageType.TIME_LOCK;
     policy: {
         from: number | bigint | string;
         to: number | bigint | string;
@@ -43,7 +47,7 @@ export type TMessageTimeLock = TMessageBase & {
 };
 
 export type TMessageLimitedRead = TMessageBase & {
-    type: TMessageType.LIMITED_READ;
+    type: MessageType.LIMITED_READ;
     policy: {
         maxReads: number | bigint | string;
     };
@@ -51,7 +55,7 @@ export type TMessageLimitedRead = TMessageBase & {
 };
 
 export type TMessageFeeBased = TMessageBase & {
-    type: TMessageType.FEE_BASED;
+    type: MessageType.FEE_BASED;
     policy: {
         fee: bigint | number | string;
         recipient: string;
@@ -62,7 +66,7 @@ export type TMessageFeeBased = TMessageBase & {
 };
 
 export type TMessageCompound = TMessageBase & {
-    type: TMessageType.COMPOUND;
+    type: MessageType.COMPOUND;
     timeLockPolicy: {
         from: number | bigint | string;
         to: number | bigint | string;
@@ -80,6 +84,7 @@ export type TMessageCompound = TMessageBase & {
 };
 
 export type TMessage =
+    | TMessageBase
     | TMessageNoPolicy
     | TMessageTimeLock
     | TMessageLimitedRead
