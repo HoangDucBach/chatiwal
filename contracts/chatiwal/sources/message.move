@@ -761,11 +761,7 @@ fun withdraw_fees_compound_impl<CoinType>(
 
 // === Seal Interface ===
 
-fun approve_internal_for_super_message_time_lock(
-    id: vector<u8>,
-    msg: &SuperMessageTimeLock,
-    c: &Clock,
-): bool {
+fun approve_internal_for_super_message_time_lock(msg: &SuperMessageTimeLock, c: &Clock): bool {
     let ts = c.timestamp_ms();
     let from = msg.policy.time_lock_policy_get_from();
     let to = msg.policy.time_lock_policy_get_to();
@@ -778,11 +774,10 @@ fun approve_internal_for_super_message_time_lock(
         return false
     };
 
-    is_prefix(msg.id.to_bytes(), id)
+    true
 }
 
 fun approve_internal_for_super_message_limited_read(
-    id: vector<u8>,
     msg: &SuperMessageLimitedRead,
     ctx: &TxContext,
 ): bool {
@@ -792,11 +787,10 @@ fun approve_internal_for_super_message_limited_read(
         return false
     };
 
-    is_prefix(msg.id.to_bytes(), id)
+    true
 }
 
 fun approve_internal_for_super_message_fee_based<CoinType>(
-    id: vector<u8>,
     msg: &SuperMessageFeeBased<CoinType>,
     ctx: &TxContext,
 ): bool {
@@ -806,11 +800,10 @@ fun approve_internal_for_super_message_fee_based<CoinType>(
         return false
     };
 
-    is_prefix(msg.id.to_bytes(), id)
+    true
 }
 
 fun approve_internal_for_super_message_compound<CoinType>(
-    id: vector<u8>,
     msg: &SuperMessageCompound<CoinType>,
     ctx: &TxContext,
 ): bool {
@@ -820,11 +813,11 @@ fun approve_internal_for_super_message_compound<CoinType>(
         return false
     };
 
-    is_prefix(msg.id.to_bytes(), id)
+    true
 }
 
 entry fun seal_approve_super_message_time_lock(
-    id: vector<u8>,
+    id: vector<u8>, // Key format: [pkg_id, group_id, hash(content)
     msg: &SuperMessageTimeLock,
     group: &Group,
     c: &Clock,
@@ -832,40 +825,40 @@ entry fun seal_approve_super_message_time_lock(
 ) {
     assert!(group.group_get_group_id() == msg.group_id, ENotMatch);
     assert!(approve_internal(id, ctx.sender(), group), ESealApprovalFailed);
-    assert!(approve_internal_for_super_message_time_lock(id, msg, c), ESealApprovalFailed);
+    assert!(approve_internal_for_super_message_time_lock(msg, c), ESealApprovalFailed);
 }
 
 entry fun seal_approve_super_message_limited_read(
-    id: vector<u8>,
+    id: vector<u8>, // Key format: [pkg_id, group_id, hash(content)
     msg: &SuperMessageLimitedRead,
     group: &Group,
     ctx: &TxContext,
 ) {
     assert!(group.group_get_group_id() == msg.group_id, ENotMatch);
     assert!(approve_internal(id, ctx.sender(), group), ESealApprovalFailed);
-    assert!(approve_internal_for_super_message_limited_read(id, msg, ctx), ESealApprovalFailed);
+    assert!(approve_internal_for_super_message_limited_read(msg, ctx), ESealApprovalFailed);
 }
 
 entry fun seal_approve_super_message_fee_based<CoinType>(
-    id: vector<u8>,
+    id: vector<u8>, // Key format: [pkg_id, group_id, hash(content)
     msg: &SuperMessageFeeBased<CoinType>,
     group: &Group,
     ctx: &TxContext,
 ) {
     assert!(group.group_get_group_id() == msg.group_id, ENotMatch);
-    assert!(approve_internal_for_super_message_fee_based(id, msg, ctx), ESealApprovalFailed);
+    assert!(approve_internal_for_super_message_fee_based(msg, ctx), ESealApprovalFailed);
     assert!(approve_internal(id, ctx.sender(), group), ESealApprovalFailed);
 }
 
 entry fun seal_approve_super_message_compound<CoinType>(
-    id: vector<u8>,
+    id: vector<u8>, // Key format: [pkg_id, group_id, hash(content)
     msg: &SuperMessageCompound<CoinType>,
     group: &Group,
     ctx: &TxContext,
 ) {
     assert!(group.group_get_group_id() == msg.group_id, ENotMatch);
     assert!(approve_internal(id, ctx.sender(), group), ESealApprovalFailed);
-    assert!(approve_internal_for_super_message_compound(id, msg, ctx), ESealApprovalFailed);
+    assert!(approve_internal_for_super_message_compound(msg, ctx), ESealApprovalFailed);
 }
 
 // === Helper Functions ===
