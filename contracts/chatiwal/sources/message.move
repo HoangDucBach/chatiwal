@@ -399,7 +399,7 @@ entry fun seal_approve_super_message(
 }
 
 fun check_policy(id: vector<u8>, msg: &SuperMessage, c: &Clock, ctx: &TxContext): bool {
-    let mut pass = false;
+    let mut pass = true;
 
     // Check prefixx
     if (msg.aux_id !=id) {
