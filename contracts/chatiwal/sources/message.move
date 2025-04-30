@@ -54,6 +54,7 @@ public struct SuperMessage has key, store {
     owner: address,
     fee_collected: Balance<SUI>,
     readers: VecSet<address>,
+    created_at: u64,
 }
 
 public struct MessagesSnapshot has key {
@@ -135,6 +136,7 @@ public entry fun mint_super_message_no_policy_and_transfer(
         owner: s,
         fee_collected: balance::zero(),
         readers: vec_set::empty(),
+        created_at: c.timestamp_ms(),
     };
 
     events::emit_super_message_minted(
@@ -170,6 +172,7 @@ public entry fun mint_super_message_time_lock_and_transfer(
         owner: s,
         fee_collected: balance::zero(),
         readers: vec_set::empty(),
+        created_at: c.timestamp_ms(),
     };
 
     events::emit_super_message_minted(
@@ -204,6 +207,7 @@ public entry fun mint_super_message_limited_read_and_transfer(
         owner: s,
         fee_collected: balance::zero(),
         readers: vec_set::empty(),
+        created_at: c.timestamp_ms(),
     };
 
     events::emit_super_message_minted(
@@ -304,6 +308,7 @@ public entry fun mint_super_message_fee_based_and_transfer(
         owner: s,
         fee_collected: balance::zero(),
         readers: vec_set::empty(),
+        created_at: c.timestamp_ms(),
     };
 
     events::emit_super_message_minted(
@@ -344,6 +349,7 @@ public entry fun mint_super_message_compound_and_transfer(
         owner: s,
         fee_collected: balance::zero(),
         readers: vec_set::empty(),
+        created_at: c.timestamp_ms(),
     };
 
     events::emit_super_message_minted(
