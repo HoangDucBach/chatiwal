@@ -300,13 +300,12 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
 
         try {
             const encryptedResult = await encryptMessage(messageToEncrypt);
-            console.log("ece", encryptedResult);
 
-            publish(AblyChannelManager.EVENTS.MESSAGE_SEND, encode(messageToEncrypt));
+            await publish(AblyChannelManager.EVENTS.MESSAGE_SEND, encode(encryptedResult));
             resetForm();
 
         } catch (error: any) {
-            console.error("Encryption or Ably publish error:", error);
+            console.error(error);
             toaster.error({ title: "Send Error", description: `Failed to encrypt or send message: ${error?.message ?? 'Unknown error'}` });
         }
 
@@ -322,32 +321,60 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             return;
         }
 
-        let message: TMessage; // Use TMessage type
-        try {
-            message = await createMessageForProcessing(data);
-        } catch (createError: any) {
-            toaster.error({ title: "Creation Error", description: createError?.message ?? 'Failed to prepare message data' });
+        const textToSend = data.contentAsText;
+        const filesToSend = data.contentAsFiles;
+
+        if (!textToSend && filesToSend.length === 0) {
+            toaster.warning({ title: "Empty Message", description: "Cannot send an empty message.", duration: 2000 });
             return;
         }
 
-        let encryptedMessageData: { content: Uint8Array, [key: string]: any }; // Assuming encrypt returns object with content
-        try {
-            // Pass the TMessage object, ensure encryptMessage accepts it or required fields
-            encryptedMessageData = await encryptMessage(message);
-            // Update message content with encrypted data if needed for storage
-            message.content = encryptedMessageData.content;
-        } catch (encError: any) {
-            toaster.error({ title: "Encryption Error", description: encError?.message ?? 'Failed to encrypt message' });
-            return;
-        }
+        if (!currentAccount) throw new Error("Not connected");
+        if (!group?.id) throw new Error("Group not loaded");
+
+        const plainMessageId = nanoid();
+        const auxId = generateContentId(fromHex(group.id));
+        const mediaContentAsText = { id: nanoid(), mimeType: "text/plain", raw: data.contentAsText } satisfies MediaContent;
+        const fileProcessingPromises = data.contentAsFiles.map(file => {
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            return new Promise<MediaContent>((resolve, reject) => {
+                reader.onload = () => resolve({
+                    id: nanoid(),
+                    mimeType: file.type,
+                    raw: new Uint8Array(reader.result as ArrayBuffer),
+                });
+                reader.onerror = (e) => reject(e);
+            });
+        });
+
+
+        const resolvedMediaContentFiles = await Promise.all(fileProcessingPromises);
+        const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
+        const encodedUint8Array: Uint8Array = encode(finalDataStructure);
+
+
+
+        // Create a structure suitable for encryptMessage
+        let messageToEncrypt = {
+            id: plainMessageId,
+            owner: currentAccount.address,
+            groupId: group.id,
+            auxId: Array.from(auxId),
+            content: encodedUint8Array,
+            readers: [],
+            feeCollected: {
+                value: "0",
+            }
+        } as TMessage;
+
+        let encryptedResult = await encryptMessage(messageToEncrypt);
 
         let blobId: string | undefined;
         try {
-            // Assuming storeMessage accepts TMessage or necessary fields
-            message = await storeMessage(message);
-            blobId = message.blobId;
+            encryptedResult = await storeMessage(encryptedResult);
+            blobId = messageToEncrypt.blobId;
             if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
-            message.blobId = blobId; // Update message object
         } catch (storeError: any) {
             toaster.error({ title: "Storage Error", description: storeError?.message ?? 'Failed to store message' });
             return;
@@ -590,7 +617,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     <Button
                         size="sm"
                         onClick={handleCreateGroupKey}
-                        colorPalette={currentSessionKey?.isExpired() ? "red" : "default"}
+                        colorPalette={currentSessionKey ? currentSessionKey?.isExpired() ? "red" : "green" : "default"}
                         variant="outline"
                     >
                         <HiKey />
@@ -631,7 +658,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     <Button
                         type="button"
                         onClick={handleSubmit(onMintSubmit)}
-                        colorScheme="primary" // Use colorScheme for Chakra Button
+                        colorPalette="primary"
                         loading={isPending || isSubmitting}
                         loadingText="Minting..."
                         size="sm"

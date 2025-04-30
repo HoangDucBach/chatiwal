@@ -230,9 +230,10 @@ export class ChatiwalClient {
         payment: ObjectId; // paymentCoinId
     }): Transaction {
         const tx = new Transaction();
-        // SUI coinType is implicit
+        const paymentCoin = tx.splitCoins(tx.gas, [payment]);
+
         this.messageModule.read_message({
-            arguments: [msg, payment],
+            arguments: [msg, paymentCoin],
         })(tx);
         return tx;
     }

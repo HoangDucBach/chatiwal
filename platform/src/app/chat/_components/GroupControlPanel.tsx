@@ -1,49 +1,59 @@
 "use client"
 
-import { Button } from "@/components/ui/button";
-import { Box, Heading, HStack, Icon, StackProps, VStack, Text } from "@chakra-ui/react";
+import { Heading, HStack, VStack, Text, TabsList, TabsTrigger, useTabs, TabsRootProvider, TabsContent, TabsRootProps } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { IoIosAdd } from "react-icons/io";
 
-import { useChatiwalClient } from "@/hooks/useChatiwalClient";
-import { toaster } from "@/components/ui/toaster";
 
-import { GroupCard } from "./GroupCard";
 import { useGroup } from "../_hooks/useGroupId";
 import { useChannel } from "ably/react";
 import { MemberCard } from "./MemberCard";
 import AddMember from "./AddMember";
+import { TMessage } from "@/types";
+import { MessageContainer } from "./MessageContainer";
+import { GroupDetailsTab } from "./GroupDetailsTab";
 
-interface Props extends StackProps { }
-export function GroupControlPanel(props: Props) {
+interface Props extends TabsRootProps {
+    chatTabProps: {
+        messages: TMessage[]
+    };
+}
+export function GroupControlPanel({ chatTabProps, ...props }: Props) {
+    const items = [
+        { id: "chat", title: "Chat", content: <MessageContainer flex={"4"} messages={chatTabProps?.messages || []} /> },
+        { id: "member", title: "Details", content: <GroupDetailsTab /> },
+    ]
+    const tabs = useTabs({
+        defaultValue: "chat",
+        onValueChange: (value) => {
+            console.log(value);
+        },
+    })
     return (
-        <VStack
-            pos={"relative"}
-            zIndex={"0"}
-            h={"full"}
-            p={"4"}
-            bg={"bg.100/75"}
-            backdropFilter={"blur(256px)"}
-            rounded={"4xl"}
-            gap={"6"}
-            {...props}
-        >
-            <Box
-                pos={"absolute"}
-                bottom={0}
-                left={0}
-                w={"32"}
-                h={"32"}
-                zIndex={"-1"}
-                bg={"primary"}
-                borderRadius={"full"}
-                filter={"blur(128px)"}
-            />
-            <GroupControlPanelHeader />
-            <GroupControlPanelBody />
-            <GroupControlPanelFooter />
-        </VStack>
+        <TabsRootProvider value={tabs} variant={"subtle"} w={"full"} h={"full"} >
+            <TabsList
+                w={"full"}
+                pos={"relative"}
+                zIndex={"0"}
+                p={"3"}
+                bg={"bg.100/75"}
+                backdropFilter={"blur(256px)"}
+                rounded={"3xl"}
+                gap={"6"}
+            >
+                {items.map((item) => (
+                    <TabsTrigger rounded={"2xl"} color={"fg.contrast"} _selected={{ bg: "bg.300", color: "fg" }} value={item.id} key={item.id}>
+                        {item.title}
+                    </TabsTrigger>
+                ))}
+            </TabsList>
+            {
+                items.map((item) => (
+                    <TabsContent w={"full"} h={"90%"} value={item.id} key={item.id}>
+                        {item.content}
+                    </TabsContent>
+                ))
+            }
+        </TabsRootProvider>
     )
 }
 

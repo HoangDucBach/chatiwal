@@ -118,7 +118,7 @@ export function useSealClient(): ISealActions {
             throw new Error("Group key not found, please create a new one");
         }
 
-        if (sessionKey.isExpired) {
+        if (sessionKey.isExpired()) {
             throw new Error("Session key expired, please create a new one");
         }
 
@@ -156,7 +156,7 @@ export function useSealClient(): ISealActions {
             throw new Error("Group key not found, please create a new one");
         }
 
-        if (sessionKey.isExpired) {
+        if (sessionKey.isExpired()) {
             throw new Error("Session key expired, please create a new one");
         }
 

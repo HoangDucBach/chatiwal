@@ -1,5 +1,8 @@
 "use client";
 
+import { useChatiwalClient } from "@/hooks/useChatiwalClient";
+import { useWalrusClient } from "@/hooks/useWalrusClient";
+import { MetadataGroupSchema } from "@/libs/schema";
 import { TGroup } from "@/types";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
@@ -9,28 +12,27 @@ const GroupContext = createContext<{ group: TGroup } | null>(null);
 
 export const GroupProvider = ({ id, children }: { id: string; children: ReactNode }) => {
     const suiClient = useSuiClient();
+    const { getGroupData } = useChatiwalClient();
+    const { read } = useWalrusClient();
+
     const { data: group } = useQuery({
         queryKey: ["group", id],
         queryFn: async () => {
-            const res = await suiClient.getObject({
-                id,
-                options: {
-                    showContent: true,
-                }
-            });
+            const group = await getGroupData(id);
 
+            const metadata_blob_id = group.metadata_blob_id;
+            let metadata;
 
-            if (res.data?.content?.dataType !== "moveObject") {
-                console.error("Error fetching group", "Invalid group");
-                return null;
+            if (metadata_blob_id) {
+                const bufferArr = await read([metadata_blob_id]);
+                const metadataStr = new TextDecoder().decode(bufferArr[0]);
+                metadata = MetadataGroupSchema.parse(JSON.parse(metadataStr));
             }
 
-            const group = res.data?.content.fields as any;
-
             return {
-                id: res.data?.objectId,
-                members: new Set(group.members.fields.contents),
-                owner: group.owner,
+                id: group.id,
+                members: new Set(group.members),
+                metadata: metadata,
             } as TGroup;
 
         },

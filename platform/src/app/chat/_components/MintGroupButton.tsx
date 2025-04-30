@@ -263,7 +263,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                         <Button
                             type={isMetadataEnabled ? "submit" : "button"}
                             onClick={isMetadataEnabled ? undefined : handleMintGroupWithoutMetadata}
-                            colorScheme="primary"
+                            colorPalette="primary"
                             loading={isPending || isSubmitting}
                             loadingText="Minting..."
                             disabled={isPending || !currentAccount}

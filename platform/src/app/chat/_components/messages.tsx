@@ -18,6 +18,8 @@ import { toaster } from "@/components/ui/toaster";
 import { useSealClient } from "@/hooks/useSealClient";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
 import { decode } from "@msgpack/msgpack";
+import { SessionKey } from "@mysten/seal";
+import { useWalrusClient } from "@/hooks/useWalrusClient";
 
 interface ContentProps {
     self?: boolean;
@@ -129,52 +131,57 @@ export function Content(props: ContentProps) {
 }
 interface MessageBaseProps extends BoxProps {
     message: TMessage;
-    type?: MessageType;
     self?: boolean;
 }
 export function MessageBase(props: MessageBaseProps) {
-    const { message, self = true, type = MessageType.BASE, ...restBoxProps } = props;
+    const { message, self = true, ...restBoxProps } = props;
     const channelName = message.groupId;
     const { channel } = useChannel({ channelName });
     const { decryptMessage } = useSealClient();
     const { getSessionKey, sessionKeys } = useSessionKeys();
     const currentAccount = useCurrentAccount();
+    const { read } = useWalrusClient();
 
+    console.log("Message:", message);
     const { data: decryptedContent, isLoading: isDecrypting, error: decryptError } = useQuery({
         queryKey: ["messages::group::decrypt", message.id, message.content], // Depend on content bytes
         queryFn: async (): Promise<MediaContent[] | null> => {
-            const sessionKey = getSessionKey(message.groupId);
             const messageType = getMessagePolicyType(message);
+            const sessionKey = getSessionKey(message.id);
+            console.log("Session key:", sessionKey);
+            console.log(sessionKeys)
 
             if (!currentAccount) {
                 return null;
             }
 
-            if (message.owner === currentAccount.address) {
-                return decode(message.content) as MediaContent[];
-            }
-
-            if (!sessionKey || sessionKey.isExpired) {
-                return null;
-            }
-
+            const blob_id = message.blobId;
             if (!message.content || message.content.length === 0) {
-                // console.warn(`No content found for message ${message.id} to decrypt`);
-                // If blobId exists, could potentially fetch here using read() from WalrusClient
-                // but current logic doesn't support it. Return null for now.
-                return null;
+                if (!blob_id) {
+                    return null;
+                }
+
+                try {
+                    const res = await read([blob_id]);
+                    message.content = new Uint8Array(res[0]);
+                } catch (err) {
+                    console.error(err);
+                }
             }
 
+            if (!sessionKey) {
+                return null;
+            }
+            console.log("Decrypting message with session key:", sessionKey);
             const decryptedBytes = await decryptMessage(message, messageType, sessionKey);
             const decodedData = decode(decryptedBytes) as MediaContent[];
+            console.log("Decoded data:", decodedData);
             return decodedData;
         },
-        enabled: !!message.content && !!message.groupId && !!message.id && !!currentAccount,
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchInterval: 0,
-        retry: 0,
-        staleTime: Infinity
+        // enabled: !!message,
+        // refetchOnMount: false,
+        // retry: 0,
+        // staleTime: Infinity
     });
 
     const { data: isOnline } = useQuery({
@@ -300,53 +307,31 @@ interface SuperMessagePolicyProps extends Omit<MessageBaseProps, "message"> {
 export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
     const { messageId, self = true } = props;
     const suiClient = useSuiClient();
-    const { readMessage } = useChatiwalClient();
+    const { readMessage, getSuperMessageData } = useChatiwalClient();
     const { getSessionKey, setSessionKey } = useSessionKeys();
     const { createSessionKey } = useSealClient();
+    const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+    const currentAccount = useCurrentAccount();
 
     const { data: message, isLoading, error } = useQuery({
         queryKey: ["messages::group::get::object", messageId],
         queryFn: async (): Promise<TMessage | null> => {
             if (!messageId) return null;
-            const res = await suiClient.getObject({
-                id: messageId,
-                options: { showBcs: true, showOwner: true, showContent: false }, // Fetch owner too
-            });
-
-            if (!res.data) {
-                console.error("Failed to get message object:", res.error);
-                return null; // Or throw
-            }
-
-            const owner = res.data.owner;
-            if (!owner || typeof owner !== 'object' || !('AddressOwner' in owner)) {
-                console.error("Object owner not found or not address owner");
-                return null;
-            }
-
-
-            const bcsData = res.data?.bcs;
-            if (typeof bcsData !== 'object' || !bcsData || !('bcsBytes' in bcsData) || typeof bcsData.bcsBytes !== 'string') {
-                console.error("Invalid BCS data structure received");
-                return null;
-            }
-
+            const superMsg = await getSuperMessageData(messageId);
 
             try {
-                const parsedData = SuperMessageStruct.fromBase64(bcsData.bcsBytes);
-
                 // Manually construct TMessage from parsed BCS data
                 const tMsg: TMessage = {
                     id: messageId,
-                    owner: owner.AddressOwner, // Get owner from getObject response
-                    groupId: parsedData.group_id,
-                    auxId: parsedData.aux_id, // Ensure conversion
-                    blobId: parsedData.message_blob_id,
-                    readers: parsedData.readers,
-                    feeCollected: parsedData.fee_collected,
-                    timeLockPolicy: parsedData.time_lock,
-                    limitedReadPolicy: parsedData.limited_read,
-                    feePolicy: parsedData.fee_policy,
+                    owner: superMsg.owner,
+                    groupId: superMsg.group_id,
+                    auxId: superMsg.aux_id, // Ensure conversion
+                    blobId: superMsg.message_blob_id,
+                    readers: superMsg.readers,
+                    feeCollected: superMsg.fee_collected,
+                    timeLockPolicy: superMsg.time_lock,
+                    limitedReadPolicy: superMsg.limited_read,
+                    feePolicy: superMsg.fee_policy,
                     content: new Uint8Array(),
                     createdAt: undefined,
                 };
@@ -361,7 +346,8 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         enabled: !!messageId,
         refetchOnMount: false,
         refetchOnWindowFocus: false,
-        staleTime: 5 * 60 * 1000, // Stale after 5 minutes
+        staleTime: 5 * 60 * 1000, // Stale after 5 minutes,
+        throwOnError: false,
     });
 
     const { mutate: subscribe } = useMutation({
@@ -371,7 +357,17 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 throw new Error("Message not found");
             }
 
-            const res = await readMessage(message.id, "");
+            const tx = await readMessage(message.id, "");
+
+            const res = await signAndExecuteTransaction({
+                transaction: tx,
+            });
+
+            const { errors } = await suiClient.waitForTransaction(res);
+
+            if (errors) {
+                throw new Error(errors.map((e) => e).join(", "));
+            }
 
             return res;
         },
@@ -382,6 +378,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 description: "Message read successfully",
             });
         },
+
         onError: (error) => {
             toaster.error({
                 title: "Error",
@@ -390,17 +387,53 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         }
     })
 
+    const createMessageKey = useCallback(async () => {
+        const sessionKey = await createSessionKey();
+        setSessionKey(messageId, sessionKey);
+    }, [messageId, message]);
+
+    const handleSubscribeOrRead = useCallback(async () => {
+        if (!currentAccount) {
+            toaster.error({
+                title: "Error",
+                description: "Not connected",
+            });
+            return;
+        }
+
+        if (!message) {
+            return;
+        }
+
+        const isReader = message.readers.includes(currentAccount.address);
+
+        if (isReader) {
+            subscribe();
+            return;
+        }
+
+        await createMessageKey();
+    }, [message]);
+
     if (isLoading) return <Box p={3}><Text color="fg.muted">Loading message...</Text></Box>;
     if (error) return <Box p={3}><Text color="red.500">Error loading message: {error.message}</Text></Box>;
     if (!message) return <Box p={3}><Text color="fg.muted">Message not found.</Text></Box>;
 
-    // Decide which specific component to render based on policies
-    // For simplicity now, just use MessageBase and add policy-specific controls below it
-
+    if (!currentAccount) {
+        return (
+            <MessageBase message={message} self={self}>
+                <Text color="fg.contrast" fontSize="sm">Please connect your wallet to subscribe or read.</Text>
+            </MessageBase>
+        );
+    }
     return (
         <MessageBase message={message} self={self}>
-            <Button>
-                Subscribe
+            <Button
+                size="sm"
+                loading={isLoading}
+                onClick={handleSubscribeOrRead}
+            >
+                {message.readers.includes(currentAccount.address) ? "Read" : "Subscribe"}
             </Button>
         </MessageBase>
     );

@@ -122,7 +122,7 @@ export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ ...pr
                     {...props}
                 >
                     <FileUpload.HiddenInput />
-                    <FileUpload.Trigger>
+                    <FileUpload.Trigger p={"2"}>
                         <Icon as={ImAttachment} />
                     </FileUpload.Trigger>
                 </FileUpload.Root>

@@ -16,8 +16,8 @@ import { ComposerInput } from "./ComposerInput";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
 import { MessageBase } from "./messages";
 import { decode } from "@msgpack/msgpack";
+import { GroupControlPanel } from "./GroupControlPanel";
 
-const ScrollMotionVStack = motion.create(VStack);
 
 interface Props extends StackProps {
 }
@@ -25,14 +25,10 @@ export function Chat(props: Props) {
     const { group } = useGroup();
     const channelName = group.id;
     const currentAccount = useCurrentAccount();
-    const { decryptMessage } = useSealClient();
     const { channel } = useChannel({ channelName });
     const [messages, setMessages] = useState<TMessage[]>([]);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { getSessionKey } = useSessionKeys();
 
     const onMessageSend = async (plainMessage: TMessage) => {
-        // setMessages((previousMessages: any) => [...previousMessages, plainMessage]);
     }
 
     useConnectionStateListener('connected', () => {
@@ -43,21 +39,12 @@ export function Chat(props: Props) {
 
     useChannel({ channelName }, AblyChannelManager.EVENTS.MESSAGE_SEND, async (message) => {
         try {
-
             const messageData = decode(message.data) as TMessage;
-            if (messageData.owner === currentAccount?.address) {
-                return;
-            }
-
             setMessages((previousMessages) => [...previousMessages, messageData]);
         } catch (error) {
-
+            console.log(error)
         }
     });
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
 
     useEffect(() => {
         if (!currentAccount) return;
@@ -74,34 +61,13 @@ export function Chat(props: Props) {
             pos={"relative"}
             bg={"bg.200/75"}
             h={"full"}
-            p={"6"}
+            p={"4"}
             backdropFilter={"blur(256px)"}
             rounded={"4xl"}
             shadow={"custom.lg"}
             zIndex={"0"} {...props}
         >
-            <Center p={"6"} pos={"relative"} flex={"1"} w={"full"}>
-                <ScrollMotionVStack
-                    px={"6"}
-                    pos={"absolute"}
-                    flex={"1"}
-                    w={"full"}
-                    h={"full"}
-                    overflowY={"auto"}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.1 }}
-                >
-                    {messages.map((message: TMessage) => (
-                        <MessageBase
-                            key={message.id}
-                            message={message}
-                            self={message.owner === currentAccount?.address}
-                        />
-                    ))}
-                    <div ref={messagesEndRef} />
-                </ScrollMotionVStack>
-            </Center>
+            <GroupControlPanel chatTabProps={{ messages }} />
             <ComposerInput
                 messageInputProps={{
                     channelName,
