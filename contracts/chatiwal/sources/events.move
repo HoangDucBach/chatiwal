@@ -30,6 +30,12 @@ public struct GroupMemberRemoved has copy, drop {
     timestamp: u64,
 }
 
+public struct GroupMemberLeft has copy, drop {
+    group_id: ID,
+    member: address,
+    timestamp: u64,
+}
+
 public struct GroupMetadataUpdated has copy, drop {
     group_id: ID,
     metadata_blob_id: String,
@@ -104,6 +110,15 @@ public(package) fun emit_group_member_added(group_id: ID, member: address, times
 
 public(package) fun emit_group_member_removed(group_id: ID, member: address, timestamp: u64) {
     let event = GroupMemberRemoved {
+        group_id,
+        member,
+        timestamp,
+    };
+    emit(event);
+}
+
+public(package) fun emit_group_member_left(group_id: ID, member: address, timestamp: u64) {
+    let event = GroupMemberLeft {
         group_id,
         member,
         timestamp,

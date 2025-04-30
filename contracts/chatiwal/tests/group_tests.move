@@ -1,7 +1,7 @@
 #[test_only]
 module chatiwal::group_tests;
 
-use chatiwal::group::{Self, Group, GroupCap, Registry, create_and_share_registry_for_testing};
+use chatiwal::group::{Self, Group, GroupCap};
 use std::string::{Self, String};
 use sui::clock::{Self, Clock};
 use sui::test_scenario::{Self as ts, Scenario};
@@ -28,12 +28,9 @@ fun most_recent_shared_group_id(): ID {
 fun test_init_creates_registry() {
     let mut scenario = ts::begin(ADMIN_1);
     let ctx = ts::ctx(&mut scenario);
-    create_and_share_registry_for_testing(ctx);
 
     ts::next_tx(&mut scenario, ADMIN_1);
-    {
-        assert!(ts::has_most_recent_shared<Registry>(), 0);
-    };
+
 
     ts::end(scenario);
 }
@@ -42,11 +39,16 @@ fun test_init_creates_registry() {
 fun test_mint_group() {
     let mut s = ts::begin(ADMIN_1);
     let c: Clock;
+    let ctx = ts::ctx(&mut s);
+
+    ts::next_tx(&mut s, ADMIN_1);
+
+
     ts::next_tx(&mut s, ADMIN_1);
     {
         let ctx = ts::ctx(&mut s);
         c = clock::create_for_testing(ctx);
-        group::mint_group_and_transfer(metadata_string(), &c, ctx);
+        group::mint_group_and_transfer( metadata_string(), &c, ctx);
     };
     ts::next_tx(&mut s, ADMIN_1);
     {
@@ -57,7 +59,7 @@ fun test_mint_group() {
 
         let g = ts::take_shared_by_id<Group>(&s, g_id);
         assert!(group::group_get_group_id(&g) == g_id, 2);
-        assert!(g.group_get_group_member().is_empty());
+        assert!(g.group_get_group_members().size() == 1, 3);
         assert!(group::group_get_group_metadata_blob_id(&g) == metadata_string(), 4);
         ts::return_to_sender(&s, cap);
         ts::return_shared(g);
@@ -71,18 +73,16 @@ fun test_mint_group() {
 fun test_add_remove_member() {
     let mut s = ts::begin(ADMIN_1);
     let ctx = ts::ctx(&mut s);
-    let mut c: Clock;
+    let c: Clock;
     let g_id: ID;
     c = clock::create_for_testing(ctx);
 
-    create_and_share_registry_for_testing(ctx);
     ts::next_tx(&mut s, ADMIN_1);
 
-    let mut registry = ts::take_shared<Registry>(&s);
 
     {
         let ctx = ts::ctx(&mut s);
-        group::mint_group_and_transfer(metadata_string(), &c, ctx);
+        group::mint_group_and_transfer( metadata_string(), &c, ctx);
     };
     ts::next_tx(&mut s, ADMIN_1);
 
@@ -91,9 +91,9 @@ fun test_add_remove_member() {
         let cap = ts::take_from_sender<GroupCap>(&s);
         let mut g = ts::take_shared_by_id<Group>(&s, g_id);
 
-        group::add_member(&cap, &mut registry, &mut g, USER_1, &c);
+        group::add_member(&cap,  &mut g, USER_1, &c);
         assert!(group::is_member(&g, USER_1), 1);
-        assert!(g.group_get_group_member().contains(&USER_1), 3);
+        assert!(g.group_get_group_members().contains(&USER_1), 3);
 
         ts::return_to_sender(&s, cap);
         ts::return_shared(g);
@@ -104,10 +104,10 @@ fun test_add_remove_member() {
         let cap = ts::take_from_sender<GroupCap>(&s);
         let mut g = ts::take_shared_by_id<Group>(&s, g_id);
 
-        group::add_member(&cap, &mut registry, &mut g, USER_2, &c);
+        group::add_member(&cap,  &mut g, USER_2, &c);
         assert!(group::is_member(&g, USER_1), 3);
         assert!(group::is_member(&g, USER_2), 4);
-        assert!(g.group_get_group_member().size() == 2, 5);
+        assert!(g.group_get_group_members().size() == 3, 5); // admin and 2 user
 
         ts::return_to_sender(&s, cap);
         ts::return_shared(g);
@@ -118,16 +118,15 @@ fun test_add_remove_member() {
         let cap = ts::take_from_sender<GroupCap>(&s);
         let mut g = ts::take_shared_by_id<Group>(&s, g_id);
 
-        group::remove_member(&cap, &mut registry, &mut g, USER_1, &c);
+        group::remove_member(&cap,  &mut g, USER_1, &c);
         assert!(!group::is_member(&g, USER_1), 6);
         assert!(group::is_member(&g, USER_2), 7);
-        assert!(g.group_get_group_member().size() == 1, 8);
+        assert!(g.group_get_group_members().size() == 2, 8);
 
         ts::return_to_sender(&s, cap);
         ts::return_shared(g);
     };
     c.destroy_for_testing();
-    ts::return_shared(registry);
     ts::end(s);
 }
 
@@ -140,14 +139,12 @@ fun test_add_existing_member_fails() {
     let ctx = ts::ctx(&mut s);
     c = clock::create_for_testing(ctx);
 
-    create_and_share_registry_for_testing(ctx);
     ts::next_tx(&mut s, ADMIN_1);
 
-    let mut registry = ts::take_shared<Registry>(&s);
 
     {
         let ctx = ts::ctx(&mut s);
-        group::mint_group_and_transfer(metadata_string(), &c, ctx);
+        group::mint_group_and_transfer( metadata_string(), &c, ctx);
     };
     ts::next_tx(&mut s, ADMIN_1);
 
@@ -156,14 +153,13 @@ fun test_add_existing_member_fails() {
         let cap = ts::take_from_sender<GroupCap>(&s);
         let mut g = ts::take_shared_by_id<Group>(&s, g_id);
 
-        group::add_member(&cap, &mut registry, &mut g, USER_1, &c);
-        group::add_member(&cap, &mut registry, &mut g, USER_1, &c);
+        group::add_member(&cap,  &mut g, USER_1, &c);
+        group::add_member(&cap,  &mut g, USER_1, &c);
 
         ts::return_to_sender(&s, cap);
         ts::return_shared(g);
     };
     c.destroy_for_testing();
-    ts::return_shared(registry);
     ts::end(s);
 }
 
@@ -174,20 +170,18 @@ fun test_remove_non_member_fails() {
     let c = clock::create_for_testing(ts::ctx(&mut s));
     let g_id: ID;
     let ctx = ts::ctx(&mut s);
-    
-    create_and_share_registry_for_testing(ctx);
+
     ts::next_tx(&mut s, ADMIN_1);
 
-    let mut registry = ts::take_shared<Registry>(&s);
 
     ts::next_tx(&mut s, ADMIN_1);
     {
         let ctx = ts::ctx(&mut s);
-        group::mint_group_and_transfer(metadata_string(), &c, ctx);
+        group::mint_group_and_transfer( metadata_string(), &c, ctx);
     };
     {
         let ctx = ts::ctx(&mut s);
-        group::mint_group_and_transfer(metadata_string(), &c, ctx);
+        group::mint_group_and_transfer( metadata_string(), &c, ctx);
     };
     ts::next_tx(&mut s, ADMIN_1);
 
@@ -196,14 +190,13 @@ fun test_remove_non_member_fails() {
         let cap = ts::take_from_sender<GroupCap>(&s);
         let mut g = ts::take_shared_by_id<Group>(&s, g_id);
 
-        group::remove_member(&cap, &mut registry, &mut g, NON_MEMBER, &c);
+        group::remove_member(&cap,  &mut g, NON_MEMBER, &c);
 
         ts::return_to_sender(&s, cap);
         ts::return_shared(g);
     };
 
     c.destroy_for_testing();
-    ts::return_shared(registry);
     ts::end(s);
 }
 
@@ -213,15 +206,13 @@ fun test_seal_approve() {
     let c = clock::create_for_testing(ts::ctx(&mut s));
     let g_id: ID;
     let ctx = ts::ctx(&mut s);
-    create_and_share_registry_for_testing(ctx);
     ts::next_tx(&mut s, ADMIN_1);
 
-    let mut registry = ts::take_shared<Registry>(&s);
 
     ts::next_tx(&mut s, ADMIN_1);
     {
         let ctx = ts::ctx(&mut s);
-        group::mint_group_and_transfer(metadata_string(), &c, ctx);
+        group::mint_group_and_transfer( metadata_string(), &c, ctx);
     };
     ts::next_tx(&mut s, ADMIN_1);
 
@@ -230,13 +221,12 @@ fun test_seal_approve() {
         let cap = ts::take_from_sender<GroupCap>(&s);
         let mut g = ts::take_shared_by_id<Group>(&s, g_id);
 
-        group::add_member(&cap, &mut registry, &mut g, USER_1, &c);
+        group::add_member(&cap,  &mut g, USER_1, &c);
         assert!(group::is_member(&g, USER_1), 1);
 
         ts::return_to_sender(&s, cap);
         ts::return_shared(g);
-        ts::return_shared(registry);
-    };
+        };
 
     ts::next_tx(&mut s, USER_1);
     {
