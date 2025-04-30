@@ -177,7 +177,7 @@ export function useSealClient(): ISealActions {
 
         const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
         await sealClient.fetchKeys({
-            ids: ids,
+            ids,
             txBytes,
             sessionKey,
             threshold: 2,

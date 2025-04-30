@@ -15,6 +15,7 @@ import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { useSupabase } from "@/hooks/useSupabase";
 import { MintGroupButton } from "./MintGroupButton";
 import { MetadataGroupSchema } from "@/libs/schema";
+import { decode } from "@msgpack/msgpack";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
@@ -48,10 +49,13 @@ export function ControlPanel(props: Props) {
 
             await Promise.all(
                 groupDataList.map(async (item) => {
-                    if (item && item.metadata_blob_id) {
-                        const bufferArr = await read([item.metadata_blob_id]);
-                        const metadataStr = new TextDecoder().decode(bufferArr[0]);
-                        groupMemberShips[item.index].metadata = MetadataGroupSchema.parse(JSON.parse(metadataStr));
+                    try {
+                        if (item && item.metadata_blob_id) {
+                            const bufferArr = await read([item.metadata_blob_id]);
+                            groupMemberShips[item.index].metadata = MetadataGroupSchema.parse(decode(bufferArr[0]));
+                        }
+                    } catch (error) {
+                        console.log(error);
                     }
                 })
             );

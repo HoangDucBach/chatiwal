@@ -1,6 +1,6 @@
-import { encode } from '@/libs';
 import { TMessage } from '@/types';
 import { NETWORK } from '@/utils/constants';
+import { encode } from '@msgpack/msgpack';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { WalrusClient } from '@mysten/walrus';
 import { useMemo } from 'react';

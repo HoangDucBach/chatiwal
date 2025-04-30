@@ -1,11 +1,6 @@
+import { encode } from "@msgpack/msgpack";
 import { SUI_ADDRESS_LENGTH } from "@mysten/sui/utils";
 import { nanoid } from "nanoid";
-
-export function shortenAddress(address: string, length = 4) {
-    if (!address) return '';
-    if (address.length <= length * 2 + 2) return address;
-    return `${address.slice(0, length + 2)}...${address.slice(-length)}`;
-}
 
 export function formatBalance(balance: bigint, decimals = 9): string {
     const divisor = 10n ** BigInt(decimals);
@@ -26,18 +21,6 @@ export function generateColorFromAddress(addr: string): string {
 }
 
 export const TypeSuffixRegex = /<([^>]+)>/;
-
-export function encode(object: any) {
-    const buffer = Buffer.from(JSON.stringify(object));
-    const asBytes = new Uint8Array(buffer);
-    return asBytes;
-}
-
-export function decode(bytes: Uint8Array) {
-    const buffer = Buffer.from(bytes);
-    const asString = buffer.toString();
-    return JSON.parse(asString);
-}
 
 export function generateContentId(prefix: Uint8Array): Uint8Array {
     const contentNonceId = nanoid();

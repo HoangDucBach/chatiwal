@@ -142,14 +142,12 @@ export function MessageBase(props: MessageBaseProps) {
     const currentAccount = useCurrentAccount();
     const { read } = useWalrusClient();
 
-    console.log("Message:", message);
-    const { data: decryptedContent, isLoading: isDecrypting, error: decryptError } = useQuery({
-        queryKey: ["messages::group::decrypt", message.id, message.content], // Depend on content bytes
+    const { data: decryptedContent, isLoading: isDecrypting, error: decryptError, refetch } = useQuery({
+        queryKey: ["messages::group::decrypt", message.id],
         queryFn: async (): Promise<MediaContent[] | null> => {
+
             const messageType = getMessagePolicyType(message);
-            const sessionKey = getSessionKey(message.id);
-            console.log("Session key:", sessionKey);
-            console.log(sessionKeys)
+            const sessionKey = messageType === MessageType.BASE ? getSessionKey(message.groupId) : getSessionKey(message.id);
 
             if (!currentAccount) {
                 return null;
@@ -163,25 +161,26 @@ export function MessageBase(props: MessageBaseProps) {
 
                 try {
                     const res = await read([blob_id]);
-                    message.content = new Uint8Array(res[0]);
+                    message.content = decode(res[0]) as Uint8Array;
                 } catch (err) {
                     console.error(err);
                 }
             }
-
+            console.log("Message content:", "with", messageType, message);
             if (!sessionKey) {
                 return null;
             }
-            console.log("Decrypting message with session key:", sessionKey);
+
             const decryptedBytes = await decryptMessage(message, messageType, sessionKey);
             const decodedData = decode(decryptedBytes) as MediaContent[];
             console.log("Decoded data:", decodedData);
             return decodedData;
         },
-        // enabled: !!message,
-        // refetchOnMount: false,
-        // retry: 0,
-        // staleTime: Infinity
+        enabled: (!!message && !!getSessionKey(message.id)) || !!getSessionKey(message.groupId),
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        staleTime: 5 * 60 * 1000, // Stale after 5 minutes
+        throwOnError: false,
     });
 
     const { data: isOnline } = useQuery({
@@ -277,6 +276,7 @@ export function MessageBase(props: MessageBaseProps) {
             console.error("Decryption error:", decryptError);
         }
     }, [decryptError]);
+
     return (
         <VStack
             w={"full"}
@@ -312,6 +312,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
     const { createSessionKey } = useSealClient();
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const currentAccount = useCurrentAccount();
+    const queryClient = useQueryClient();
 
     const { data: message, isLoading, error } = useQuery({
         queryKey: ["messages::group::get::object", messageId],
@@ -377,6 +378,10 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 title: "Success",
                 description: "Message read successfully",
             });
+
+            queryClient.invalidateQueries({
+                queryKey: ["messages::group::get::object", messageId],
+            });
         },
 
         onError: (error) => {
@@ -408,11 +413,11 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         const isReader = message.readers.includes(currentAccount.address);
 
         if (isReader) {
-            subscribe();
+            await createMessageKey();
             return;
         }
 
-        await createMessageKey();
+        subscribe();
     }, [message]);
 
     if (isLoading) return <Box p={3}><Text color="fg.muted">Loading message...</Text></Box>;

@@ -50,7 +50,7 @@ export function hasLimitedRead(msg: TMessage): msg is TMessage & { limitedReadPo
 }
 
 export function hasFeePolicy(msg: TMessage): msg is TMessage & { feePolicy: TFeeBasedPolicy } {
-    return msg.feeCollected !== undefined;
+    return msg.feePolicy !== undefined;
 }
 
 export function getMessagePolicyType(msg: TMessage): MessageType {
@@ -58,7 +58,8 @@ export function getMessagePolicyType(msg: TMessage): MessageType {
     const hasLR = hasLimitedRead(msg);
     const hasFP = hasFeePolicy(msg);
 
-    if (hasTL && !hasLR && !hasFP) return MessageType.SUPER_MESSAGE
+    if (hasTL || hasLR || hasFP) return MessageType.SUPER_MESSAGE
 
     return MessageType.BASE;
+
 }

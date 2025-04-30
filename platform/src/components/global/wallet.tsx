@@ -3,10 +3,10 @@
 import { Menu, chakra, Portal } from "@chakra-ui/react"
 import { ConnectModal, useAutoConnectWallet, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import { Button, ButtonProps } from "../ui/button";
-import { shortenAddress } from "@/libs";
 import { Icon } from "@chakra-ui/react"
 import { TbLogout } from "react-icons/tb";
 import { useEffect } from "react";
+import { formatAddress } from "@mysten/sui/utils";
 
 interface Props extends ButtonProps { }
 export function ConnectButton(props: Props) {
@@ -32,7 +32,7 @@ function MenuAccount() {
         <Menu.Root>
             <Menu.Trigger asChild>
                 <Button variant="outline" colorPalette={"primary"} size="sm">
-                    {shortenAddress(account.address)}
+                    {formatAddress(account.address)}
                 </Button>
             </Menu.Trigger>
             <Portal>

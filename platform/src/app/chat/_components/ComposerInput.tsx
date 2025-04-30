@@ -25,15 +25,14 @@ import {
     HStack,
     Span,
     SelectItemText,
-    Group,
 } from "@chakra-ui/react";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { decode, encode } from "@msgpack/msgpack";
+import { encode } from "@msgpack/msgpack";
 
 import { useGroup } from "../_hooks/useGroupId";
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "@/components/ui/select";
-import { MediaContent, MessageType, TMessage } from "@/types";
+import { MediaContent, TMessage } from "@/types";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { useSealClient } from "@/hooks/useSealClient";
 import { MediaInput, TextInput } from "./MessageInput";
@@ -85,7 +84,7 @@ interface ComposerInputProps extends StackProps {
 
 export function ComposerInput({ messageInputProps, ...props }: ComposerInputProps) {
     const { channelName, onMessageSend } = messageInputProps;
-    const { channel, publish } = useChannel({ channelName });
+    const { publish } = useChannel({ channelName });
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const { onMessageMinted } = props;
     const currentAccount = useCurrentAccount();
@@ -100,8 +99,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         mintSuperMessageCompoundAndTransfer,
     } = useChatiwalClient();
     const { setSessionKey, getSessionKey, sessionKeys } = useSessionKeys();
-    const { encryptMessage, createSessionKey, decryptMessage, encrypt, decrypt } = useSealClient();
-    const { storeMessage } = useWalrusClient();
+    const { encrypt, encryptMessage, createSessionKey } = useSealClient();
+    const { storeMessage, store } = useWalrusClient();
 
     const [isSelectExpanded, setIsSelectExpanded] = useState(false);
     const currentSessionKey = useMemo<SessionKey | null>(() => {
@@ -188,42 +187,6 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
 
     const messageType = watch('messageType');
 
-    const createMessageForProcessing = async (data: FormValues): Promise<TMessage> => {
-        if (!currentAccount) throw new Error("Not connected");
-        if (!group?.id) throw new Error("Group not loaded");
-
-        const auxId = generateContentId(fromHex(group.id));
-        const mediaContentAsText = { id: nanoid(), mimeType: "text/plain", raw: data.contentAsText } satisfies MediaContent;
-        const fileProcessingPromises = data.contentAsFiles.map(file => {
-            const reader = new FileReader();
-            reader.readAsArrayBuffer(file);
-            return new Promise<MediaContent>((resolve, reject) => {
-                reader.onload = () => resolve({
-                    id: nanoid(),
-                    mimeType: file.type,
-                    raw: new Uint8Array(reader.result as ArrayBuffer),
-                });
-                reader.onerror = (e) => reject(e);
-            });
-        });
-
-        const resolvedMediaContentFiles = await Promise.all(fileProcessingPromises);
-        const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
-        const encodedUint8Array: Uint8Array = encode(finalDataStructure);
-
-        return {
-            id: nanoid(),
-            owner: currentAccount.address,
-            groupId: group.id,
-            auxId: Array.from(auxId),
-            readers: [],
-            feeCollected: {
-                value: "0",
-            },
-            content: encodedUint8Array,
-            blobId: '', // Will be filled after storing
-        };
-    };
 
     const handleCreateGroupKey = async () => {
         if (!currentAccount) {
@@ -351,29 +314,12 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
 
         const resolvedMediaContentFiles = await Promise.all(fileProcessingPromises);
         const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
-        const encodedUint8Array: Uint8Array = encode(finalDataStructure);
 
-
-
-        // Create a structure suitable for encryptMessage
-        let messageToEncrypt = {
-            id: plainMessageId,
-            owner: currentAccount.address,
-            groupId: group.id,
-            auxId: Array.from(auxId),
-            content: encodedUint8Array,
-            readers: [],
-            feeCollected: {
-                value: "0",
-            }
-        } as TMessage;
-
-        let encryptedResult = await encryptMessage(messageToEncrypt);
-
+        let encryptedResult = await encrypt(auxId, finalDataStructure);
+        console.log("Encrypted result:", encryptedResult);
         let blobId: string | undefined;
         try {
-            encryptedResult = await storeMessage(encryptedResult);
-            blobId = messageToEncrypt.blobId;
+            blobId = await store(encryptedResult);
             if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
         } catch (storeError: any) {
             toaster.error({ title: "Storage Error", description: storeError?.message ?? 'Failed to store message' });

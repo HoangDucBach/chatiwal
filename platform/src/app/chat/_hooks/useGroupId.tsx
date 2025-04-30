@@ -4,6 +4,7 @@ import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { MetadataGroupSchema } from "@/libs/schema";
 import { TGroup } from "@/types";
+import { decode } from "@msgpack/msgpack";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, ReactNode } from "react";
@@ -25,8 +26,8 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
 
             if (metadata_blob_id) {
                 const bufferArr = await read([metadata_blob_id]);
-                const metadataStr = new TextDecoder().decode(bufferArr[0]);
-                metadata = MetadataGroupSchema.parse(JSON.parse(metadataStr));
+                const metadataStr = decode(bufferArr[0]);
+                metadata = MetadataGroupSchema.parse(metadataStr);
             }
 
             return {

@@ -48,9 +48,9 @@ export function MessageContainer({ messages, ...props }: Props) {
                         self={message.owner === currentAccount?.address}
                     />
                 ))}
-                <SuperMessagePolicy
-                    messageId="0x81af0ef33574a44c6f665d2771d0541d6297d71bf7b1ee1065a2d9c143bd4035"
-                />
+                {/* <SuperMessagePolicy
+                    messageId="0x48d90d98dc150e38d2c55b5f96591893a2a47b4e274401acdb135b7f4f09f6ba"
+                /> */}
 
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>
