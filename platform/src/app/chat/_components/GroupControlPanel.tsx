@@ -1,8 +1,9 @@
 "use client"
 
-import { Heading, HStack, VStack, Text, TabsList, TabsTrigger, useTabs, TabsRootProvider, TabsContent, TabsRootProps } from "@chakra-ui/react";
+import { Heading, HStack, VStack, Text, TabsList, TabsTrigger, useTabs, TabsRootProvider, TabsContent, TabsRootProps, Icon } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-
+import { IoChatbubblesOutline } from "react-icons/io5";
+import { LuInfo } from "react-icons/lu";
 
 import { useGroup } from "../_hooks/useGroupId";
 import { useChannel } from "ably/react";
@@ -19,8 +20,18 @@ interface Props extends TabsRootProps {
 }
 export function GroupControlPanel({ chatTabProps, ...props }: Props) {
     const items = [
-        { id: "chat", title: "Chat", content: <MessageContainer flex={"4"} messages={chatTabProps?.messages || []} /> },
-        { id: "member", title: "Details", content: <GroupDetailsTab /> },
+        {
+            id: "chat",
+            icon: <IoChatbubblesOutline size={16} />,
+            title: "Chat",
+            content: <MessageContainer flex={"4"} messages={chatTabProps?.messages || []} />
+        },
+        {
+            id: "member",
+            icon: <IoChatbubblesOutline size={16} />,
+            title: "Details",
+            content: <GroupDetailsTab />
+        },
     ]
     const tabs = useTabs({
         defaultValue: "chat",
@@ -39,9 +50,13 @@ export function GroupControlPanel({ chatTabProps, ...props }: Props) {
                 backdropFilter={"blur(256px)"}
                 rounded={"3xl"}
                 gap={"6"}
+                defaultValue={items[0].id}
             >
                 {items.map((item) => (
                     <TabsTrigger rounded={"2xl"} color={"fg.contrast"} _selected={{ bg: "bg.300", color: "fg" }} value={item.id} key={item.id}>
+                        <Icon color={"fg.contrast"} _selected={{ color: "fg" }}>
+                            {item.icon}
+                        </Icon>
                         {item.title}
                     </TabsTrigger>
                 ))}

@@ -29,7 +29,7 @@ export default function HeroSection(props: HeroSectionProps) {
 
     return (
         <chakra.section id="hero" zIndex={"0"} w={"full"} h={"full"} overflow={"hidden"}>
-            <VStack w="full" h={"full"} justify={"start"} align={"start"} py={"32"} gap={"8"} mx={"auto"}>
+            <VStack w="full" h={"full"} justify={"start"} align={"start"} py={["4", "16", "20"]} gap={"8"} mx={"auto"}>
                 <VStack w={"full"} h={"full"} align={"start"}>
                     <Tag fontSize={"lg"}>
                         E2EE Super Message
@@ -47,7 +47,7 @@ export default function HeroSection(props: HeroSectionProps) {
                     </Text>
                 </VStack>
                 <ChatNowButton />
-                <HStack pos={"relative"} justify={"start"} align={"center"} w={"full"} h={"full"}>
+                <HStack pos={"relative"} justify={"space-between"} align={"center"} w={"full"} h={"full"}>
                     <Heading as="h2" size={"4xl"} fontWeight={"bold"} color={"fg/15"} maxW={"50%"}>
                         Your Chat,
                         Your Key,

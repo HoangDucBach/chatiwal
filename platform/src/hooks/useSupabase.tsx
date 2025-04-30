@@ -69,7 +69,7 @@ export function useSupabase(): SupabaseActionsProps {
                     .eq("group_id", groupId);
 
                 if (!superMessages) {
-                    throw new Error("Failed to fetch super message id for group: ", groupId);
+                    throw new Error("Failed to fetch super message id for group: ");
                 }
 
                 return superMessages.map((superMessage) => superMessage.super_message_id);

@@ -28,8 +28,7 @@ export function Chat(props: Props) {
     const { channel } = useChannel({ channelName });
     const [messages, setMessages] = useState<TMessage[]>([]);
 
-    const onMessageSend = async (plainMessage: TMessage) => {
-    }
+    const onMessageSend = async (plainMessage: TMessage) => { }
 
     useConnectionStateListener('connected', () => {
         if (!currentAccount) return;

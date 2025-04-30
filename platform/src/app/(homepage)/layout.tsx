@@ -5,7 +5,7 @@ export default function Layout({
     children,
 }: React.PropsWithChildren) {
     return (
-        <LayoutLayout >
+        <LayoutLayout align={"center"}>
             <Header />
             {children}
         </LayoutLayout>

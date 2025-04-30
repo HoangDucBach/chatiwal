@@ -101,6 +101,7 @@ function ControlPanelBody({ myGroupsQuery }: ControlPanelBodyProps) {
                 <Skeleton
                     h={"full"}
                     w={"full"}
+                    bg={"bg.300"}
                     rounded={"3xl"}
                 />
                 :

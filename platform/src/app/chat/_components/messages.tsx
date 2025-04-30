@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For } from "@chakra-ui/react";
+import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Center } from "@chakra-ui/react";
 import { formatAddress, fromBase64 } from "@mysten/sui/utils";
 import { useMemo, useCallback, useState, useEffect } from "react";
 import ReactPlayer from "react-player";
@@ -28,6 +28,12 @@ interface ContentProps {
 
 export function Content(props: ContentProps) {
     const { media, self } = props;
+
+    const isImage = media.mimeType.startsWith("image/");
+    const isVideo = media.mimeType.startsWith("video/");
+    const isAudio = media.mimeType.startsWith("audio/");
+    const isText = media.mimeType === "text/plain";
+
 
     const decodeMediaAsUrl = useMemo(() => {
         if (!media) return null;
@@ -62,15 +68,24 @@ export function Content(props: ContentProps) {
         };
     }, [decodeMediaAsUrl]);
 
+    const getAspectRatio = () => {
+        if (isImage) {
+            return "16/9";
+        }
+        if (isVideo) {
+            return "16/9";
+        }
+        if (isAudio) {
+            return "5/1";
+        }
+
+        return "auto";
+    }
+
 
     const mediaNode = useMemo(() => {
         const decodedUrl = decodeMediaAsUrl?.url;
         if (!decodedUrl) return <Text color="fg.contrast" fontSize="sm">No preview available</Text>;
-
-        const isImage = media.mimeType.startsWith("image/");
-        const isVideo = media.mimeType.startsWith("video/");
-        const isAudio = media.mimeType.startsWith("audio/");
-        const isText = media.mimeType === "text/plain";
 
         if (isImage) {
             return (
@@ -87,20 +102,25 @@ export function Content(props: ContentProps) {
 
         if (isVideo || isAudio) {
             return (
-                <Box
-                    width={["full", "full", "full", "sm"]} // Adjust width
-                    borderRadius="2xl"
-                    overflow="hidden"
-                >
-                    <ReactPlayer
-                        url={decodedUrl}
-                        width="100%"
-                        height="100%"
-                        controls
-                        playing={false}
-                        style={{ borderRadius: "inherit", aspectRatio: "16/9" }}
-                    />
-                </Box>
+                <ReactPlayer
+                    url={decodedUrl}
+                    config={{
+                        file: {
+                            forceAudio: isAudio,
+                            forceVideo: isVideo,
+                            attributes: {
+                                controls: true,
+                            },
+                        }
+                    }}
+                    width="100%"
+                    height={"100%"}
+                    controls
+                    playing={false}
+                    style={{
+                        borderRadius: "inherit",
+                    }}
+                />
             );
         }
 
@@ -109,7 +129,7 @@ export function Content(props: ContentProps) {
                 <Text
                     fontSize={"md"}
                     color={"fg"}
-                    w={"full"}
+                    w={"fit"}
                 >
                     {media.raw}
                 </Text>
@@ -123,8 +143,16 @@ export function Content(props: ContentProps) {
         return <Text color="fg.contrast" fontSize="sm">[Unsupported media type: {media.mimeType}]</Text>;
     }, [media, decodeMediaAsUrl]);
 
+    if (!media) return null;
+
     return (
-        <VStack align={"start"} justify={"start"} gap={"1"} w={"full"}>
+        <VStack align={"start"}
+            justify={self ? "end" : "start"}
+            gap={"1"}
+            w={isText ? "fit" : "full"}
+            maxW={isAudio ? "80" : "full"}
+            aspectRatio={getAspectRatio()}
+        >
             {mediaNode}
         </VStack>
     )
@@ -166,21 +194,22 @@ export function MessageBase(props: MessageBaseProps) {
                     console.error(err);
                 }
             }
-            console.log("Message content:", "with", messageType, message);
+
             if (!sessionKey) {
                 return null;
             }
 
             const decryptedBytes = await decryptMessage(message, messageType, sessionKey);
             const decodedData = decode(decryptedBytes) as MediaContent[];
-            console.log("Decoded data:", decodedData);
             return decodedData;
         },
         enabled: (!!message && !!getSessionKey(message.id)) || !!getSessionKey(message.groupId),
+        refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
         refetchOnMount: false,
         refetchOnWindowFocus: false,
         staleTime: 5 * 60 * 1000, // Stale after 5 minutes
-        throwOnError: false,
+
+        retry: 0,
     });
 
     const { data: isOnline } = useQuery({
@@ -286,8 +315,9 @@ export function MessageBase(props: MessageBaseProps) {
             <Avatar />
             <VStack
                 align={self ? "end" : "start"}
-                justify={"start"}
+                justify={"end"}
                 gap={"1"}
+                w={"full"}
                 maxW={["90%", "80%", "70%", "60%"]}
                 p={3}
                 rounded="xl"
