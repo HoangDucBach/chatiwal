@@ -8,6 +8,9 @@ import { useEffect, useRef } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import EmptyContent from "@/components/ui/empty-content";
 import { fromHex } from "@mysten/sui/utils";
+import { useQuery } from "@tanstack/react-query";
+import { useGroup } from "../_hooks/useGroupId";
+import { useSupabase } from "@/hooks/useSupabase";
 
 const ScrollMotionVStack = motion.create(VStack);
 
@@ -18,15 +21,29 @@ interface Props extends CenterProps {
 export function MessageContainer({ messages, ...props }: Props) {
     const currentAccount = useCurrentAccount();
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const { group } = useGroup();
+    const { getSuperMessages } = useSupabase();
+
+    const { data: superMessagesIds, isLoading: isSuperMessagesLoading } = useQuery({
+        queryKey: ["group::get_super_message_policy", group.id],
+        queryFn: async () => {
+            const superMessagesIds = await getSuperMessages(group.id);
+
+            return superMessagesIds;
+        },
+        enabled: !!group.id,
+        refetchOnWindowFocus: true,
+        staleTime: 30_000,
+        refetchOnReconnect: true,
+    })
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
-    console.log(fromHex("2c45b864339ac44a70fff4db6b01e35fff797c0705b18ce9f23a3ee0307d6401b5372d567553794639634c4f7153452d41315f792d6f"))
 
     return (
         <Center p={"6"} pos={"relative"} flex={"1"} w={"full"} h={"full"} {...props}>
-            {messages.length === 0 && (
+            {messages.length === 0 && superMessagesIds?.length === 0 && (
                 <EmptyContent
                     emptyText={"No messages yet"}
                 />
@@ -42,6 +59,14 @@ export function MessageContainer({ messages, ...props }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.1 }}
             >
+                {superMessagesIds && superMessagesIds.length > 0 && (
+                    superMessagesIds.map((id) => (
+                        <SuperMessagePolicy
+                            key={id}
+                            messageId={id}
+                        />
+                    ))
+                )}
                 {messages.map((message: TMessage) => (
                     <MessageBase
                         key={message.id}
@@ -49,9 +74,6 @@ export function MessageContainer({ messages, ...props }: Props) {
                         self={message.owner === currentAccount?.address}
                     />
                 ))}
-                <SuperMessagePolicy
-                    messageId="0x90a0b821a1047131dbf7fa41971f67edd84c32144d64ce435062e0cc2b3293be"
-                />
 
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>

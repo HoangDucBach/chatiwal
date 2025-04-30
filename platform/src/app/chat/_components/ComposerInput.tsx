@@ -46,6 +46,7 @@ import { generateContentId } from "@/libs";
 import { fromHex } from "@mysten/sui/utils";
 import { Tooltip } from "@/components/ui/tooltip";
 import { SessionKey } from "@mysten/seal";
+import { useSupabase } from "@/hooks/useSupabase";
 
 const MotionVStack = motion.create(VStack);
 
@@ -100,7 +101,9 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
     } = useChatiwalClient();
     const { setSessionKey, getSessionKey, sessionKeys } = useSessionKeys();
     const { encrypt, encryptMessage, createSessionKey } = useSealClient();
-    const { storeMessage, store } = useWalrusClient();
+    const { store } = useWalrusClient();
+    const { client } = useChatiwalClient();
+    const { addSuperMessage } = useSupabase();
 
     const [isSelectExpanded, setIsSelectExpanded] = useState(false);
     const currentSessionKey = useMemo<SessionKey | null>(() => {
@@ -142,8 +145,18 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             }
             if (!tx) throw new Error("Transaction block generation failed");
 
-            let { digest } = await signAndExecuteTransaction({ transaction: tx });
-            await suiClient.waitForTransaction({ digest });
+            let { digest, } = await signAndExecuteTransaction({ transaction: tx });
+
+            const { events } = await suiClient.waitForTransaction({ digest });
+
+            if (events) {
+                const superMsgMintedEvent = events.find((e) => e.type === `${client.getPackageConfig().chatiwalId}::events::SuperMessageMinted`);
+                if (superMsgMintedEvent) {
+                    const parsedJson = superMsgMintedEvent.parsedJson as { id: string, group_id: string };
+                    await addSuperMessage(parsedJson.id, parsedJson.group_id);
+                }
+            }
+
             return { digest };
         },
         onSuccess: (data, variables) => {
@@ -309,9 +322,9 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         const resolvedMediaContentFiles = await Promise.all(fileProcessingPromises);
         const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
 
-        let encryptedResult = await encrypt(auxId, finalDataStructure);
-        console.log("Encrypted result:", encryptedResult);
+        let encryptedResult = await encrypt(auxId, encode(finalDataStructure));
         let blobId: string | undefined;
+
         try {
             blobId = await store(encryptedResult);
             if (!blobId) throw new Error("Failed to store message, received undefined blobId.");

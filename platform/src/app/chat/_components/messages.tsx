@@ -1,12 +1,16 @@
 "use client";
 
-import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Center } from "@chakra-ui/react";
+import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Center, Heading, DataListRoot, DataListItem, DataListItemValue, DataListItemLabel } from "@chakra-ui/react";
 import { formatAddress, fromBase64 } from "@mysten/sui/utils";
 import { useMemo, useCallback, useState, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { useChannel } from "ably/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { TbCalendar } from "react-icons/tb";
+import { TbCalendarPause } from "react-icons/tb";
+import { TiUserOutline } from "react-icons/ti";
+import { RiCoinLine } from "react-icons/ri";
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { generateColorFromAddress } from "@/libs";
@@ -20,6 +24,7 @@ import { useSessionKeys } from "@/hooks/useSessionKeysStore";
 import { decode } from "@msgpack/msgpack";
 import { SessionKey } from "@mysten/seal";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface ContentProps {
     self?: boolean;
@@ -164,10 +169,10 @@ export function MessageBase(props: MessageBaseProps) {
     const channelName = message.groupId;
     const { channel } = useChannel({ channelName });
     const { decryptMessage } = useSealClient();
-    const { getSessionKey, sessionKeys } = useSessionKeys();
+    const { getSessionKey } = useSessionKeys();
     const currentAccount = useCurrentAccount();
     const { read } = useWalrusClient();
-    
+
     const { data: decryptedContent, isLoading: isDecrypting, error: decryptError, refetch } = useQuery({
         queryKey: ["messages::group::decrypt", message.id],
         queryFn: async (): Promise<MediaContent[] | null> => {
@@ -188,6 +193,7 @@ export function MessageBase(props: MessageBaseProps) {
                 try {
                     const res = await read([blob_id]);
                     message.content = decode(res[0]) as Uint8Array;
+                    console.log("message content after:", message.content);
                 } catch (err) {
                     console.error(err);
                 }
@@ -199,14 +205,14 @@ export function MessageBase(props: MessageBaseProps) {
 
             const decryptedBytes = await decryptMessage(message, messageType, sessionKey);
             const decodedData = decode(decryptedBytes) as MediaContent[];
+            console.log("Decrypted data:", decryptedBytes);
             return decodedData;
         },
         enabled: (!!message && !!getSessionKey(message.id)) || !!getSessionKey(message.groupId),
-        refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+        refetchInterval: 5 * 60 * 1000,
         refetchOnMount: false,
         refetchOnWindowFocus: false,
-        staleTime: 5 * 60 * 1000, // Stale after 5 minutes
-
+        staleTime: 5 * 60 * 1000,
         retry: 0,
     });
 
@@ -231,7 +237,7 @@ export function MessageBase(props: MessageBaseProps) {
 
     const Avatar = () => {
         return (
-            <ChakraAvatar.Root variant="subtle">
+            <ChakraAvatar.Root bg={"transparent"}>
                 <Icon as={ChatiwalMascotIcon} boxSize={"8"} color={generateColorFromAddress(message.owner)} />
                 <Float placement="bottom-end" offsetX="1" offsetY="1">
                     <Circle
@@ -246,7 +252,6 @@ export function MessageBase(props: MessageBaseProps) {
     const Header = () => {
         const formattedTime = message.createdAt
         new Date(message.createdAt || Date.now()).toLocaleString("en-US", {
-            // month: "short", day: "2-digit", year: "numeric",
             hour: "2-digit", minute: "2-digit"
         })
 
@@ -254,14 +259,14 @@ export function MessageBase(props: MessageBaseProps) {
             <HStack flexDirection={self ? "row-reverse" : "row"} align="center">
                 <Text
                     fontSize={"md"}
-                    color={"fg"}
+                    color={generateColorFromAddress(message.owner)}
                     fontWeight={"medium"}
                 >
                     {self ? "You" : formatAddress(message.owner)}
                 </Text>
                 <Text
-                    fontSize={"sm"} // Smaller timestamp
-                    color={"fg.contrast"} // Muted color
+                    fontSize={"sm"}
+                    color={"fg.contrast"}
                     fontWeight={"normal"}
                 >
                     {formattedTime}
@@ -308,7 +313,6 @@ export function MessageBase(props: MessageBaseProps) {
         <VStack
             w={"full"}
             align={self ? "end" : "start"}
-            gap={2}
         >
             <Avatar />
             <VStack
@@ -317,7 +321,6 @@ export function MessageBase(props: MessageBaseProps) {
                 gap={"1"}
                 w={"full"}
                 maxW={["90%", "80%", "70%", "60%"]}
-                p={3}
                 rounded="xl"
             >
                 <Header />
@@ -349,7 +352,6 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
             const superMsg = await getSuperMessageData(messageId);
 
             try {
-                // Manually construct TMessage from parsed BCS data
                 const tMsg: TMessage = {
                     id: messageId,
                     owner: superMsg.owner,
@@ -459,15 +461,97 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
             </MessageBase>
         );
     }
+
+    const items = [
+        {
+            label: "Time Lock",
+            hasPolicy: message.timeLockPolicy !== undefined,
+            fields: [
+                {
+                    label: "Start",
+                    icon: <TbCalendarPause />,
+                    value: message.timeLockPolicy?.from
+                        ? new Date(Number(message.timeLockPolicy.from) * 1000).toLocaleString()
+                        : "-",
+                },
+                {
+                    label: "End",
+                    icon: <TbCalendar />,
+                    value: message.timeLockPolicy?.to
+                        ? new Date(Number(message.timeLockPolicy.to) * 1000).toLocaleString()
+                        : "-",
+                },
+            ]
+        },
+        {
+            label: "Limited Read",
+            hasPolicy: message.limitedReadPolicy !== undefined,
+            fields: [
+                {
+                    label: "Readers",
+                    icon: <TiUserOutline />,
+                    value: message.readers.length,
+                },
+                {
+                    label: "Max Readers",
+                    icon: <TiUserOutline />,
+                    value: message.limitedReadPolicy?.max || 0,
+                },
+            ]
+        },
+        {
+            label: "Fee Policy",
+            hasPolicy: message.feePolicy !== undefined,
+            fields: [
+                {
+                    label: "Fee Amount",
+                    icon: <RiCoinLine />,
+                    value: message.feePolicy?.fee_amount || 0,
+                },
+            ]
+        }
+    ];
+
     return (
         <MessageBase message={message} self={self}>
-            <Button
-                size="sm"
-                loading={isLoading}
-                onClick={handleSubscribeOrRead}
-            >
-                {message.readers.includes(currentAccount.address) ? "Read" : "Subscribe"}
-            </Button>
+            <VStack p={"4"} bg={"bg.200/75"} rounded={"3xl"} align={"end"} justify={"center"} shadow={"custom.md"}>
+                <Heading as={"h6"} size={"md"} fontWeight={"medium"} textAlign={"start"} w={"full"}>
+                    Super Message Policy
+                </Heading>
+                <VStack gap={"2"} align={"start"}>
+                    {items.map((item, index) => (
+                        item.hasPolicy && (
+                            <DataListRoot orientation={"horizontal"} key={index}>
+                                <HStack gap={"6"}>
+                                    {
+                                        item.fields.map((field, fieldIndex) => (
+                                            <DataListItem key={fieldIndex}>
+                                                <DataListItemLabel color={"fg.contrast"}>
+                                                    <Icon size={"sm"}>
+                                                        {field.icon}
+                                                    </Icon>
+                                                    {field.label}
+                                                </DataListItemLabel>
+                                                <DataListItemValue>
+                                                    {field.value}
+                                                </DataListItemValue>
+                                            </DataListItem>
+                                        ))
+                                    }
+                                </HStack>
+                            </DataListRoot>
+                        )
+                    ))}
+                </VStack>
+                <Button
+                    size="sm"
+                    colorPalette={"primary"}
+                    loading={isLoading}
+                    onClick={handleSubscribeOrRead}
+                >
+                    {message.readers.includes(currentAccount.address) ? "Read" : "Subscribe"}
+                </Button>
+            </VStack>
         </MessageBase>
     );
 }

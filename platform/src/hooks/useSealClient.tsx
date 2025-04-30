@@ -162,6 +162,7 @@ export function useSealClient(): ISealActions {
 
         const encryptedData = encryptedMessage.content;
         const encryptedObject = EncryptedObject.parse(new Uint8Array(encryptedData));
+        console.log("encryptedObjectParsed", encryptedObject);
 
 
         const tx = new Transaction();
@@ -183,14 +184,18 @@ export function useSealClient(): ISealActions {
             threshold: 2,
         });
 
-        const decryptedBytes = await sealClient.decrypt({
-            data: new Uint8Array(encryptedData),
-            sessionKey,
-            txBytes: txBytes,
-        });
-
-
-        return decryptedBytes;
+        try {
+            const decryptedBytes = await sealClient.decrypt({
+                data: new Uint8Array(encryptedData),
+                sessionKey,
+                txBytes: txBytes,
+            });
+            console.log("decryptedBytes", decryptedBytes);
+            return decryptedBytes;
+        } catch (e) {
+            console.error("Error decrypting message", e);
+        }
+        return new Uint8Array();
     }, [currentAccount, packageId, sealClient, getSessionKey]);
 
     return useMemo(() => ({
