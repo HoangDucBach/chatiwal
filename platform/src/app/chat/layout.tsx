@@ -1,4 +1,4 @@
-import { HStack, VStack } from "@chakra-ui/react";
+import { HStack } from "@chakra-ui/react";
 import { Provider } from "./provider";
 import { ControlPanel } from "./_components/ControlPanel";
 import { Effects } from "./_components/Effects";

@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 interface SupabaseActionsProps {
     getGroupMemberships: (user: string) => Promise<string[]>;
