@@ -19,7 +19,7 @@ interface ButtonLoadingProps {
 export const buttonRecipe = defineRecipe({
   base: {
     width: "fit",
-    rounded: "full",
+    rounded: "xl",
   },
 })
 

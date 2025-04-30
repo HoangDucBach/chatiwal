@@ -6,17 +6,17 @@ import {
     MOVE_STDLIB_ADDRESS,
     SUI_FRAMEWORK_ADDRESS,
 } from '@mysten/sui/utils';
-import { Address, ObjectId } from '..';
+import { Address, ChatiwalClientConfig, ObjectId } from '..';
 
 
-export const GroupCap = bcs.struct("GroupCap", {
-    id: bcs.Address, // Assuming UID maps to Address/ID
-    group_id: bcs.Address, // Assuming ID maps to Address/ID
+export const GroupCapStruct = bcs.struct("GroupCap", {
+    id: bcs.Address,
+    group_id: bcs.Address,
 });
 
-export const Group = bcs.struct("Group", {
-    id: bcs.Address, // Assuming UID maps to Address/ID
-    member: bcs.vector(bcs.Address), // Assuming VecSet<address> maps to vector<address>
+export const GroupStruct = bcs.struct("Group", {
+    id: bcs.Address,
+    members: bcs.vector(bcs.Address),
     metadata_blob_id: bcs.String,
 });
 
@@ -33,10 +33,10 @@ export const GroupErrorCodes = { // Renamed from ErrorCodes for clarity
 /**
  * Initialize the group module with the package ID
  * @param packageId The ID of the deployed Chatiwal package
+ * @param config Optional configuration for the client
  * @returns Object with all group module functions
  */
-export function init(packageId: ObjectId) {
-
+function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
     /**
      * Mint a group and transfer it to the sender.
      */
@@ -75,18 +75,18 @@ export function init(packageId: ObjectId) {
             `address`,                              // recipient
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`,// c - assuming needed
         ];
-         const args = [
-             ...options.arguments,
+        const args = [
+            ...options.arguments,
             SUI_CLOCK_OBJECT_ID, // Assuming clock is needed
         ];
 
         // Placeholder - Adjust target and args if this function exists in Move
         return (tx: Transaction) =>
-             tx.moveCall({
-                 target: `${packageId}::group::mint_group_cap`, // Adjust function name if needed
-                 arguments: normalizeMoveArguments(args, moveArgsTypes),
-                 typeArguments: []
-             });
+            tx.moveCall({
+                target: `${packageId}::group::mint_group_cap`, // Adjust function name if needed
+                arguments: normalizeMoveArguments(args, moveArgsTypes),
+                typeArguments: []
+            });
         // If the function is meant to transfer an *existing* cap, the signature would be different.
     }
 
@@ -107,7 +107,9 @@ export function init(packageId: ObjectId) {
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
-            ...options.arguments,
+            options.arguments[0], // groupCapId
+            options.arguments[1], // groupId
+            options.arguments[2], // member
             SUI_CLOCK_OBJECT_ID,
         ];
 
@@ -136,7 +138,9 @@ export function init(packageId: ObjectId) {
             `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
         ];
         const args = [
-            ...options.arguments,
+            options.arguments[0], // groupCapId
+            options.arguments[1], // groupId
+            options.arguments[2], // member
             SUI_CLOCK_OBJECT_ID,
         ];
 
@@ -148,6 +152,29 @@ export function init(packageId: ObjectId) {
             });
     }
 
+    function leave_group(options: {
+        arguments: [
+            user: RawTransactionArgument<Address>,
+            group: RawTransactionArgument<ObjectId>,
+        ]
+    }) {
+        const moveArgsTypes = [
+            `address`,                              // user
+            `&mut ${packageId}::group::Group`,      // group (as mutable reference)
+            `&${SUI_FRAMEWORK_ADDRESS}::clock::Clock`, // c
+        ];
+        const args = [
+            ...options.arguments,
+            SUI_CLOCK_OBJECT_ID,
+        ];
+
+        return (tx: Transaction) =>
+            tx.moveCall({
+                target: `${packageId}::group::leave_group`,
+                arguments: normalizeMoveArguments(args, moveArgsTypes),
+                typeArguments: []
+            });
+    }
     /**
      * Approve a seal for the given ID if the sender is a member.
      */
@@ -319,6 +346,7 @@ export function init(packageId: ObjectId) {
         mint_group_cap, // Kept for structural similarity, review based on Move code
         add_member,
         remove_member,
+        leave_group,
         seal_approve,
         group_get_group_id,
         group_get_group_member,
@@ -329,3 +357,5 @@ export function init(packageId: ObjectId) {
         namespace,
     };
 }
+
+export const initGroup = init;

@@ -1,55 +1,78 @@
 "use client"
 
-import { Button } from "@/components/ui/button";
-import { Box, Heading, HStack, Icon, StackProps, VStack, Text } from "@chakra-ui/react";
+import { Heading, HStack, VStack, Text, TabsList, TabsTrigger, useTabs, TabsRootProvider, TabsContent, TabsRootProps, Icon } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
-import { IoIosAdd } from "react-icons/io";
+import { IoChatbubblesOutline } from "react-icons/io5";
+import { LuInfo } from "react-icons/lu";
 
-import { useChatiwalClient } from "@/hooks/useChatiwalClient";
-import { toaster } from "@/components/ui/toaster";
-
-import { GroupCard } from "./GroupCard";
 import { useGroup } from "../_hooks/useGroupId";
 import { useChannel } from "ably/react";
-import { useState } from "react";
 import { MemberCard } from "./MemberCard";
+import AddMember from "./AddMember";
+import { TMessage } from "@/types";
+import { MessageContainer } from "./MessageContainer";
+import { GroupDetailsTab } from "./GroupDetailsTab";
 
-interface Props extends StackProps { }
-export function GroupControlPanel(props: Props) {
+interface Props extends TabsRootProps {
+    chatTabProps: {
+        messages: TMessage[]
+    };
+}
+export function GroupControlPanel({ chatTabProps, ...props }: Props) {
+    const items = [
+        {
+            id: "chat",
+            icon: <IoChatbubblesOutline size={16} />,
+            title: "Chat",
+            content: <MessageContainer flex={"4"} messages={chatTabProps?.messages || []} />
+        },
+        {
+            id: "member",
+            icon: <IoChatbubblesOutline size={16} />,
+            title: "Details",
+            content: <GroupDetailsTab />
+        },
+    ]
+    const tabs = useTabs({
+        defaultValue: "chat",
+        onValueChange: (value) => {
+            console.log(value);
+        },
+    })
     return (
-        <VStack
-            pos={"relative"}
-            overflow={"hidden"}
-            zIndex={"0"}
-            h={"full"}
-            p={"4"}
-            bg={"bg.100"}
-            backdropBlur={"2xl"}
-            rounded={"4xl"}
-            gap={"6"}
-            {...props}
-        >
-            <Box
-                pos={"absolute"}
-                bottom={0}
-                left={0}
-                w={"32"}
-                h={"32"}
-                zIndex={"-1"}
-                bg={"primary"}
-                borderRadius={"full"}
-                filter={"blur(128px)"}
-            />
-            <GroupControlPanelHeader />
-            <GroupControlPanelBody />
-            <GroupControlPanelFooter />
-        </VStack>
+        <TabsRootProvider value={tabs} variant={"subtle"} w={"full"} h={"full"} >
+            <TabsList
+                w={"full"}
+                pos={"relative"}
+                zIndex={"0"}
+                p={"3"}
+                bg={"bg.100/75"}
+                backdropFilter={"blur(256px)"}
+                rounded={"3xl"}
+                gap={"6"}
+                defaultValue={items[0].id}
+            >
+                {items.map((item) => (
+                    <TabsTrigger rounded={"2xl"} color={"fg.contrast"} _selected={{ bg: "bg.300", color: "fg" }} value={item.id} key={item.id}>
+                        <Icon color={"fg.contrast"} _selected={{ color: "fg" }}>
+                            {item.icon}
+                        </Icon>
+                        {item.title}
+                    </TabsTrigger>
+                ))}
+            </TabsList>
+            {
+                items.map((item) => (
+                    <TabsContent w={"full"} h={"90%"} value={item.id} key={item.id}>
+                        {item.content}
+                    </TabsContent>
+                ))
+            }
+        </TabsRootProvider>
     )
 }
 
 function GroupControlPanelBody() {
-    const suiClient = useSuiClient();
     const { group } = useGroup();
     const { channel } = useChannel({ channelName: group.id });
 
@@ -78,7 +101,7 @@ function GroupControlPanelBody() {
             w={"full"}
             flex={"1 0"}
         >
-            {group.members.values().map((member) => (
+            {[...group.members.values()].map((member) => (
                 <MemberCard
                     key={member}
                     member={member}
@@ -101,47 +124,9 @@ function GroupControlPanelHeader() {
 }
 
 function GroupControlPanelFooter() {
-    const { group } = useGroup();
-    const { add_member } = useChatiwalClient();
-    const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
-
-    const handleAddMember = async () => {
-        try {
-            const tx = await add_member(group.id, "0xa34034f5a6e9758e540e3f8054c6aebea055f5948bde9e9aba48be015c98cd99");
-            signAndExecuteTransaction({
-                transaction: tx,
-            }, {
-                onSuccess: (res) => {
-                    toaster.success({
-                        title: "Group created successfully",
-                        description: "Your group has been created and you are the owner.",
-                    })
-                },
-                onError: (error) => {
-                    toaster.error({
-                        title: "Error creating group",
-                        description: "There was an error creating your group. Please try again.",
-                        meta: error,
-                    })
-                }
-            })
-        } catch (error) {
-            console.error("Error creating group", error);
-        }
-    }
-
     return (
         <VStack w={"full"} gap={"4"}>
-            <Button
-                colorPalette={"default"}
-                w={"full"}
-                onClick={handleAddMember}
-            >
-                <Icon>
-                    <IoIosAdd />
-                </Icon>
-                Add member
-            </Button>
+            <AddMember w="full" shadow={"custom.md"} />
         </VStack>
     )
 }

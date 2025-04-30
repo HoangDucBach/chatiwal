@@ -1,12 +1,12 @@
 "use client"
 
 import { Menu, chakra, Portal } from "@chakra-ui/react"
-import { ConnectModal, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
+import { ConnectModal, useAutoConnectWallet, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import { Button, ButtonProps } from "../ui/button";
-import { shortenAddress } from "@/libs";
 import { Icon } from "@chakra-ui/react"
 import { TbLogout } from "react-icons/tb";
 import { useEffect } from "react";
+import { formatAddress } from "@mysten/sui/utils";
 
 interface Props extends ButtonProps { }
 export function ConnectButton(props: Props) {
@@ -16,7 +16,7 @@ export function ConnectButton(props: Props) {
     return (
         <ConnectModal
             trigger={
-                account ? <Button colorPalette={"danger"} size="sm" onClick={()=>{disconnect}} {...props}>Disconnect</Button> : <Button colorPalette={"primary"} size="sm" {...props}>Connect</Button>
+                account ? <Button colorPalette={"danger"} size="sm" onClick={() => { disconnect() }} {...props}>Disconnect</Button> : <Button colorPalette={"primary"} size="sm" {...props}>Connect</Button>
             }
         />
     )
@@ -32,7 +32,7 @@ function MenuAccount() {
         <Menu.Root>
             <Menu.Trigger asChild>
                 <Button variant="outline" colorPalette={"primary"} size="sm">
-                    {shortenAddress(account.address)}
+                    {formatAddress(account.address)}
                 </Button>
             </Menu.Trigger>
             <Portal>

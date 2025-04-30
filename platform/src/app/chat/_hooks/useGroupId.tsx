@@ -1,6 +1,11 @@
 "use client";
 
+import { useChatiwalClient } from "@/hooks/useChatiwalClient";
+import { useWalrusClient } from "@/hooks/useWalrusClient";
+import { MetadataGroupSchema } from "@/libs/schema";
 import { TGroup } from "@/types";
+import { Skeleton } from "@chakra-ui/react";
+import { decode } from "@msgpack/msgpack";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, ReactNode } from "react";
@@ -8,39 +13,40 @@ import { createContext, useContext, ReactNode } from "react";
 const GroupContext = createContext<{ group: TGroup } | null>(null);
 
 export const GroupProvider = ({ id, children }: { id: string; children: ReactNode }) => {
-    const suiClient = useSuiClient();
-    const { data: group } = useQuery({
+    const { getGroupData } = useChatiwalClient();
+    const { read } = useWalrusClient();
+
+    const { data: group, isLoading } = useQuery({
         queryKey: ["group", id],
         queryFn: async () => {
-            const res = await suiClient.getObject({
-                id,
-                options: {
-                    showContent: true,
-                }
-            });
+            const group = await getGroupData(id);
 
-            console.log("res", res);
-            if (res.error) {
-                console.error("Error fetching group", res.error);
-                return null;
+            const metadata_blob_id = group.metadata_blob_id;
+            let metadata;
+
+            if (metadata_blob_id) {
+                const bufferArr = await read([metadata_blob_id]);
+                const metadataStr = decode(bufferArr[0]);
+                metadata = MetadataGroupSchema.parse(metadataStr);
             }
-
-            if (res.data?.content?.dataType !== "moveObject") {
-                console.error("Error fetching group", "Invalid group");
-                return null;
-            }
-
-            const group = res.data?.content.fields as any;
 
             return {
-                id: res.data?.objectId,
-                members: new Set(group.member.fields.contents),
-                owner: group.owner,
+                id: group.id,
+                members: new Set(group.members),
+                metadata: metadata,
             } as TGroup;
 
         },
         enabled: !!id,
     })
+
+    if (isLoading) return (
+        <Skeleton flex={"4"} height={"100%"} backdropFilter={"blur(256px)"} rounded="3xl" css={{
+            "--start-color": "colors.bg.100",
+            "--end-color": "colors.bg.200",
+        }}
+        />
+    );
 
     if (!group) return null;
 

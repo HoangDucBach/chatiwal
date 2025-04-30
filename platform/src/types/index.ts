@@ -1,104 +1,65 @@
-export enum MediaType {
-    IMAGE = 'image',
-    VIDEO = 'video',
-    AUDIO = 'audio',
-    DOCUMENT = 'document',
-    GIF = 'gif'
-}
+import { MetadataGroup } from "@/libs/schema";
+import { FeeBasedPolicyStruct, LimitedReadPolicyStruct, TimeLockPolicyStruct, SuperMessageStruct } from "@/sdk";
 
 export type MediaContent = {
     id: string;
-    type: MediaType;
-    url: string;
-    name?: string;
-    size?: number;
-    duration?: number;
-    dimensions?: {
-        width: number;
-        height: number;
-    };
-    mimeType?: string;
+    url?: string;
+    raw?: string | Uint8Array;
+    mimeType: string;
 };
 
 export type TGroup = {
     id: string;
-    name?: string;
-    description?: string;
-    owner: string;
     members: Set<string>;
+    metadata?: MetadataGroup;
 };
 
-export enum TMessageType {
-    NO_POLICY = 'no-policy',
-    TIME_LOCK = 'time-lock',
-    LIMITED_READ = 'limited-read',
-    FEE_BASED = 'fee-based',
-    COMPOUND = 'compound'
+export enum MessageType {
+    BASE,
+    SUPER_MESSAGE,
 }
 
-export type TMessageBase = {
-    id: string;
-    owner: string;
-    groupId: string;
-    content: {
-        text?: string;
-        media?: MediaContent[];
-    };
+export type TTimeLockPolicy = typeof TimeLockPolicyStruct.$inferType;
+
+export type TLimitedReadPolicy = typeof LimitedReadPolicyStruct.$inferType;
+
+export type TFeeBasedPolicy = typeof FeeBasedPolicyStruct.$inferType;
+
+type SuperMessage = typeof SuperMessageStruct.$inferType;
+export type TMessage = {
+    id: SuperMessage['id'];
+    owner: SuperMessage['owner'];
+    groupId: SuperMessage['group_id'];
+    auxId: SuperMessage['aux_id'];
+    blobId?: SuperMessage['message_blob_id'];
+    readers: SuperMessage['readers'];
+    feeCollected: SuperMessage['fee_collected'];
+    timeLockPolicy?: TTimeLockPolicy | null;
+    limitedReadPolicy?: TLimitedReadPolicy | null;
+    feePolicy?: TFeeBasedPolicy | null;
+    content: Uint8Array
     createdAt?: number;
 };
 
-export type TMessageNoPolicy = TMessageBase & {
-    type: TMessageType.NO_POLICY;
-};
+export function hasTimeLock(msg: TMessage): msg is TMessage & { timeLockPolicy: TTimeLockPolicy } {
+    return msg.timeLockPolicy !== undefined;
+}
 
-export type TMessageTimeLock = TMessageBase & {
-    type: TMessageType.TIME_LOCK;
-    policy: {
-        from: number;
-        to: number;
-    };
-};
+export function hasLimitedRead(msg: TMessage): msg is TMessage & { limitedReadPolicy: TLimitedReadPolicy } {
+    return msg.limitedReadPolicy !== undefined;
+}
 
-export type TMessageLimitedRead = TMessageBase & {
-    type: TMessageType.LIMITED_READ;
-    policy: {
-        maxReads: number;
-    };
-    readers: string[];
-};
+export function hasFeePolicy(msg: TMessage): msg is TMessage & { feePolicy: TFeeBasedPolicy } {
+    return msg.feePolicy !== undefined;
+}
 
-export type TMessageFeeBased = TMessageBase & {
-    type: TMessageType.FEE_BASED;
-    policy: {
-        fee: number;
-        recipient: string;
-    };
-    readers: string[];
-    feeCollected: number;
-    coinType: string;
-};
+export function getMessagePolicyType(msg: TMessage): MessageType {
+    const hasTL = hasTimeLock(msg);
+    const hasLR = hasLimitedRead(msg);
+    const hasFP = hasFeePolicy(msg);
 
-export type TMessageCompound = TMessageBase & {
-    type: TMessageType.COMPOUND;
-    timeLockPolicy: {
-        from: number;
-        to: number;
-    };
-    limitedReadPolicy: {
-        maxReads: number;
-    };
-    feePolicy: {
-        fee: number;
-        recipient: string;
-    };
-    readers: string[];
-    feeCollected: number;
-    coinType: string;
-};
+    if (hasTL || hasLR || hasFP) return MessageType.SUPER_MESSAGE
 
-export type TMessage =
-    | TMessageNoPolicy
-    | TMessageTimeLock
-    | TMessageLimitedRead
-    | TMessageFeeBased
-    | TMessageCompound;
+    return MessageType.BASE;
+
+}

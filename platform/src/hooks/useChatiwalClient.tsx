@@ -1,94 +1,41 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChatiwalClient, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
+import { ChatiwalClient, GroupStruct, SuperMessageStruct, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
 import { ChatiwalClientConfig } from "@/sdk/types";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { InvalidGroupCapError } from "@/sdk/errors";
-import { Address, ObjectId } from "@/sdk/types";
+import { ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
+import { SuiGraphQLClient } from '@mysten/sui/graphql';
+import { graphql } from '@mysten/sui/graphql/schemas/latest';
+
+type GroupData = typeof GroupStruct.$inferType;
+type SuperMessageData = typeof SuperMessageStruct.$inferType
 
 export interface IGroupActions {
-    mint_group_and_transfer(metadataBlobId?: string): Promise<Transaction>;
-    mint_group_cap(group: string, recipient: string): Promise<Transaction>;
-    add_member(group: string, member: string): Promise<Transaction>;
-    remove_member(group: string, member: string): Promise<Transaction>;
-    seal_approve(id: Uint8Array, group: string): Promise<Transaction>;
-    group_get_group_id(group: string): Promise<Uint8Array>;
-    group_get_group_member(group: string): Promise<number[]>;
-    group_get_group_metadataBlobId(group: string): Promise<string>;
-    group_cap_get_group_id(group_cap: string): Promise<Uint8Array>;
-    group_cap_get_id(group_cap: string): Promise<string>;
-    is_member(group: string, addr: string): Promise<boolean>;
+    mintGroupAndTransfer(metadataBlobId?: string): Promise<Transaction>;
+    mintGroupCap(groupId: string, recipient: string): Promise<Transaction>;
+    addMember(groupId: string, member: string, groupCap?: string): Promise<Transaction>;
+    removeMember(groupId: string, member: string): Promise<Transaction>;
+    leaveGroup(groupId: string, member: string): Promise<Transaction>;
+    sealApprove(id: Uint8Array, groupId: string): Promise<Transaction>;
+    validateGroupCap(groupId: string): Promise<string>;
+    getGroupData(groupdId: string): Promise<GroupData>;
 }
 
 export interface IMessageActions {
-    mint_messages_snapshot_and_transfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
-    mint_messages_snapshot_cap_and_transfer(messages_snapshot_id: string): Promise<Transaction>;
-    mint_super_message_no_policy_and_transfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
-    read_message_no_policy(messageId: string): Promise<Transaction>;
-    mint_super_message_time_lock_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint): Promise<Transaction>;
-    read_message_time_lock(messageId: string): Promise<Transaction>;
-    mint_super_message_limited_read_and_transfer(groupId: string, metadataBlobId: string, maxReads: number | bigint): Promise<Transaction>; read_message_limited_read(messageId: string): Promise<Transaction>;
-    mint_super_message_fee_based_and_transfer(groupId: string, metadataBlobId: string, fee: number | bigint, recipient: string, coinType: string): Promise<Transaction>;
-    read_message_fee_based(messageId: string, payment_coin_id: string, coinType: string): Promise<Transaction>; withdraw_fees(messageId: string, coinType: string): Promise<Transaction>;
-    mint_super_message_compound_and_transfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, coinType: string): Promise<Transaction>;
-    read_message_compound(messageId: string, payment_coin_id: string, coinType: string): Promise<Transaction>;
-    withdraw_fees_compound(messageId: string, coinType: string): Promise<Transaction>;
-
-    // === Seal Integration ===
-
-    seal_approve_super_message_time_lock(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
-    seal_approve_super_message_limited_read(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
-    seal_approve_super_message_fee_based(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<Transaction>;
-    seal_approve_super_message_compound(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<Transaction>;
-
-    // === Public view functions (Accessors using devInspect) ===
-
-    get_current_reader(messageId: ObjectId): Promise<string>; // u64 as string
-    get_collected_fees(messageId: ObjectId, coinType: string): Promise<string>; // u64 as string
-    get_collected_fees_compound(messageId: ObjectId, coinType: string): Promise<string>; // u64 as string
-    get_remaining_reads(messageId: ObjectId): Promise<string>; // u64 as string
-    is_readable_by_time(messageId: ObjectId, timestamp: bigint | number): Promise<boolean>;
-    message_cap_get_id(capId: ObjectId): Promise<ObjectId>;
-    message_cap_get_message_id(capId: ObjectId): Promise<ObjectId>;
-    message_snapshot_cap_get_id(capId: ObjectId): Promise<ObjectId>;
-    message_snapshot_cap_get_messages_snapshot_id(capId: ObjectId): Promise<ObjectId>;
-    message_snapshot_get_id(snapshotId: ObjectId): Promise<ObjectId>;
-    message_snapshot_get_group_id(snapshotId: ObjectId): Promise<ObjectId>;
-    message_snapshot_get_messages_blob_id(snapshotId: ObjectId): Promise<string>;
-    message_no_policy_get_id(messageId: ObjectId): Promise<ObjectId>;
-    message_no_policy_get_group_id(messageId: ObjectId): Promise<ObjectId>;
-    message_no_policy_get_message_blob_id(messageId: ObjectId): Promise<string>;
-    message_no_policy_get_owner(messageId: ObjectId): Promise<Address>;
-    message_limit_read_get_id(messageId: ObjectId): Promise<ObjectId>;
-    message_limit_read_get_group_id(messageId: ObjectId): Promise<ObjectId>;
-    message_limit_read_get_message_blob_id(messageId: ObjectId): Promise<string>;
-    message_limit_read_get_policy(messageId: ObjectId): Promise<any>; // Specific policy type needed for parsing
-    message_limit_read_get_owner(messageId: ObjectId): Promise<Address>;
-    message_limit_read_get_readers(messageId: ObjectId): Promise<Address[]>;
-    message_time_lock_get_id(messageId: ObjectId): Promise<ObjectId>;
-    message_time_lock_get_group_id(messageId: ObjectId): Promise<ObjectId>;
-    message_time_lock_get_message_blob_id(messageId: ObjectId): Promise<string>;
-    message_time_lock_get_policy(messageId: ObjectId): Promise<any>; // Specific policy type needed for parsing
-    message_time_lock_get_owner(messageId: ObjectId): Promise<Address>;
-    message_fee_based_get_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
-    message_fee_based_get_group_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
-    message_fee_based_get_message_blob_id(messageId: ObjectId, coinType: string): Promise<string>;
-    message_fee_based_get_policy(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed for parsing
-    message_fee_based_get_owner(messageId: ObjectId, coinType: string): Promise<Address>;
-    message_fee_based_get_readers(messageId: ObjectId, coinType: string): Promise<Address[]>;
-    message_fee_based_get_fee_collected(messageId: ObjectId, coinType: string): Promise<any>; // Specific Balance type needed
-    message_compound_get_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
-    message_compound_get_group_id(messageId: ObjectId, coinType: string): Promise<ObjectId>;
-    message_compound_get_message_blob_id(messageId: ObjectId, coinType: string): Promise<string>;
-    message_compound_get_time_lock(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed
-    message_compound_get_limited_read(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed
-    message_compound_get_fee_policy(messageId: ObjectId, coinType: string): Promise<any>; // Specific policy type needed
-    message_compound_get_owner(messageId: ObjectId, coinType: string): Promise<Address>;
-    message_compound_get_fee_collected(messageId: ObjectId, coinType: string): Promise<any>; // Specific Balance type needed
-    message_compound_get_readers(messageId: ObjectId, coinType: string): Promise<Address[]>;
-    message_compound_get_remaining_reads(messageId: ObjectId, coinType: string): Promise<string>; // u64 as string
+    mintMessagesSnapshotAndTransfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
+    mintMessagesSnapshotCapAndTransfer(messagesSnapshotId: string): Promise<Transaction>;
+    mintSuperMessageNoPolicyAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array): Promise<Transaction>;
+    mintSuperMessageTimeLockAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint): Promise<Transaction>;
+    mintSuperMessageLimitedReadAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint): Promise<Transaction>;
+    mintSuperMessageFeeBasedAndTransfer(groupId: string, messageBlobId: string, fee: number | bigint, recipient: string): Promise<Transaction>;
+    mintSuperMessageCompoundAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string): Promise<Transaction>;
+    readMessage(messageId: string, paymentCoinId: string): Promise<Transaction>;
+    withdrawFees(messageId: string): Promise<Transaction>;
+    sealApproveSuperMessage(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
+    getSuperMessageData(messageId: string): Promise<SuperMessageData>;
 }
 
 export interface IChatiwalClientActions extends IGroupActions, IMessageActions {
@@ -107,6 +54,12 @@ export function useChatiwalClient(): IChatiwalClientActions {
         return new ChatiwalClient(config);
     }, [suiClient]);
 
+    const gqlClient = useMemo(() => {
+        return new SuiGraphQLClient({
+            url: 'https://sui-testnet.mystenlabs.com/graphql',
+        })
+    }, []);
+
     if (!suiClient) {
         throw new Error("Sui client is not available");
     }
@@ -116,767 +69,266 @@ export function useChatiwalClient(): IChatiwalClientActions {
         return account;
     };
 
-    const getOwnedGroupCapById = async (group: string) => {
-        validateAccount();
+    const getOwnedGroupCapById = async (groupId: string) => {
+        const userAccount = validateAccount();
+        const packageId = client.getPackageConfig().chatiwalId;
 
         const groupCapsOfOwner = await suiClient.getOwnedObjects({
-            owner: account!.address,
+            owner: userAccount.address,
             filter: {
-                StructType: `${client.getPackageConfig().chatiwalId}::group::GroupCap`,
+                StructType: `${packageId}::group::GroupCap`,
             },
             options: {
                 showContent: true,
+                showType: true,
             }
         });
 
         const groupCap = groupCapsOfOwner.data.find((cap) => {
-            const type = cap.data?.content?.dataType;
-            if (type !== "moveObject") throw new Error("Invalid type");
-            const object = cap.data?.content?.fields as unknown as any;
-            return object.group_id === group;
+            if (cap.data?.content?.dataType !== "moveObject") return false;
+            const fields = cap.data?.content?.fields as any;
+            return fields?.group_id === groupId;
         });
 
         return groupCap;
     };
 
-    const validateGroupCap = async (group: string) => {
-        const groupCapOfOwner = await getOwnedGroupCapById(group);
-        if (!groupCapOfOwner || !groupCapOfOwner.data) {
-            throw new InvalidGroupCapError("You don't have permission");
+
+    const validateGroupCap = async (groupId: string): Promise<string> => {
+        const groupCapOfOwner = await getOwnedGroupCapById(groupId);
+        if (!groupCapOfOwner?.data?.objectId) {
+            throw new InvalidGroupCapError("You don't have the required GroupCap or it's missing data");
         }
         return groupCapOfOwner.data.objectId;
     };
 
-    const executeTransaction = async (txBuilder: () => Promise<Transaction>) => {
+    const executeTransaction = async (txBuilder: () => Transaction): Promise<Transaction> => {
+        validateAccount();
         try {
-            validateAccount();
-            return await txBuilder();
+            const tx = txBuilder();
+            return Promise.resolve(tx);
         } catch (error) {
+            console.error("Error building transaction:", error);
             throw error;
         }
     };
 
-    const executeInspectTransaction = async (txBuilder: () => Promise<any>, processResult?: (res: any) => any) => {
-        try {
-            const userAccount = validateAccount();
-            const tx = await txBuilder();
-            const res = await suiClient.devInspectTransactionBlock({
-                transactionBlock: tx,
-                sender: userAccount.address,
-            });
-
-            if (!res || !res.results) {
-                throw new Error("No results found");
-            }
-
-            return processResult ? processResult(res) : res;
-        } catch (error) {
-            throw error;
-        }
-    };
 
     const groupActions: IGroupActions = {
-        mint_group_and_transfer: async (metadataBlobId: string = "") => {
-            return await executeTransaction(() =>
-                client.mintGroupAndTransfer({ metadataBlobId: metadataBlobId })
+        mintGroupAndTransfer: (metadataBlobId: string = "") => {
+            return executeTransaction(() =>
+                client.mintGroupAndTransfer({ metadataBlobId })
             );
         },
 
-        mint_group_cap: async (group: string, recipient: string) => {
-            const groupCapId = await validateGroupCap(group);
-            return await executeTransaction(() =>
+        mintGroupCap: async (groupId: string, recipient: string) => {
+            const groupCapId = await validateGroupCap(groupId);
+            return executeTransaction(() =>
                 client.mintGroupCap({
                     groupCapId,
-                    groupId: group,
+                    groupId,
                     recipient,
                 })
             );
         },
 
-        add_member: async (group: string, member: string) => {
-            const groupCapId = await validateGroupCap(group);
-            return await executeTransaction(() =>
+        addMember: async (groupId: string, member: string, customGroupCapId?: string) => {
+            const groupCapId = customGroupCapId || await validateGroupCap(groupId);
+            return executeTransaction(() =>
                 client.addMember({
                     groupCapId,
-                    groupId: group,
+                    groupId,
                     member,
                 })
             );
         },
 
-        remove_member: async (group: string, member: string) => {
-            const groupCapId = await validateGroupCap(group);
-            return await executeTransaction(() =>
+        removeMember: async (groupId: string, member: string) => {
+            const groupCapId = await validateGroupCap(groupId);
+            return executeTransaction(() =>
                 client.removeMember({
                     groupCapId,
-                    groupId: group,
+                    groupId,
                     member,
                 })
             );
         },
 
-        seal_approve: async (id: Uint8Array, group: string) => {
-            return await executeInspectTransaction(() =>
-                client.sealApprove({
-                    id,
-                    groupId: group,
+        leaveGroup: (groupId: string, member: string) => {
+            return executeTransaction(() =>
+                client.leaveGroup({
+                    groupId,
+                    member,
                 })
             );
         },
 
-        group_get_group_id: async (group: string): Promise<Uint8Array> => {
-            return executeInspectTransaction(
-                () => client.groupGetGroupId(group),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
+        sealApprove: (id: Uint8Array, groupId: string) => {
+            return executeTransaction(() =>
+                client.sealApprove({ id, groupId })
             );
         },
 
-        group_get_group_member: async (group: string): Promise<number[]> => {
-            return executeInspectTransaction(
-                () => client.groupGetGroupMember(group),
-                (res) => res.results[0].returnValues![0][0]
-            );
+        validateGroupCap: validateGroupCap,
+
+
+        getGroupData: async (groupId: string) => {
+            const res = await gqlClient.query({
+                query: graphql(`
+                    query ($groupId: SuiAddress!) {
+                    object(address: $groupId) {
+                        asMoveObject {
+                        contents {
+                            json 
+                            bcs
+                        }
+                        }
+                    }
+                    }
+                    `),
+                variables: {
+                    groupId
+                }
+            });
+
+            if (!res) throw new Error("No group found");
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return GroupStruct.fromBase64(bcs!);
         },
 
-        group_get_group_metadataBlobId: async (group: string): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.groupGetGroupMetadataBlobId(group),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
-            );
-        },
 
-        group_cap_get_group_id: async (group_cap: string): Promise<Uint8Array> => {
-            return executeInspectTransaction(
-                () => client.groupCapGetGroupId(group_cap),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
-            );
-        },
-
-        group_cap_get_id: async (group_cap: string): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.groupCapGetId(group_cap),
-                (res) => new Uint8Array(res.results[0].returnValues![0][0])
-            );
-        },
-
-        is_member: async (group: string, addr: string): Promise<boolean> => {
-            return executeInspectTransaction(
-                () => client.isMember({
-                    groupId: group,
-                    address: addr,
-                }),
-                (res) => res.results[0].returnValues![0][0] as unknown as boolean
-            );
-        }
     };
 
     const messageActions: IMessageActions = {
-        // Snapshot management
-        mint_messages_snapshot_and_transfer: async (groupId: string, metadataBlobId: string) => {
-            return await executeTransaction(() =>
+        mintMessagesSnapshotAndTransfer: (groupId: string, metadataBlobId: string) => {
+            return executeTransaction(() =>
                 client.mintMessagesSnapshotAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId
+                    g_id: groupId,
+                    mt_b_id: metadataBlobId
                 })
             );
         },
 
-        mint_messages_snapshot_cap_and_transfer: async (messages_snapshot_id: string) => {
-            return await executeTransaction(() =>
+        mintMessagesSnapshotCapAndTransfer: (messagesSnapshotId: string) => {
+            return executeTransaction(() =>
                 client.mintMessagesSnapshotCapAndTransfer({
-                    msgsSnapshotId: messages_snapshot_id
+                    msg_snapshot_id: messagesSnapshotId
                 })
             );
         },
 
-        // No Policy Messages
-        mint_super_message_no_policy_and_transfer: async (groupId: string, metadataBlobId: string) => {
-            return await executeTransaction(() =>
+        mintSuperMessageNoPolicyAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageNoPolicyAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId
                 })
             );
         },
 
-        read_message_no_policy: async (messageId: string) => {
-            return await executeTransaction(() =>
-                client.readMessageNoPolicy({
-                    messageId: messageId
-                })
-            );
-        },
-
-        // Time Lock Messages
-        mint_super_message_time_lock_and_transfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            timeFrom: number | bigint,
-            timeTo: number | bigint
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageTimeLockAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageTimeLockAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId,
                     from: timeFrom,
                     to: timeTo
                 })
             );
         },
 
-        read_message_time_lock: async (messageId: string) => {
-            return await executeTransaction(() =>
-                client.readMessageTimeLock({
-                    messageId: messageId
-                })
-            );
-        },
-
-        // Limited Read Messages
-        mint_super_message_limited_read_and_transfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            maxReads: number | bigint
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageLimitedReadAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageLimitedReadAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId,
                     max: maxReads
                 })
             );
         },
 
-        read_message_limited_read: async (messageId: string) => {
-            return await executeTransaction(() =>
-                client.readMessageLimitedRead({
-                    messageId: messageId
-                })
-            );
-        },
-
-        // Fee Based Messages
-        mint_super_message_fee_based_and_transfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            fee: number | bigint,
-            recipient: string,
-            coinType: string
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageFeeBasedAndTransfer: (groupId: string, messageBlobId: string, fee: number | bigint, recipient: string) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageFeeBasedAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
                     fee: fee,
-                    recipient: recipient,
-                    coinType: coinType
+                    r: recipient
                 })
             );
         },
 
-        read_message_fee_based: async (messageId: string, payment_coin_id: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.readMessageFeeBased({
-                    messageId: messageId,
-                    paymentCoinId: payment_coin_id,
-                    coinType: coinType
-                })
-            );
-        },
-
-        withdraw_fees: async (messageId: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.withdrawFees({
-                    messageId: messageId,
-                    coinType: coinType
-                })
-            );
-        },
-
-        mint_super_message_compound_and_transfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            timeFrom: number | bigint,
-            timeTo: number | bigint,
-            maxReads: number | bigint,
-            fee: number | bigint,
-            recipient: string,
-            coinType: string
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageCompoundAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageCompoundAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
-                    timeFrom: timeFrom,
-                    timeTo: timeTo,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId,
+                    tf: timeFrom,
+                    tt: timeTo,
                     max: maxReads,
                     fee: fee,
-                    recipient: recipient,
-                    coinType: coinType
+                    receipient: recipient
                 })
             );
         },
 
-        read_message_compound: async (messageId: string, payment_coin_id: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.readMessageCompound({
-                    messageId: messageId,
-                    paymentCoinId: payment_coin_id,
-                    coinType: coinType
+        readMessage: (messageId: string, paymentCoinId: string) => {
+            return executeTransaction(() =>
+                client.readMessage({
+                    msg: messageId,
+                    payment: paymentCoinId
                 })
             );
         },
 
-        withdraw_fees_compound: async (messageId: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.withdrawFeesCompound({
-                    messageId: messageId,
-                    coinType: coinType
+        withdrawFees: (messageId: string) => {
+            return executeTransaction(() =>
+                client.withdrawFees({
+                    msg: messageId
                 })
             );
         },
 
-        // === Seal Integration ===
-
-        seal_approve_super_message_time_lock: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageTimeLock({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId
-                })
-            );
-        },
-        seal_approve_super_message_limited_read: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageLimitedRead({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId
-                })
-            );
-        },
-        seal_approve_super_message_fee_based: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageFeeBased({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId,
-                    coinType: coinType
-                })
-            );
-        },
-        seal_approve_super_message_compound: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageCompound({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId,
-                    coinType: coinType
+        sealApproveSuperMessage: (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
+            return executeTransaction(() =>
+                client.sealApproveSuperMessage({
+                    id: id,
+                    msg: messageId,
+                    group: groupId
                 })
             );
         },
 
-        // === Public view functions (Accessors using devInspect) ===
+        getSuperMessageData: async (messageId: string) => {
+            const res = await gqlClient.query({
+                query: graphql(`
+                    query ($messageId: SuiAddress!) {
+                    object(address: $messageId) {
+                        asMoveObject {
+                        contents {
+                            json 
+                            bcs
+                        }
+                        }
+                    }
+                    }
+                    `),
+                variables: {
+                    messageId
+                }
+            });
 
-        get_current_reader: async (messageId: ObjectId): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.getCurrentReader({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
+            if (!res) throw new Error("No message found");
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return SuperMessageStruct.fromBase64(bcs!);
         },
 
-        get_collected_fees: async (messageId: ObjectId, coinType: string): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.getCollectedFees({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        get_collected_fees_compound: async (messageId: ObjectId, coinType: string): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.getCollectedFeesCompound({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        get_remaining_reads: async (messageId: ObjectId): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.getRemainingReads({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        is_readable_by_time: async (messageId: ObjectId, timestamp: bigint | number): Promise<boolean> => {
-            return executeInspectTransaction(
-                () => client.isReadableByTime({ messageId, timestamp }),
-                (res) => res.results[0].returnValues![0][0] as unknown as boolean
-            );
-        },
-
-        message_cap_get_id: async (capId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageCapGetId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_cap_get_message_id: async (capId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageCapGetMessageId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_snapshot_cap_get_id: async (capId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageSnapshotCapGetId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_snapshot_cap_get_messages_snapshot_id: async (capId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageSnapshotCapGetMessagesSnapshotId({ capId }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_snapshot_get_id: async (snapshotId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageSnapshotGetId({ snapshotId }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_snapshot_get_group_id: async (snapshotId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageSnapshotGetGroupId({ snapshotId }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_snapshot_get_messages_blob_id: async (snapshotId: ObjectId): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.messageSnapshotGetMessagesBlobId({ snapshotId }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_no_policy_get_id: async (messageId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageNoPolicyGetId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_no_policy_get_group_id: async (messageId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageNoPolicyGetGroupId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_no_policy_get_message_blob_id: async (messageId: ObjectId): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.messageNoPolicyGetMessageBlobId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_no_policy_get_owner: async (messageId: ObjectId): Promise<Address> => {
-            return executeInspectTransaction(
-                () => client.messageNoPolicyGetOwner({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_limit_read_get_id: async (messageId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageLimitReadGetId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_limit_read_get_group_id: async (messageId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageLimitReadGetGroupId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_limit_read_get_message_blob_id: async (messageId: ObjectId): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.messageLimitReadGetMessageBlobId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_limit_read_get_policy: async (messageId: ObjectId): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageLimitReadGetPolicy({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_limit_read_get_owner: async (messageId: ObjectId): Promise<Address> => {
-            return executeInspectTransaction(
-                () => client.messageLimitReadGetOwner({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_limit_read_get_readers: async (messageId: ObjectId): Promise<Address[]> => {
-            return executeInspectTransaction(
-                () => client.messageLimitReadGetReaders({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_time_lock_get_id: async (messageId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageTimeLockGetId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_time_lock_get_group_id: async (messageId: ObjectId): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageTimeLockGetGroupId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_time_lock_get_message_blob_id: async (messageId: ObjectId): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.messageTimeLockGetMessageBlobId({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_time_lock_get_policy: async (messageId: ObjectId): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageTimeLockGetPolicy({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_time_lock_get_owner: async (messageId: ObjectId): Promise<Address> => {
-            return executeInspectTransaction(
-                () => client.messageTimeLockGetOwner({
-                    messageId: messageId
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_fee_based_get_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageFeeBasedGetId({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_fee_based_get_group_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageFeeBasedGetGroupId({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_fee_based_get_message_blob_id: async (messageId: ObjectId, coinType: string): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.messageFeeBasedGetMessageBlobId({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_fee_based_get_policy: async (messageId: ObjectId, coinType: string): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageFeeBasedGetPolicy({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_fee_based_get_owner: async (messageId: ObjectId, coinType: string): Promise<Address> => {
-            return executeInspectTransaction(
-                () => client.messageFeeBasedGetOwner({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_fee_based_get_readers: async (messageId: ObjectId, coinType: string): Promise<Address[]> => {
-            return executeInspectTransaction(
-                () => client.messageFeeBasedGetReaders({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_fee_based_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageFeeBasedGetFeeCollected({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetId({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_group_id: async (messageId: ObjectId, coinType: string): Promise<ObjectId> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetGroupId({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_message_blob_id: async (messageId: ObjectId, coinType: string): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetMessageBlobId({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_time_lock: async (messageId: ObjectId, coinType: string): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetTimeLock({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_limited_read: async (messageId: ObjectId, coinType: string): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetLimitedRead({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_fee_policy: async (messageId: ObjectId, coinType: string): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetFeePolicy({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_owner: async (messageId: ObjectId, coinType: string): Promise<Address> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetOwner({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_fee_collected: async (messageId: ObjectId, coinType: string): Promise<any> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetFeeCollected({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_readers: async (messageId: ObjectId, coinType: string): Promise<Address[]> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetReaders({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        },
-
-        message_compound_get_remaining_reads: async (messageId: ObjectId, coinType: string): Promise<string> => {
-            return executeInspectTransaction(
-                () => client.messageCompoundGetRemainingReads({
-                    messageId: messageId,
-                    coinType: coinType
-                }),
-                (res) => res.results[0].returnValues![0][0]
-            );
-        }
     };
 
     return {

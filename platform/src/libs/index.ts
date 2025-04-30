@@ -1,8 +1,6 @@
-export function shortenAddress(address: string, length = 4) {
-    if (!address) return '';
-    if (address.length <= length * 2 + 2) return address;
-    return `${address.slice(0, length + 2)}...${address.slice(-length)}`;
-}
+import { encode } from "@msgpack/msgpack";
+import { SUI_ADDRESS_LENGTH } from "@mysten/sui/utils";
+import { nanoid } from "nanoid";
 
 export function formatBalance(balance: bigint, decimals = 9): string {
     const divisor = 10n ** BigInt(decimals);
@@ -20,4 +18,20 @@ export function generateColorFromAddress(addr: string): string {
     const saturation = 60 + (hash % 20); // 60–80%
     const lightness = 50 + (hash % 20); // 50–70%
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+export const TypeSuffixRegex = /<([^>]+)>/;
+
+export function generateContentId(prefix: Uint8Array): Uint8Array {
+    const contentNonceId = nanoid();
+    const contentHashBytes = encode(contentNonceId);
+    return new Uint8Array([...prefix, ...contentHashBytes]);
+}
+
+export function extractPrefixFromContentId(contentId: Uint8Array): Uint8Array {
+    return contentId.slice(0, SUI_ADDRESS_LENGTH);
+}
+
+export function extractContentHashBytes(contentId: Uint8Array): Uint8Array {
+    return contentId.slice(SUI_ADDRESS_LENGTH);
 }

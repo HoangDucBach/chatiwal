@@ -14,10 +14,11 @@ export default function Provider({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+
     return (
         <QueryClientProvider client={queryClient}>
             <SuiClientProvider network={suiConfig.defaultNetwork} networks={suiConfig.networks}>
-                <WalletProvider>
+                <WalletProvider autoConnect>
                     <UIProvider>
                         {children}
                     </UIProvider>
