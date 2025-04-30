@@ -44,7 +44,6 @@ export function Content(props: ContentProps) {
             return { url: media.url, cleanup: () => { } };
         }
 
-
         if (raw instanceof Uint8Array || typeof raw === 'string') {
             try {
                 const blob = new Blob([raw], { type: media.mimeType });
@@ -56,7 +55,6 @@ export function Content(props: ContentProps) {
                 return null;
             }
         }
-
 
         return null;
     }, [media]);
@@ -169,7 +167,7 @@ export function MessageBase(props: MessageBaseProps) {
     const { getSessionKey, sessionKeys } = useSessionKeys();
     const currentAccount = useCurrentAccount();
     const { read } = useWalrusClient();
-
+    
     const { data: decryptedContent, isLoading: isDecrypting, error: decryptError, refetch } = useQuery({
         queryKey: ["messages::group::decrypt", message.id],
         queryFn: async (): Promise<MediaContent[] | null> => {

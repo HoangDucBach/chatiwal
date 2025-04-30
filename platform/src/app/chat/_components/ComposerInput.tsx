@@ -55,7 +55,7 @@ type MintParams = {
     type: SuperMessageType;
     groupId: string;
     messageBlobId: string;
-    auxId?: Uint8Array;
+    auxId: Uint8Array;
     timeFrom?: bigint;
     timeTo?: bigint;
     maxReads?: bigint;
@@ -114,32 +114,27 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             if (!group?.id) throw new Error("Group ID is not available");
 
             let tx: Transaction;
-            let auxId: Uint8Array | undefined = undefined;
-            if (params.type !== 'fee_based') {
-                auxId = new Uint8Array(16);
-                crypto.getRandomValues(auxId);
-            }
 
             switch (params.type) {
                 case 'time_lock':
-                    if (!params.timeFrom || !params.timeTo || !params.messageBlobId || !auxId) throw new Error("Missing parameters for Time Lock");
-                    tx = await mintSuperMessageTimeLockAndTransfer(group.id, params.messageBlobId, auxId, params.timeFrom, params.timeTo);
+                    if (!params.timeFrom || !params.timeTo || !params.messageBlobId || !params.auxId) throw new Error("Missing parameters for Time Lock");
+                    tx = await mintSuperMessageTimeLockAndTransfer(group.id, params.messageBlobId, params.auxId, params.timeFrom, params.timeTo);
                     break;
                 case 'limited_read':
-                    if (!params.maxReads || !params.messageBlobId || !auxId) throw new Error("Missing parameters for Limited Read");
-                    tx = await mintSuperMessageLimitedReadAndTransfer(group.id, params.messageBlobId, auxId, params.maxReads);
+                    if (!params.maxReads || !params.messageBlobId || !params.auxId) throw new Error("Missing parameters for Limited Read");
+                    tx = await mintSuperMessageLimitedReadAndTransfer(group.id, params.messageBlobId, params.auxId, params.maxReads);
                     break;
                 case 'fee_based':
                     if (params.fee === undefined || !params.recipient || !params.messageBlobId) throw new Error("Missing parameters for Fee Based");
                     tx = await mintSuperMessageFeeBasedAndTransfer(group.id, params.messageBlobId, BigInt(params.fee), params.recipient);
                     break;
                 case 'compound':
-                    if (!params.timeFrom || !params.timeTo || !params.maxReads || params.fee === undefined || !params.recipient || !params.messageBlobId || !auxId) throw new Error("Missing parameters for Compound");
-                    tx = await mintSuperMessageCompoundAndTransfer(group.id, params.messageBlobId, auxId, params.timeFrom, params.timeTo, params.maxReads, BigInt(params.fee), params.recipient);
+                    if (!params.timeFrom || !params.timeTo || !params.maxReads || params.fee === undefined || !params.recipient || !params.messageBlobId || !params.auxId) throw new Error("Missing parameters for Compound");
+                    tx = await mintSuperMessageCompoundAndTransfer(group.id, params.messageBlobId, params.auxId, params.timeFrom, params.timeTo, params.maxReads, BigInt(params.fee), params.recipient);
                     break;
                 case 'no_policy':
-                    if (!params.messageBlobId || !auxId) throw new Error("Missing parameters for No Policy");
-                    tx = await mintSuperMessageNoPolicyAndTransfer(group.id, params.messageBlobId, auxId);
+                    if (!params.messageBlobId || !params.auxId) throw new Error("Missing parameters for No Policy");
+                    tx = await mintSuperMessageNoPolicyAndTransfer(group.id, params.messageBlobId, params.auxId);
                     break;
                 default:
                     const exhaustiveCheck: never = params.type;
@@ -295,7 +290,6 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         if (!currentAccount) throw new Error("Not connected");
         if (!group?.id) throw new Error("Group not loaded");
 
-        const plainMessageId = nanoid();
         const auxId = generateContentId(fromHex(group.id));
         const mediaContentAsText = { id: nanoid(), mimeType: "text/plain", raw: data.contentAsText } satisfies MediaContent;
         const fileProcessingPromises = data.contentAsFiles.map(file => {
@@ -327,10 +321,11 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         }
 
         try {
-            const baseParams: { type: SuperMessageType, groupId: string, messageBlobId: string } = {
+            const baseParams: { type: SuperMessageType, groupId: string, messageBlobId: string, auxId: Uint8Array } = {
                 type: data.messageType,
                 groupId: group.id,
                 messageBlobId: blobId,
+                auxId
             };
 
             let finalParams: MintParams;

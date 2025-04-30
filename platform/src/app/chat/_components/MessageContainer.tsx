@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import EmptyContent from "@/components/ui/empty-content";
+import { fromHex } from "@mysten/sui/utils";
 
 const ScrollMotionVStack = motion.create(VStack);
 
@@ -21,7 +22,7 @@ export function MessageContainer({ messages, ...props }: Props) {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
-
+    console.log(fromHex("2c45b864339ac44a70fff4db6b01e35fff797c0705b18ce9f23a3ee0307d6401b5372d567553794639634c4f7153452d41315f792d6f"))
 
     return (
         <Center p={"6"} pos={"relative"} flex={"1"} w={"full"} h={"full"} {...props}>
@@ -48,9 +49,9 @@ export function MessageContainer({ messages, ...props }: Props) {
                         self={message.owner === currentAccount?.address}
                     />
                 ))}
-                {/* <SuperMessagePolicy
-                    messageId="0x48d90d98dc150e38d2c55b5f96591893a2a47b4e274401acdb135b7f4f09f6ba"
-                /> */}
+                <SuperMessagePolicy
+                    messageId="0x90a0b821a1047131dbf7fa41971f67edd84c32144d64ce435062e0cc2b3293be"
+                />
 
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>
