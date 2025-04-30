@@ -1,3 +1,6 @@
+import { SUI_ADDRESS_LENGTH } from "@mysten/sui/utils";
+import { nanoid } from "nanoid";
+
 export function shortenAddress(address: string, length = 4) {
     if (!address) return '';
     if (address.length <= length * 2 + 2) return address;
@@ -34,4 +37,18 @@ export function decode(bytes: Uint8Array) {
     const buffer = Buffer.from(bytes);
     const asString = buffer.toString();
     return JSON.parse(asString);
+}
+
+export function generateContentId(prefix: Uint8Array): Uint8Array {
+    const contentNonceId = nanoid();
+    const contentHashBytes = encode(contentNonceId);
+    return new Uint8Array([...prefix, ...contentHashBytes]);
+}
+
+export function extractPrefixFromContentId(contentId: Uint8Array): Uint8Array {
+    return contentId.slice(0, SUI_ADDRESS_LENGTH);
+}
+
+export function extractContentHashBytes(contentId: Uint8Array): Uint8Array {
+    return contentId.slice(SUI_ADDRESS_LENGTH);
 }

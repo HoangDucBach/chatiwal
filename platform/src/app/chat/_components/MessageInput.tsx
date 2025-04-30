@@ -15,6 +15,7 @@ import { HiDocumentText, HiPhotograph, HiFilm } from "react-icons/hi";
 import { ImAttachment } from "react-icons/im";
 import { Tooltip } from "@/components/ui/tooltip";
 
+const MAX_FILE_SIZE = 60 * 1024; // 60 KB
 function FileCard({ file, removeFile }: { file: File, removeFile: () => void }) {
     const getFileIcon = (type: string) => {
         if (type.startsWith('image/')) return HiPhotograph;
@@ -79,10 +80,17 @@ interface MediaInputProps extends FileUploadRootProps {
 
 export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ ...props }, ref) => {
     const [files, setFiles] = useState<File[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     const handleFileChange = (file: File) => {
+        console.log(file);
+        if (file.size > MAX_FILE_SIZE) {
+            setError("File size exceeds 60 KB");
+            return;
+        }
         setFiles((prev) => [...prev, file]);
     }
+
 
     const removeFile = useCallback((idToRemove: string) => {
         setFiles((prev) => prev.filter((file) => file.name !== idToRemove));
@@ -98,7 +106,18 @@ export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ ...pr
                 <FileUpload.Root
                     w={"fit"}
                     accept={acceptedFileTypes}
-                    onFileChange={(files) => handleFileChange(files.acceptedFiles[0])}
+                    onFileChange={(d => handleFileChange(d.acceptedFiles[0]))}
+                    onFileReject={(d) => {
+                        d.files.forEach((rejFile) => {
+                            if (rejFile.file.size > MAX_FILE_SIZE) {
+                                setError("File size exceeds 60 KB");
+                            }
+                            else {
+                                setError("File type not supported");
+                            }
+                        })
+                    }}
+                    maxFileSize={MAX_FILE_SIZE}
                     maxFiles={1}
                     {...props}
                 >
@@ -109,6 +128,11 @@ export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ ...pr
                 </FileUpload.Root>
             )
             }
+            {error && (
+                <Text fontSize="xs" w={"fit"} color="red.500">
+                    {error}
+                </Text>
+            )}
             <HStack gap={"2"} w={"full"}>
                 <For each={files} fallback={null}>
                     {(file) => (

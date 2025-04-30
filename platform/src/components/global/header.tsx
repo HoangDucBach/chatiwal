@@ -3,10 +3,8 @@
 import { chakra, Heading, HStack, Link, StackProps, Text, VStack } from "@chakra-ui/react";
 import { Image as ChakraImage } from "@chakra-ui/react"
 import NextImage from "next/image"
-import NextLink from "next/link";
 
 import { siteConfig } from "@/config/site";
-import { ConnectButton } from "./wallet";
 
 interface Props extends StackProps { }
 

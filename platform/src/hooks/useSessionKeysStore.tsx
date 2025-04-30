@@ -3,12 +3,9 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface SessionKeyStore {
-    groupKeys: Map<string, SessionKey>;
-    messageKeys: Map<string, SessionKey>;
-    setGroupKey: (groupId: string, key: SessionKey) => void;
-    getGroupKey: (groupId: string) => SessionKey | undefined;
-    setMessageKey: (messageId: string, key: SessionKey) => void;
-    getMessageKey: (messageId: string) => SessionKey | undefined;
+    sessionKeys: Map<string, SessionKey>;
+    setSessionKey: (id: string, key: SessionKey) => void;
+    getSessionKey: (id: string) => SessionKey | undefined;
     clearAll: () => void;
 }
 
@@ -33,28 +30,18 @@ function reviver(key: string, value: any): any {
 export const useSessionKeys = create<SessionKeyStore>()(
     persist(
         (set, get) => ({
-            groupKeys: new Map<string, SessionKey>(),
-            messageKeys: new Map<string, SessionKey>(),
+            sessionKeys: new Map<string, SessionKey>(),
 
-            setGroupKey: (groupId, key) =>
+            setSessionKey: (id, key) =>
                 set((state) => {
-                    const newGroupKeys = new Map(state.groupKeys);
-                    newGroupKeys.set(groupId, key);
-                    return { groupKeys: newGroupKeys };
+                    const newsessionKeys = new Map(state.sessionKeys);
+                    newsessionKeys.set(id, key);
+                    return { sessionKeys: newsessionKeys };
                 }),
 
-            getGroupKey: (groupId) => get().groupKeys.get(groupId),
+            getSessionKey: (id) => get().sessionKeys.get(id),
 
-            setMessageKey: (messageId, key) =>
-                set((state) => {
-                    const newMessageKeys = new Map(state.messageKeys);
-                    newMessageKeys.set(messageId, key);
-                    return { messageKeys: newMessageKeys };
-                }),
-
-            getMessageKey: (messageId) => get().messageKeys.get(messageId),
-
-            clearAll: () => set({ groupKeys: new Map(), messageKeys: new Map() }),
+            clearAll: () => set({ sessionKeys: new Map() }),
         }),
         {
             name: 'session-key-storage',
@@ -63,8 +50,7 @@ export const useSessionKeys = create<SessionKeyStore>()(
                 reviver,
             }),
             partialize: (state) => ({
-                groupKeys: state.groupKeys,
-                messageKeys: state.messageKeys,
+                sessionKeys: state.sessionKeys,
             }),
         }
     )

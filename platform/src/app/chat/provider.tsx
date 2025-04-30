@@ -15,7 +15,8 @@ export function Provider({
 
     const ablyClient = new Ably.Realtime({
         clientId: currentAccount?.address,
-        key: ABLY_API_KEY
+        key: ABLY_API_KEY,
+        useBinaryProtocol: true,
     });
 
     return (

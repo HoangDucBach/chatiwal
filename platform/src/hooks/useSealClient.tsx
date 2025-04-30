@@ -7,61 +7,27 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useChatiwalClient } from "./useChatiwalClient";
 import { useSessionKeys } from "./useSessionKeysStore";
 import { MessageType, TMessage } from "@/types";
-
-function getSealApproveTarget(packageId: string, type: MessageType) {
-    switch (type) {
-        case MessageType.TIME_LOCK:
-            return `${packageId}::message::seal_approve_super_message_time_lock`;
-        case MessageType.LIMITED_READ:
-            return `${packageId}::message::seal_approve_super_message_limited_read`;
-        case MessageType.FEE_BASED:
-            return `${packageId}::message::seal_approve_super_message_fee_based`;
-        case MessageType.COMPOUND:
-            return `${packageId}::message::seal_approve_super_message_compound`;
-        default:
-            return `${packageId}::group::seal_approve`;
-    }
-}
+import { nanoid } from "nanoid";
+import { decode, encode } from "@msgpack/msgpack";
+import { extractPrefixFromContentId, generateContentId } from "@/libs";
 
 
-function getSealApproveArguments(
-    tx: Transaction,
-    message: TMessage,
-    type: MessageType,
-    id: string
-) {
-    const groupId = message.groupId;
-
-    switch (type) {
-        case MessageType.TIME_LOCK:
-            return [
-                tx.pure.vector('u8', fromHex(id)),
-                tx.object(id),
-                tx.object(id),
-                tx.object(SUI_CLOCK_OBJECT_ID),
-            ]
-        default:
-            return [
-                tx.pure.vector('u8', fromHex(id)),
-                tx.object(id),
-                tx.object(groupId),
-            ]
-
-    }
-}
-
-function messageSealApprove(packageId: string) {
-    return (tx: Transaction, message: TMessage, type: MessageType, id: string) => {
+function superMessageSealApprove(packageId: string) {
+    return (tx: Transaction, message: TMessage, id: string) => {
         tx.moveCall({
-            target: getSealApproveTarget(packageId, type),
-            arguments: getSealApproveArguments(tx, message, type, id),
+            target: `${packageId}::message::seal_approve_super_message`,
+            arguments: [
+                tx.pure.vector('u8', fromHex(id)),
+                tx.object(message.id),
+                tx.object(message.groupId),
+                tx.object(SUI_CLOCK_OBJECT_ID),
+            ],
         });
     };
 }
 
 function groupSealApprove(packageId: string) {
-    return (tx: Transaction, message: TMessage, id: string) => {
-        const groupId = message.groupId;
+    return (tx: Transaction, groupId: string, id: string) => {
         tx.moveCall({
             target: `${packageId}::group::seal_approve`,
             arguments: [tx.pure.vector('u8', fromHex(id)), tx.object(groupId)],
@@ -71,7 +37,9 @@ function groupSealApprove(packageId: string) {
 
 interface ISealActions {
     encryptMessage: (message: TMessage) => Promise<TMessage>;
-    decryptMessage: (encryptedMessage: TMessage, sessionKey: SessionKey) => Promise<TMessage>;
+    encrypt(auxId: Uint8Array, object: any): Promise<Uint8Array>;
+    decrypt: (encryptedObject: Uint8Array, sessionKey: SessionKey) => Promise<Uint8Array>;
+    decryptMessage: (encryptedMessage: TMessage, type: MessageType, sessionKey: SessionKey) => Promise<Uint8Array>;
     createSessionKey: () => Promise<SessionKey>;
 }
 
@@ -79,7 +47,7 @@ export function useSealClient(): ISealActions {
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
     const { client } = useChatiwalClient();
-    const { getGroupKey } = useSessionKeys();
+    const { getSessionKey } = useSessionKeys();
     const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
     const sealClient = new SealClient({
         suiClient,
@@ -90,7 +58,7 @@ export function useSealClient(): ISealActions {
     const packageId = client.getPackageConfig().chatiwalId;
 
 
-    const createSessionKey = useCallback(async (groupId: string): Promise<SessionKey> => {
+    const createSessionKey = useCallback(async (): Promise<SessionKey> => {
         if (!currentAccount) {
             throw new Error("Not connected");
         }
@@ -98,7 +66,7 @@ export function useSealClient(): ISealActions {
         const sessionKey = new SessionKey({
             address: currentAccount.address,
             packageId: packageId,
-            ttlMin: 10,
+            ttlMin: 30,
         });
 
         const signResult = await signPersonalMessage({ message: sessionKey.getPersonalMessage() });
@@ -111,9 +79,8 @@ export function useSealClient(): ISealActions {
         const content = message.content;
         const contentAsBytes = new Uint8Array(content);
         const groupObjectBytes = fromHex(message.groupId);
-        const hashBuffer: ArrayBuffer = await crypto.subtle.digest('SHA-256', contentAsBytes);
-        const contentHashBytes = new Uint8Array(hashBuffer);
-        const id = toHex(new Uint8Array([...groupObjectBytes, ...contentHashBytes]));
+        const auxId = Uint8Array.from(message.auxId) || generateContentId(groupObjectBytes);
+        const id = toHex(auxId);
 
         const { encryptedObject } = await sealClient.encrypt({
             id,
@@ -121,12 +88,28 @@ export function useSealClient(): ISealActions {
             threshold: 2,
             data: contentAsBytes,
         });
+
         message.content = encryptedObject;
+        message.auxId = Array.from(auxId);
 
         return message;
     }, [packageId, sealClient]);
 
-    const decryptMessage = useCallback(async (encryptedMessage: TMessage, type: MessageType, sessionKey: SessionKey): Promise<TMessage> => {
+    const encrypt = useCallback(async (auxId: Uint8Array, object: any): Promise<Uint8Array> => {
+        const contentAsBytes = new Uint8Array(object);
+        const id = toHex(auxId);
+
+        const { encryptedObject } = await sealClient.encrypt({
+            id,
+            packageId,
+            threshold: 2,
+            data: contentAsBytes,
+        });
+
+        return encryptedObject;
+    }, [packageId, sealClient]);
+
+    const decrypt = useCallback(async (encryptedObject: Uint8Array, sessionKey: SessionKey): Promise<Uint8Array> => {
         if (!currentAccount) {
             throw new Error("Not connected");
         }
@@ -135,54 +118,84 @@ export function useSealClient(): ISealActions {
             throw new Error("Group key not found, please create a new one");
         }
 
-        if (sessionKey.isExpired()) {
+        if (sessionKey.isExpired) {
             throw new Error("Session key expired, please create a new one");
         }
 
-        try {
-            const encryptedData = encryptedMessage.content;
-            console.log("Encrypted data", encryptedData);
-            const encryptedObject = EncryptedObject.parse(new Uint8Array(encryptedData));
+        const tx = new Transaction();
+        const encryptedObjectParsed = EncryptedObject.parse(new Uint8Array(encryptedObject));
+        const ids = [encryptedObjectParsed.id];
 
+        ids.forEach((id) => {
+            groupSealApprove(packageId)(tx, toHex(extractPrefixFromContentId(fromHex(encryptedObjectParsed.id))), id);
+        });
 
-            const tx = new Transaction();
-            let ids = [encryptedObject.id];
+        const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
+        await sealClient.fetchKeys({
+            ids,
+            txBytes,
+            sessionKey,
+            threshold: 2,
+        });
 
-            ids.forEach((id) => {
-                if (type === MessageType.BASE || type === MessageType.NO_POLICY) {
-                    groupSealApprove(packageId)(tx, encryptedMessage, id);
-                } else {
-                    messageSealApprove(packageId)(tx, encryptedMessage, type, id);
-                }
-            });
+        const decryptedBytes = await sealClient.decrypt({
+            data: new Uint8Array(encryptedObject),
+            sessionKey,
+            txBytes,
+        });
 
-            const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
-            await sealClient.fetchKeys({
-                ids: ids,
-                txBytes,
-                sessionKey,
-                threshold: 2,
-            });
+        return decryptedBytes;
+    }, [currentAccount, packageId, sealClient, suiClient]);
 
-            const decryptedBytes = await sealClient.decrypt({
-                data: new Uint8Array(encryptedData),
-                sessionKey,
-                txBytes: txBytes,
-            });
-
-
-            const decryptedMessage = encryptedMessage.setData({
-                content: decryptedBytes,
-            });
-
-            return decryptedMessage;
-        } catch (error) {
-            console.error("Error decrypting message:", error);
-            throw new Error("Failed to decrypt message, please try again.");
+    const decryptMessage = useCallback(async (encryptedMessage: TMessage, type: MessageType, sessionKey: SessionKey): Promise<Uint8Array> => {
+        if (!currentAccount) {
+            throw new Error("Not connected");
         }
-    }, [currentAccount, packageId, sealClient, getGroupKey]);
+
+        if (!sessionKey) {
+            throw new Error("Group key not found, please create a new one");
+        }
+
+        if (sessionKey.isExpired) {
+            throw new Error("Session key expired, please create a new one");
+        }
+
+        const encryptedData = encryptedMessage.content;
+        const encryptedObject = EncryptedObject.parse(new Uint8Array(encryptedData));
+
+
+        const tx = new Transaction();
+        let ids = [encryptedObject.id];
+
+        ids.forEach((id) => {
+            if (type === MessageType.BASE) {
+                groupSealApprove(packageId)(tx, encryptedMessage.groupId, id);
+            } else {
+                superMessageSealApprove(packageId)(tx, encryptedMessage, id);
+            }
+        });
+
+        const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
+        await sealClient.fetchKeys({
+            ids: ids,
+            txBytes,
+            sessionKey,
+            threshold: 2,
+        });
+
+        const decryptedBytes = await sealClient.decrypt({
+            data: new Uint8Array(encryptedData),
+            sessionKey,
+            txBytes: txBytes,
+        });
+
+
+        return decryptedBytes;
+    }, [currentAccount, packageId, sealClient, getSessionKey]);
 
     return useMemo(() => ({
+        encrypt,
+        decrypt,
         encryptMessage,
         decryptMessage,
         createSessionKey,

@@ -6,16 +6,15 @@ import { Heading, StackProps, Text, VStack, Center } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
-import { MessageBase, SuperMessageFeeBased, SuperMessageLimitedRead } from "./messages";
-import { MediaContent, TMessage, TMessageBase, TMessageNoPolicy, TProtocolMessage } from "@/types";
+import { getMessagePolicyType, TMessage } from "@/types";
 import { useSealClient } from "@/hooks/useSealClient";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
-import { SuperMessageNoPolicy } from "@/sdk";
 import { toaster } from "@/components/ui/toaster";
 import { useGroup } from "../_hooks/useGroupId";
 import { Tag } from "@/components/ui/tag";
 import { ComposerInput } from "./ComposerInput";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
+import { MessageBase } from "./messages";
 import { decode } from "@msgpack/msgpack";
 
 const ScrollMotionVStack = motion.create(VStack);
@@ -28,13 +27,12 @@ export function Chat(props: Props) {
     const currentAccount = useCurrentAccount();
     const { decryptMessage } = useSealClient();
     const { channel } = useChannel({ channelName });
-    const [messages, setMessages] = useState<TMessageBase[]>([]);
+    const [messages, setMessages] = useState<TMessage[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { getGroupKey } = useSessionKeys();
+    const { getSessionKey } = useSessionKeys();
 
-    const onMessageSend = async (plainMessage: TMessageBase) => {
-        console.log("Message received", plainMessage);
-        setMessages((previousMessages: any) => [...previousMessages, plainMessage]);
+    const onMessageSend = async (plainMessage: TMessage) => {
+        // setMessages((previousMessages: any) => [...previousMessages, plainMessage]);
     }
 
     useConnectionStateListener('connected', () => {
@@ -44,41 +42,16 @@ export function Chat(props: Props) {
     });
 
     useChannel({ channelName }, AblyChannelManager.EVENTS.MESSAGE_SEND, async (message) => {
-        console.log("Message received", message);
         try {
-            if (message.clientId === currentAccount?.address) {
+
+            const messageData = decode(message.data) as TMessage;
+            if (messageData.owner === currentAccount?.address) {
                 return;
             }
 
-            const messageData = message.data as TProtocolMessage;
-            const encryptedMessage = new SuperMessageNoPolicy({
-                id: messageData.id,
-                data: {
-                    content: messageData.content,
-                },
-                groupId: messageData.groupId,
-                owner: messageData.owner,
-            });
-
-            const sessionKey = getGroupKey(messageData.groupId);
-            if (!sessionKey) {
-                throw new Error("Session key not found");
-            }
-            const decryptedMessage = await decryptMessage(encryptedMessage, sessionKey);
-            const decryptedMessageData: TMessageBase = {
-                id: decryptedMessage.getId(),
-                groupId: messageData.groupId,
-                owner: messageData.owner,
-                content: decode(decryptedMessage.getData().content) as MediaContent[],
-                createdAt: Date.now(),
-            }
-
-            setMessages((previousMessages) => [...previousMessages, decryptedMessageData]);
+            setMessages((previousMessages) => [...previousMessages, messageData]);
         } catch (error) {
-            toaster.error({
-                title: "Error",
-                description: error,
-            })
+
         }
     });
 
@@ -119,16 +92,13 @@ export function Chat(props: Props) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.1 }}
                 >
-                    {messages.map((message: TMessageBase) => (
+                    {messages.map((message: TMessage) => (
                         <MessageBase
                             key={message.id}
-                            message={message as TMessageNoPolicy}
+                            message={message}
                             self={message.owner === currentAccount?.address}
                         />
                     ))}
-                    {/* <SuperMessageLimitedRead
-                        messageId="0xe685eb1c36e677f59fdcc5e1db6934f064909c5e9d90e5e450ddb4a8cfca6726"
-                    /> */}
                     <div ref={messagesEndRef} />
                 </ScrollMotionVStack>
             </Center>

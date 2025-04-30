@@ -1,30 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChatiwalClient, SuperMessageFeeBased, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
+import { ChatiwalClient, GroupStruct, SuperMessageStruct, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
 import { ChatiwalClientConfig } from "@/sdk/types";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { InvalidGroupCapError } from "@/sdk/errors";
-import { Address, ObjectId } from "@/sdk/types";
+import { ObjectId } from "@/sdk/types";
 import { Transaction } from "@mysten/sui/transactions";
-import { bcs, BcsType } from "@mysten/sui/bcs";
-import { SuperMessageNoPolicyStruct, FeeBasedPolicyStruct, GroupStruct, LimitedReadPolicyStruct, SuperMessageCompoundStruct, SuperMessageFeeBasedStruct, SuperMessageLimitedReadStruct, TimeLockPolicyStruct, GroupCapStruct, SuperMessageTimeLockStruct } from "@/sdk/contracts";
-import { CoinStruct } from "@/sdk/contracts/utils";
 import { SuiGraphQLClient } from '@mysten/sui/graphql';
 import { graphql } from '@mysten/sui/graphql/schemas/latest';
 
 type GroupData = typeof GroupStruct.$inferType;
-type GroupCapData = typeof GroupCapStruct.$inferType;
-type TimeLockPolicyData = typeof TimeLockPolicyStruct.$inferType;
-type LimitedReadPolicyData = typeof LimitedReadPolicyStruct.$inferType;
-type FeeBasedPolicyData = typeof FeeBasedPolicyStruct.$inferType;
-type MessageLimitedReadData = typeof LimitedReadPolicyStruct.$inferType;
-type SuperMessageNoPolicyData = typeof SuperMessageNoPolicyStruct.$inferType;
-type SuperMessageTimeLockData = typeof SuperMessageTimeLockStruct.$inferType;
-type SuperMessageLimitedReadData = typeof SuperMessageLimitedReadStruct.$inferType;
-type SuperMessageFeeBasedData = typeof SuperMessageFeeBasedStruct.$inferType;
-type SuperMessageCompoundData = typeof SuperMessageCompoundStruct.$inferType;
-type CoinData = typeof CoinStruct.$inferType;
+type SuperMessageData = typeof SuperMessageStruct.$inferType
 
 export interface IGroupActions {
     mintGroupAndTransfer(metadataBlobId?: string): Promise<Transaction>;
@@ -33,46 +20,22 @@ export interface IGroupActions {
     removeMember(groupId: string, member: string): Promise<Transaction>;
     leaveGroup(groupId: string, member: string): Promise<Transaction>;
     sealApprove(id: Uint8Array, groupId: string): Promise<Transaction>;
-    isMember(groupId: string, addr: string): Promise<boolean>;
     validateGroupCap(groupId: string): Promise<string>;
-    getGroupData(groupId: string): Promise<GroupData | undefined>;
-    getGroupCapData(groupCapId: string): Promise<GroupCapData | undefined>;
+    getGroupData(groupdId: string): Promise<GroupData>;
 }
 
 export interface IMessageActions {
     mintMessagesSnapshotAndTransfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
     mintMessagesSnapshotCapAndTransfer(messagesSnapshotId: string): Promise<Transaction>;
-    mintSuperMessageNoPolicyAndTransfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
-    readMessageNoPolicy(messageId: string): Promise<Transaction>;
-    mintSuperMessageTimeLockAndTransfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint): Promise<Transaction>;
-    readMessageTimeLock(messageId: string): Promise<Transaction>;
-    mintSuperMessageLimitedReadAndTransfer(groupId: string, metadataBlobId: string, maxReads: number | bigint): Promise<Transaction>;
-    readMessageLimitedRead(messageId: string): Promise<Transaction>;
-    mintSuperMessageFeeBasedAndTransfer(groupId: string, metadataBlobId: string, fee: number | bigint, recipient: string, coinType: string): Promise<Transaction>;
-    readMessageFeeBased(messageId: string, paymentCoinId: string, coinType: string): Promise<Transaction>;
-    withdrawFees(messageId: string, coinType: string): Promise<Transaction>;
-    mintSuperMessageCompoundAndTransfer(groupId: string, metadataBlobId: string, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, coinType: string): Promise<Transaction>;
-    readMessageCompound(messageId: string, paymentCoinId: string, coinType: string): Promise<Transaction>;
-    withdrawFeesCompound(messageId: string, coinType: string): Promise<Transaction>;
-
-    // === Seal Integration ===
-
-    sealApproveSuperMessageTimeLock(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
-    sealApproveSuperMessageLimitedRead(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
-    sealApproveSuperMessageFeeBased(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<Transaction>;
-    sealApproveSuperMessageCompound(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string): Promise<Transaction>;
-
-    // View Functions
-
-    getSuperMessageNoPolicyData(messageId: string): Promise<SuperMessageNoPolicyData | undefined>;
-    getTimeLockPolicyData(messageId: string): Promise<TimeLockPolicyData | undefined>;
-    getSuperMessageTimeLockData(messageId: string): Promise<SuperMessageTimeLockData | undefined>;
-    getLimitedReadPolicyData(messageId: string): Promise<MessageLimitedReadData | undefined>;
-    getSuperMessageLimitedReadData(messageId: string): Promise<SuperMessageLimitedReadData | undefined>;
-    getFeeBasedPolicyData(messageId: string): Promise<FeeBasedPolicyData | undefined>;
-    getSuperMessageFeeBasedData(messageId: string): Promise<SuperMessageFeeBasedData | undefined>;
-    getSuperMessageCompoundData(messageId: string): Promise<SuperMessageCompoundData | undefined>;
-    getCoinData(coinId: string): Promise<CoinData | undefined>;
+    mintSuperMessageNoPolicyAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array): Promise<Transaction>;
+    mintSuperMessageTimeLockAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint): Promise<Transaction>;
+    mintSuperMessageLimitedReadAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint): Promise<Transaction>;
+    mintSuperMessageFeeBasedAndTransfer(groupId: string, messageBlobId: string, fee: number | bigint, recipient: string): Promise<Transaction>;
+    mintSuperMessageCompoundAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string): Promise<Transaction>;
+    readMessage(messageId: string, paymentCoinId: string): Promise<Transaction>;
+    withdrawFees(messageId: string): Promise<Transaction>;
+    sealApproveSuperMessage(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
+    getSuperMessageData(messageId: string): Promise<SuperMessageData>;
 }
 
 export interface IChatiwalClientActions extends IGroupActions, IMessageActions {
@@ -95,7 +58,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
         return new SuiGraphQLClient({
             url: 'https://sui-testnet.mystenlabs.com/graphql',
         })
-    }, [suiClient]);
+    }, []);
 
     if (!suiClient) {
         throw new Error("Sui client is not available");
@@ -107,77 +70,63 @@ export function useChatiwalClient(): IChatiwalClientActions {
     };
 
     const getOwnedGroupCapById = async (groupId: string) => {
-        validateAccount();
+        const userAccount = validateAccount();
+        const packageId = client.getPackageConfig().chatiwalId;
 
         const groupCapsOfOwner = await suiClient.getOwnedObjects({
-            owner: account!.address,
+            owner: userAccount.address,
             filter: {
-                StructType: `${client.getPackageConfig().chatiwalId}::groupId::GroupCap`,
+                StructType: `${packageId}::group::GroupCap`,
             },
             options: {
                 showContent: true,
+                showType: true,
             }
         });
 
         const groupCap = groupCapsOfOwner.data.find((cap) => {
-            const type = cap.data?.content?.dataType;
-            if (type !== "moveObject") throw new Error("Invalid type");
-            const object = cap.data?.content?.fields as unknown as any;
-            return object.groupId_id === groupId;
+            if (cap.data?.content?.dataType !== "moveObject") return false;
+            const fields = cap.data?.content?.fields as any;
+            return fields?.group_id === groupId;
         });
 
         return groupCap;
     };
 
-    const validateGroupCap = async (groupId: string) => {
+
+    const validateGroupCap = async (groupId: string): Promise<string> => {
         const groupCapOfOwner = await getOwnedGroupCapById(groupId);
-        if (!groupCapOfOwner || !groupCapOfOwner.data) {
-            throw new InvalidGroupCapError("You don't have permission");
+        if (!groupCapOfOwner?.data?.objectId) {
+            throw new InvalidGroupCapError("You don't have the required GroupCap or it's missing data");
         }
         return groupCapOfOwner.data.objectId;
     };
-    const executeTransaction = async (txBuilder: () => Promise<Transaction>) => {
+
+    const executeTransaction = async (txBuilder: () => Transaction): Promise<Transaction> => {
+        validateAccount();
         try {
-            validateAccount();
-            return await txBuilder();
+            const tx = txBuilder();
+            return Promise.resolve(tx);
         } catch (error) {
+            console.error("Error building transaction:", error);
             throw error;
         }
     };
 
-    const executeInspectTransaction = async (txBuilder: () => Promise<any>, processResult?: (bytes: Uint8Array) => any) => {
-        try {
-            const userAccount = validateAccount();
-            const tx = await txBuilder();
-            const res = await suiClient.devInspectTransactionBlock({
-                transactionBlock: tx,
-                sender: userAccount.address,
-            });
-            if (!res || !res.results) {
-                throw new Error("No results found");
-            }
-            const returnValues = res.results[0].returnValues || [];
-            const bytes = new Uint8Array(returnValues[0][0]);
 
-            return processResult ? processResult(bytes) : bytes;
-        } catch (error) {
-            throw error;
-        }
-    };
-
-    const groupIdActions: IGroupActions = {
-        mintGroupAndTransfer: async (metadataBlobId: string = "") => {
-            return await executeTransaction(() =>
-                client.mintGroupAndTransfer({ metadataBlobId: metadataBlobId })
+    const groupActions: IGroupActions = {
+        mintGroupAndTransfer: (metadataBlobId: string = "") => {
+            return executeTransaction(() =>
+                client.mintGroupAndTransfer({ metadataBlobId })
             );
         },
 
         mintGroupCap: async (groupId: string, recipient: string) => {
             const groupCapId = await validateGroupCap(groupId);
-            return await executeTransaction(() =>
+            return executeTransaction(() =>
                 client.mintGroupCap({
                     groupCapId,
-                    groupId: groupId,
+                    groupId,
                     recipient,
                 })
             );
@@ -185,10 +134,10 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         addMember: async (groupId: string, member: string, customGroupCapId?: string) => {
             const groupCapId = customGroupCapId || await validateGroupCap(groupId);
-            return await executeTransaction(() =>
+            return executeTransaction(() =>
                 client.addMember({
                     groupCapId,
-                    groupId: groupId,
+                    groupId,
                     member,
                 })
             );
@@ -196,43 +145,32 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         removeMember: async (groupId: string, member: string) => {
             const groupCapId = await validateGroupCap(groupId);
-            return await executeTransaction(() =>
+            return executeTransaction(() =>
                 client.removeMember({
                     groupCapId,
-                    groupId: groupId,
+                    groupId,
                     member,
                 })
             );
         },
 
-        leaveGroup: async (groupId: string, member: string) => {
-            return await executeTransaction(() =>
+        leaveGroup: (groupId: string, member: string) => {
+            return executeTransaction(() =>
                 client.leaveGroup({
-                    groupId: groupId,
+                    groupId,
                     member,
                 })
             );
         },
 
-        sealApprove: async (id: Uint8Array, groupId: string) => {
-            return await executeInspectTransaction(() =>
-                client.sealApprove({
-                    id,
-                    groupId: groupId,
-                })
+        sealApprove: (id: Uint8Array, groupId: string) => {
+            return executeTransaction(() =>
+                client.sealApprove({ id, groupId })
             );
         },
 
-        isMember: async (groupId: string, addr: string): Promise<boolean> => {
-            return executeInspectTransaction(
-                () => client.isMember({
-                    groupId: groupId,
-                    address: addr,
-                }),
-                (bytes) => bcs.Bool.parse(bytes)
-            );
-        },
         validateGroupCap: validateGroupCap,
+
 
         getGroupData: async (groupId: string) => {
             const res = await gqlClient.query({
@@ -259,469 +197,143 @@ export function useChatiwalClient(): IChatiwalClientActions {
             return GroupStruct.fromBase64(bcs!);
         },
 
-        getGroupCapData: async (groupCapId) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($groupCapId: SuiAddress!) {
-                        object(address: $groupCapId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    groupCapId
-                }
-            });
-
-            if (!res) throw new Error("No group cap found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return GroupCapStruct.fromBase64(bcs!);
-        },
 
     };
 
     const messageActions: IMessageActions = {
-        // Snapshot management
-        mintMessagesSnapshotAndTransfer: async (groupId: string, metadataBlobId: string) => {
-            return await executeTransaction(() =>
+        mintMessagesSnapshotAndTransfer: (groupId: string, metadataBlobId: string) => {
+            return executeTransaction(() =>
                 client.mintMessagesSnapshotAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId
+                    g_id: groupId,
+                    mt_b_id: metadataBlobId
                 })
             );
         },
 
-        mintMessagesSnapshotCapAndTransfer: async (messagesSnapshotId: string) => {
-            return await executeTransaction(() =>
+        mintMessagesSnapshotCapAndTransfer: (messagesSnapshotId: string) => {
+            return executeTransaction(() =>
                 client.mintMessagesSnapshotCapAndTransfer({
-                    msgsSnapshotId: messagesSnapshotId
+                    msg_snapshot_id: messagesSnapshotId
                 })
             );
         },
 
-        // No Policy Messages
-        mintSuperMessageNoPolicyAndTransfer: async (groupId: string, metadataBlobId: string) => {
-            return await executeTransaction(() =>
+        mintSuperMessageNoPolicyAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageNoPolicyAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId
                 })
             );
         },
 
-        readMessageNoPolicy: async (messageId: string) => {
-            return await executeTransaction(() =>
-                client.readMessageNoPolicy({
-                    messageId: messageId
-                })
-            );
-        },
-
-        // Time Lock Messages
-        mintSuperMessageTimeLockAndTransfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            timeFrom: number | bigint,
-            timeTo: number | bigint
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageTimeLockAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageTimeLockAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId,
                     from: timeFrom,
                     to: timeTo
                 })
             );
         },
 
-        readMessageTimeLock: async (messageId: string) => {
-            return await executeTransaction(() =>
-                client.readMessageTimeLock({
-                    messageId: messageId
-                })
-            );
-        },
-
-        // Limited Read Messages
-        mintSuperMessageLimitedReadAndTransfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            maxReads: number | bigint
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageLimitedReadAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageLimitedReadAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId,
                     max: maxReads
                 })
             );
         },
 
-        readMessageLimitedRead: async (messageId: string) => {
-            return await executeTransaction(() =>
-                client.readMessageLimitedRead({
-                    messageId: messageId
-                })
-            );
-        },
-
-        // Fee Based Messages
-        mintSuperMessageFeeBasedAndTransfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            fee: number | bigint,
-            recipient: string,
-            coinType: string
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageFeeBasedAndTransfer: (groupId: string, messageBlobId: string, fee: number | bigint, recipient: string) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageFeeBasedAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
                     fee: fee,
-                    recipient: recipient,
-                    coinType: coinType
+                    r: recipient
                 })
             );
         },
 
-        readMessageFeeBased: async (messageId: string, paymentCoinId: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.readMessageFeeBased({
-                    messageId: messageId,
-                    paymentCoinId: paymentCoinId,
-                    coinType: coinType
-                })
-            );
-        },
-
-        withdrawFees: async (messageId: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.withdrawFees({
-                    messageId: messageId,
-                    coinType: coinType
-                })
-            );
-        },
-
-        mintSuperMessageCompoundAndTransfer: async (
-            groupId: string,
-            metadataBlobId: string,
-            timeFrom: number | bigint,
-            timeTo: number | bigint,
-            maxReads: number | bigint,
-            fee: number | bigint,
-            recipient: string,
-            coinType: string
-        ) => {
-            return await executeTransaction(() =>
+        mintSuperMessageCompoundAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string) => {
+            return executeTransaction(() =>
                 client.mintSuperMessageCompoundAndTransfer({
-                    groupId: groupId,
-                    metadataBlobId: metadataBlobId,
-                    timeFrom: timeFrom,
-                    timeTo: timeTo,
+                    g_id: groupId,
+                    mt_b_id: messageBlobId,
+                    aux_id: auxId,
+                    tf: timeFrom,
+                    tt: timeTo,
                     max: maxReads,
                     fee: fee,
-                    recipient: recipient,
-                    coinType: coinType
+                    receipient: recipient
                 })
             );
         },
 
-        readMessageCompound: async (messageId: string, paymentCoinId: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.readMessageCompound({
-                    messageId: messageId,
-                    paymentCoinId: paymentCoinId,
-                    coinType: coinType
+        readMessage: (messageId: string, paymentCoinId: string) => {
+            return executeTransaction(() =>
+                client.readMessage({
+                    msg: messageId,
+                    payment: paymentCoinId
                 })
             );
         },
 
-        withdrawFeesCompound: async (messageId: string, coinType: string) => {
-            return await executeTransaction(() =>
-                client.withdrawFeesCompound({
-                    messageId: messageId,
-                    coinType: coinType
+        withdrawFees: (messageId: string) => {
+            return executeTransaction(() =>
+                client.withdrawFees({
+                    msg: messageId
                 })
             );
         },
 
-        // === Seal Integration ===
-
-        sealApproveSuperMessageTimeLock: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageTimeLock({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId
-                })
-            );
-        },
-        sealApproveSuperMessageLimitedRead: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageLimitedRead({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId
-                })
-            );
-        },
-        sealApproveSuperMessageFeeBased: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageFeeBased({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId,
-                    coinType: coinType
-                })
-            );
-        },
-        sealApproveSuperMessageCompound: async (id: Uint8Array, messageId: ObjectId, groupId: ObjectId, coinType: string) => {
-            return await executeInspectTransaction(() =>
-                client.sealApproveSuperMessageCompound({
-                    id,
-                    messageId: messageId,
-                    groupId: groupId,
-                    coinType: coinType
+        sealApproveSuperMessage: (id: Uint8Array, messageId: ObjectId, groupId: ObjectId) => {
+            return executeTransaction(() =>
+                client.sealApproveSuperMessage({
+                    id: id,
+                    msg: messageId,
+                    group: groupId
                 })
             );
         },
 
-        // === View Functions ===
-
-        getSuperMessageNoPolicyData: async (messageId: string) => {
+        getSuperMessageData: async (messageId: string) => {
             const res = await gqlClient.query({
                 query: graphql(`
                     query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    json 
-                                }
-                            }
+                    object(address: $messageId) {
+                        asMoveObject {
+                        contents {
+                            json 
+                            bcs
+                        }
                         }
                     }
-                `),
+                    }
+                    `),
                 variables: {
                     messageId
                 }
             });
 
             if (!res) throw new Error("No message found");
-
-            return res.data?.object?.asMoveObject?.contents?.json as SuperMessageNoPolicyData;
-        },
-
-        getTimeLockPolicyData: async (messageId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    messageId
-                }
-            });
-
-            if (!res) throw new Error("No policy found");
-
             const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
 
-            return TimeLockPolicyStruct.fromBase64(bcs!);
+            return SuperMessageStruct.fromBase64(bcs!);
         },
 
-        getSuperMessageTimeLockData: async (messageId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    messageId
-                }
-            });
-
-            if (!res) throw new Error("No message found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return SuperMessageTimeLockStruct.fromBase64(bcs!);
-        },
-
-        getLimitedReadPolicyData: async (messageId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    messageId
-                }
-            });
-
-            if (!res) throw new Error("No policy found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return LimitedReadPolicyStruct.fromBase64(bcs!);
-        },
-
-        getSuperMessageLimitedReadData: async (messageId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    messageId
-                }
-            });
-
-            if (!res) throw new Error("No message found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return SuperMessageLimitedReadStruct.fromBase64(bcs!);
-        },
-
-        getFeeBasedPolicyData: async (messageId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    messageId
-                }
-            });
-
-            if (!res) throw new Error("No policy found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return FeeBasedPolicyStruct.fromBase64(bcs!);
-        },
-
-        getSuperMessageFeeBasedData: async (messageId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    messageId
-                }
-            });
-
-            if (!res) throw new Error("No message found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return SuperMessageFeeBasedStruct.fromBase64(bcs!);
-        },
-
-        getSuperMessageCompoundData: async (messageId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($messageId: SuiAddress!) {
-                        object(address: $messageId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    messageId
-                }
-            });
-
-            if (!res) throw new Error("No message found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return SuperMessageCompoundStruct.fromBase64(bcs!);
-        },
-
-        getCoinData: async (coinId: string) => {
-            const res = await gqlClient.query({
-                query: graphql(`
-                    query ($coinId: SuiAddress!) {
-                        object(address: $coinId) {
-                            asMoveObject {
-                                contents {
-                                    bcs 
-                                }
-                            }
-                        }
-                    }
-                `),
-                variables: {
-                    coinId
-                }
-            });
-
-            if (!res) throw new Error("No coin found");
-
-            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
-
-            return CoinStruct.fromBase64(bcs!);
-        }
     };
 
     return {
         client,
-        ...groupIdActions,
+        ...groupActions,
         ...messageActions,
     };
 }

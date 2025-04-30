@@ -1,6 +1,10 @@
 "use client";
 
-import { ButtonProps, Button } from "@/components/ui/button";
+import { useCallback, useState, useMemo } from "react";
+import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+
+import { Button } from "@/components/ui/button";
 import { toaster } from "@/components/ui/toaster";
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { FaSuperpowers } from "react-icons/fa";
@@ -21,40 +25,43 @@ import {
     HStack,
     Span,
     SelectItemText,
+    Group,
 } from "@chakra-ui/react";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { encode, decode } from "@msgpack/msgpack";
+import { decode, encode } from "@msgpack/msgpack";
 
 import { useGroup } from "../_hooks/useGroupId";
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "@/components/ui/select";
-import { MediaContent, TMessageBase, TProtocolMessage } from "@/types";
+import { MediaContent, MessageType, TMessage } from "@/types";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
-import { MessageBase, MessageOptions, SuperMessageCompound, SuperMessageFeeBased, SuperMessageLimitedRead, SuperMessageNoPolicy, SuperMessageTimeLock } from "@/sdk";
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { useSealClient } from "@/hooks/useSealClient";
 import { MediaInput, TextInput } from "./MessageInput";
-import { useCallback, useState } from "react";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { nanoid } from "nanoid";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
 import { HiKey } from "react-icons/hi";
 import { useChannel } from "ably/react";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
+import { generateContentId } from "@/libs";
+import { fromHex } from "@mysten/sui/utils";
+import { Tooltip } from "@/components/ui/tooltip";
+import { SessionKey } from "@mysten/seal";
 
 const MotionVStack = motion.create(VStack);
 
 type SuperMessageType = 'time_lock' | 'limited_read' | 'fee_based' | 'compound' | 'no_policy';
+
 type MintParams = {
     type: SuperMessageType;
     groupId: string;
-    metadataBlobId: string;
+    messageBlobId: string;
+    auxId?: Uint8Array;
     timeFrom?: bigint;
     timeTo?: bigint;
     maxReads?: bigint;
     fee?: bigint;
     recipient?: string;
-    coinType?: string;
 }
 
 interface FormValues {
@@ -66,13 +73,12 @@ interface FormValues {
     maxReads: number;
     fee: number;
     recipient: string;
-    coinType: string;
 }
 
 interface ComposerInputProps extends StackProps {
     messageInputProps: {
         channelName: string;
-        onMessageSend: (plainMessage: TMessageBase) => void;
+        onMessageSend: (plainMessage: TMessage) => void;
     };
     onMessageMinted?: (message: any) => void;
 }
@@ -92,57 +98,70 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         mintSuperMessageFeeBasedAndTransfer,
         mintSuperMessageLimitedReadAndTransfer,
         mintSuperMessageCompoundAndTransfer,
-    } = useChatiwalClient()
-    const { setGroupKey } = useSessionKeys();
-    const { encryptMessage, createGroupSessionKey } = useSealClient();
+    } = useChatiwalClient();
+    const { setSessionKey, getSessionKey, sessionKeys } = useSessionKeys();
+    const { encryptMessage, createSessionKey, decryptMessage, encrypt, decrypt } = useSealClient();
     const { storeMessage } = useWalrusClient();
 
     const [isSelectExpanded, setIsSelectExpanded] = useState(false);
+    const currentSessionKey = useMemo<SessionKey | null>(() => {
+        let s = getSessionKey(group.id);
+        if (!s || !(s instanceof SessionKey)) return null;
+        return s;
+    }, [currentAccount, group, getSessionKey, sessionKeys]);
 
     const { mutate: mintSuperMessage, isPending, isError, error, reset: resetMutation } = useMutation({
         mutationFn: async (params: MintParams) => {
             if (!group?.id) throw new Error("Group ID is not available");
-            let tx;
+
+            let tx: Transaction;
+            let auxId: Uint8Array | undefined = undefined;
+            if (params.type !== 'fee_based') {
+                auxId = new Uint8Array(16);
+                crypto.getRandomValues(auxId);
+            }
+
             switch (params.type) {
                 case 'time_lock':
-                    if (!params.timeFrom || !params.timeTo || !params.metadataBlobId) throw new Error("Missing parameters for Time Lock");
-                    tx = await mintSuperMessageTimeLockAndTransfer(group.id, params.metadataBlobId, params.timeFrom, params.timeTo);
+                    if (!params.timeFrom || !params.timeTo || !params.messageBlobId || !auxId) throw new Error("Missing parameters for Time Lock");
+                    tx = await mintSuperMessageTimeLockAndTransfer(group.id, params.messageBlobId, auxId, params.timeFrom, params.timeTo);
                     break;
                 case 'limited_read':
-                     if (!params.maxReads || !params.metadataBlobId) throw new Error("Missing parameters for Limited Read");
-                     tx = await mintSuperMessageLimitedReadAndTransfer(group.id, params.metadataBlobId, params.maxReads);
+                    if (!params.maxReads || !params.messageBlobId || !auxId) throw new Error("Missing parameters for Limited Read");
+                    tx = await mintSuperMessageLimitedReadAndTransfer(group.id, params.messageBlobId, auxId, params.maxReads);
                     break;
                 case 'fee_based':
-                    if (params.fee === undefined || !params.recipient || !params.coinType || !params.metadataBlobId) throw new Error("Missing parameters for Fee Based");
-                    tx = await mintSuperMessageFeeBasedAndTransfer(group.id, params.metadataBlobId, BigInt(params.fee), params.recipient, params.coinType);
+                    if (params.fee === undefined || !params.recipient || !params.messageBlobId) throw new Error("Missing parameters for Fee Based");
+                    tx = await mintSuperMessageFeeBasedAndTransfer(group.id, params.messageBlobId, BigInt(params.fee), params.recipient);
                     break;
                 case 'compound':
-                     if (!params.timeFrom || !params.timeTo || !params.maxReads || params.fee === undefined || !params.recipient || !params.coinType || !params.metadataBlobId) throw new Error("Missing parameters for Compound");
-                    tx = await mintSuperMessageCompoundAndTransfer(group.id, params.metadataBlobId, params.timeFrom, params.timeTo, params.maxReads, BigInt(params.fee), params.recipient, params.coinType);
+                    if (!params.timeFrom || !params.timeTo || !params.maxReads || params.fee === undefined || !params.recipient || !params.messageBlobId || !auxId) throw new Error("Missing parameters for Compound");
+                    tx = await mintSuperMessageCompoundAndTransfer(group.id, params.messageBlobId, auxId, params.timeFrom, params.timeTo, params.maxReads, BigInt(params.fee), params.recipient);
                     break;
                 case 'no_policy':
-                     if (!params.metadataBlobId) throw new Error("Missing metadataBlobId for No Policy");
-                    tx = await mintSuperMessageNoPolicyAndTransfer(group.id, params.metadataBlobId);
+                    if (!params.messageBlobId || !auxId) throw new Error("Missing parameters for No Policy");
+                    tx = await mintSuperMessageNoPolicyAndTransfer(group.id, params.messageBlobId, auxId);
                     break;
-                 default:
-                     throw new Error(`Unknown message type for minting: ${params.type}`);
+                default:
+                    const exhaustiveCheck: never = params.type;
+                    throw new Error(`Unknown message type for minting: ${exhaustiveCheck}`);
             }
             if (!tx) throw new Error("Transaction block generation failed");
 
             let { digest } = await signAndExecuteTransaction({ transaction: tx });
             await suiClient.waitForTransaction({ digest });
-             return { digest };
+            return { digest };
         },
         onSuccess: (data, variables) => {
-             queryClient.invalidateQueries({ queryKey: ['superMessages', variables.groupId] });
-             toaster.success({ title: "Success", description: "Super message minted successfully" });
-             if (onMessageMinted) onMessageMinted(data);
-             resetMutation();
+            queryClient.invalidateQueries({ queryKey: ['superMessages', variables.groupId] });
+            toaster.success({ title: "Success", description: "Super message minted successfully" });
+            if (onMessageMinted) onMessageMinted(data);
+            resetMutation();
             resetForm();
         },
         onError: (error) => {
-             console.error('Mutation failed:', error);
-             toaster.error({ title: "Minting Error", description: error instanceof Error ? error.message : "Failed to mint super message" });
+            console.error('Mutation failed:', error);
+            toaster.error({ title: "Minting Error", description: error instanceof Error ? error.message : "Failed to mint super message" });
         },
     });
 
@@ -150,78 +169,77 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         handleSubmit,
         control,
         watch,
-        formState: { isSubmitting, errors, isValid },
+        formState: { isSubmitting, errors },
         reset: resetForm,
         getValues
     } = useForm<FormValues>({
         mode: "onChange",
-         defaultValues: {
+        defaultValues: {
             messageType: 'no_policy',
             contentAsFiles: [],
             contentAsText: '',
             timeFrom: Math.floor(Date.now() / 1000),
-             timeTo: Math.floor(Date.now() / 1000) + 86400,
+            timeTo: Math.floor(Date.now() / 1000) + 86400,
             maxReads: 1,
             fee: 0,
             recipient: currentAccount?.address ?? '',
-            coinType: '0x2::sui::SUI',
         }
     });
 
     const messageType = watch('messageType');
 
-    const createSuperMessage = async (data: FormValues): Promise<MessageBase> => {
+    const createMessageForProcessing = async (data: FormValues): Promise<TMessage> => {
         if (!currentAccount) throw new Error("Not connected");
         if (!group?.id) throw new Error("Group not loaded");
 
-         const mediaContentAsText = { id: nanoid(), mimeType: "text/plain", raw: data.contentAsText } satisfies MediaContent;
-         const fileProcessingPromises = data.contentAsFiles.map(file => {
-             const reader = new FileReader();
-             reader.readAsArrayBuffer(file);
-             return new Promise<MediaContent>((resolve, reject) => {
-                 reader.onload = () => resolve({ id: nanoid(), mimeType: file.type, raw: new Uint8Array(reader.result as ArrayBuffer) });
-                 reader.onerror = (e) => reject(e);
-             });
-         });
-        const resolvedMediaContentFiles = await Promise.all(fileProcessingPromises);
-         const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles];
-         const encodedUint8Array: Uint8Array = encode(finalDataStructure);
-
-        const baseMessageProps: MessageOptions = {
-            data: { content: encodedUint8Array, blobId: '' },
-            groupId: group.id,
-            owner: currentAccount.address,
-        };
-
-         switch (data.messageType) {
-            case 'no_policy': return new SuperMessageNoPolicy(baseMessageProps);
-            case 'limited_read': return new SuperMessageLimitedRead({ ...baseMessageProps, policy: { maxReads: BigInt(data.maxReads) } });
-            case 'fee_based': return new SuperMessageFeeBased({ ...baseMessageProps, policy: { feeAmount: BigInt(data.fee), coinType: data.coinType, recipient: data.recipient } });
-            case 'time_lock': return new SuperMessageTimeLock({ ...baseMessageProps, policy: { endTime: BigInt(data.timeTo), startTime: BigInt(data.timeFrom) } });
-            case 'compound': return new SuperMessageCompound({
-                ...baseMessageProps,
-                feePolicy: { feeAmount: BigInt(data.fee), coinType: data.coinType, recipient: data.recipient },
-                timeLock: { endTime: BigInt(data.timeTo), startTime: BigInt(data.timeFrom) },
-                limitedRead: { maxReads: BigInt(data.maxReads) },
+        const auxId = generateContentId(fromHex(group.id));
+        const mediaContentAsText = { id: nanoid(), mimeType: "text/plain", raw: data.contentAsText } satisfies MediaContent;
+        const fileProcessingPromises = data.contentAsFiles.map(file => {
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            return new Promise<MediaContent>((resolve, reject) => {
+                reader.onload = () => resolve({
+                    id: nanoid(),
+                    mimeType: file.type,
+                    raw: new Uint8Array(reader.result as ArrayBuffer),
+                });
+                reader.onerror = (e) => reject(e);
             });
-            default: throw new Error(`Unknown message type: ${data.messageType}`);
-        }
+        });
+
+        const resolvedMediaContentFiles = await Promise.all(fileProcessingPromises);
+        const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
+        const encodedUint8Array: Uint8Array = encode(finalDataStructure);
+
+        return {
+            id: nanoid(),
+            owner: currentAccount.address,
+            groupId: group.id,
+            auxId: Array.from(auxId),
+            readers: [],
+            feeCollected: {
+                value: "0",
+            },
+            content: encodedUint8Array,
+            blobId: '', // Will be filled after storing
+        };
     };
 
     const handleCreateGroupKey = async () => {
         if (!currentAccount) {
-            throw new Error("Not connected");
+            toaster.error({ title: "Error", description: "Not connected." });
+            return;
         }
-         if (!group?.id) {
-             toaster.error({ title: "Error", description: "Group not loaded." });
-             return;
-         }
+        if (!group?.id) {
+            toaster.error({ title: "Error", description: "Group not loaded." });
+            return;
+        }
         try {
-            const groupKey = await createGroupSessionKey(group.id);
-            setGroupKey(group.id, groupKey);
+            const groupKey = await createSessionKey();
+            setSessionKey(group.id, groupKey);
             toaster.success({ title: "Success", description: "Group key created successfully" });
         } catch (error) {
-             toaster.error({ title: "Key Creation Error", description: error instanceof Error ? error.message : "Failed to create group key" });
+            toaster.error({ title: "Key Creation Error", description: error instanceof Error ? error.message : "Failed to create group key" });
         }
     };
 
@@ -239,129 +257,137 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             return;
         }
 
-        const mediaContentAsTextPlain = { id: nanoid(), mimeType: "text/plain", raw: textToSend } satisfies MediaContent;
-        const fileProcessingPromisesPlain = filesToSend.map(file => {
-             return Promise.resolve({ id: nanoid(), mimeType: file.type, raw: file.name });
+        if (!currentAccount) throw new Error("Not connected");
+        if (!group?.id) throw new Error("Group not loaded");
+
+        const plainMessageId = nanoid();
+        const auxId = generateContentId(fromHex(group.id));
+        const mediaContentAsText = { id: nanoid(), mimeType: "text/plain", raw: data.contentAsText } satisfies MediaContent;
+        const fileProcessingPromises = data.contentAsFiles.map(file => {
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            return new Promise<MediaContent>((resolve, reject) => {
+                reader.onload = () => resolve({
+                    id: nanoid(),
+                    mimeType: file.type,
+                    raw: new Uint8Array(reader.result as ArrayBuffer),
+                });
+                reader.onerror = (e) => reject(e);
+            });
         });
-        const resolvedMediaContentFilesPlain = await Promise.all(fileProcessingPromisesPlain);
-        const plainMessage: TMessageBase = {
-            id: nanoid(),
-            groupId: group.id,
+
+
+        const resolvedMediaContentFiles = await Promise.all(fileProcessingPromises);
+        const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
+        const encodedUint8Array: Uint8Array = encode(finalDataStructure);
+
+
+
+        // Create a structure suitable for encryptMessage
+        const messageToEncrypt = {
+            id: plainMessageId,
             owner: currentAccount.address,
-            content: [mediaContentAsTextPlain, ...resolvedMediaContentFilesPlain],
-            timestamp: Date.now(),
-            status: 'sending',
-        };
-        onMessageSend(plainMessage);
-
-         const mediaContentAsTextActual = { id: nanoid(), mimeType: "text/plain", raw: textToSend } satisfies MediaContent;
-         const fileProcessingPromisesActual = filesToSend.map(file => {
-             const reader = new FileReader();
-             reader.readAsArrayBuffer(file);
-             return new Promise<MediaContent>((resolve, reject) => {
-                 reader.onload = () => resolve({ id: nanoid(), mimeType: file.type, raw: new Uint8Array(reader.result as ArrayBuffer) });
-                 reader.onerror = (e) => reject(e);
-             });
-         });
-         const resolvedMediaContentFilesActual = await Promise.all(fileProcessingPromisesActual);
-         const finalDataStructureActual: MediaContent[] = [mediaContentAsTextActual, ...resolvedMediaContentFilesActual];
-         const encodedUint8Array: Uint8Array = encode(finalDataStructureActual);
-
-        const messageBase = new MessageBase({
-            data: { content: encodedUint8Array, blobId: '' },
             groupId: group.id,
-            owner: currentAccount.address
-        } as MessageOptions);
+            auxId: Array.from(auxId),
+            content: encodedUint8Array,
+            readers: [],
+            feeCollected: {
+                value: "0",
+            }
+        } satisfies TMessage;
+
+        onMessageSend(messageToEncrypt);
 
         try {
-             const encryptedMessage = await encryptMessage(messageBase);
-             const protocolMessage: TProtocolMessage = {
-                 id: plainMessage.id,
-                 groupId: messageBase.getGroupId(),
-                 owner: messageBase.getOwner(),
-                 content: new Uint8Array(encryptedMessage.getData().content),
-                 timestamp: plainMessage.timestamp,
-             };
+            const encryptedResult = await encryptMessage(messageToEncrypt);
+            console.log("ece", encryptedResult);
 
-             publish(AblyChannelManager.EVENTS.MESSAGE_SEND, protocolMessage);
-             resetForm();
+            publish(AblyChannelManager.EVENTS.MESSAGE_SEND, encode(messageToEncrypt));
+            resetForm();
 
-        } catch(error) {
+        } catch (error: any) {
             console.error("Encryption or Ably publish error:", error);
-            toaster.error({ title: "Send Error", description: `Failed to encrypt or send message: ${error.message}`});
+            toaster.error({ title: "Send Error", description: `Failed to encrypt or send message: ${error?.message ?? 'Unknown error'}` });
         }
 
-    }, [currentAccount, group, onMessageSend, encryptMessage, publish, resetForm, setGroupKey]);
+    }, [currentAccount, group, onMessageSend, encryptMessage, publish, resetForm]);
 
     const onMintSubmit = async (data: FormValues) => {
         if (!currentAccount || !group?.id) {
             toaster.error({ title: "Error", description: "Not connected or group not found." });
             return;
         }
-         if (!data.contentAsText && data.contentAsFiles.length === 0) {
-             toaster.warning({ title: "Empty Message", description: "Cannot mint an empty message.", duration: 2000 });
+        if (!data.contentAsText && data.contentAsFiles.length === 0) {
+            toaster.warning({ title: "Empty Message", description: "Cannot mint an empty message.", duration: 2000 });
             return;
         }
 
-        let message: MessageBase;
+        let message: TMessage; // Use TMessage type
         try {
-            message = await createSuperMessage(data);
-        } catch (createError) {
-             toaster.error({ title: "Creation Error", description: createError.message });
+            message = await createMessageForProcessing(data);
+        } catch (createError: any) {
+            toaster.error({ title: "Creation Error", description: createError?.message ?? 'Failed to prepare message data' });
             return;
         }
 
+        let encryptedMessageData: { content: Uint8Array, [key: string]: any }; // Assuming encrypt returns object with content
         try {
-            message = await encryptMessage(message);
-        } catch (encError) {
-             toaster.error({ title: "Encryption Error", description: encError.message });
-             return;
+            // Pass the TMessage object, ensure encryptMessage accepts it or required fields
+            encryptedMessageData = await encryptMessage(message);
+            // Update message content with encrypted data if needed for storage
+            message.content = encryptedMessageData.content;
+        } catch (encError: any) {
+            toaster.error({ title: "Encryption Error", description: encError?.message ?? 'Failed to encrypt message' });
+            return;
         }
 
         let blobId: string | undefined;
         try {
-             blobId = await storeMessage(message);
-             if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
-        } catch (storeError) {
-             toaster.error({ title: "Storage Error", description: storeError.message });
-             return;
+            // Assuming storeMessage accepts TMessage or necessary fields
+            message = await storeMessage(message);
+            blobId = message.blobId;
+            if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
+            message.blobId = blobId; // Update message object
+        } catch (storeError: any) {
+            toaster.error({ title: "Storage Error", description: storeError?.message ?? 'Failed to store message' });
+            return;
         }
 
         try {
-            const params: Partial<MintParams> & { type: SuperMessageType, groupId: string, metadataBlobId: string } = {
+            const baseParams: { type: SuperMessageType, groupId: string, messageBlobId: string } = {
                 type: data.messageType,
                 groupId: group.id,
-                metadataBlobId: blobId,
+                messageBlobId: blobId,
             };
+
+            let finalParams: MintParams;
 
             switch (data.messageType) {
                 case 'time_lock':
-                     if (!data.timeFrom || !data.timeTo) throw new Error("Missing time parameters");
-                    params.timeFrom = BigInt(data.timeFrom);
-                    params.timeTo = BigInt(data.timeTo);
+                    if (data.timeFrom === undefined || data.timeTo === undefined || data.timeFrom >= data.timeTo) throw new Error("Valid time parameters required (End > Start)");
+                    finalParams = { ...baseParams, timeFrom: BigInt(data.timeFrom), timeTo: BigInt(data.timeTo) };
                     break;
                 case 'limited_read':
-                     if (!data.maxReads) throw new Error("Missing maxReads");
-                    params.maxReads = BigInt(data.maxReads);
+                    if (data.maxReads === undefined || data.maxReads < 1) throw new Error("Valid maxReads required (>= 1)");
+                    finalParams = { ...baseParams, maxReads: BigInt(data.maxReads) };
                     break;
                 case 'fee_based':
-                    if (data.fee === undefined || !data.recipient || !data.coinType) throw new Error("Missing parameters for Fee Based");
-                    params.fee = BigInt(data.fee);
-                    params.recipient = data.recipient;
-                    params.coinType = data.coinType;
+                    if (data.fee === undefined || data.fee < 0 || !data.recipient) throw new Error("Valid fee (>= 0) and recipient required");
+                    finalParams = { ...baseParams, fee: BigInt(data.fee), recipient: data.recipient };
                     break;
                 case 'compound':
-                     if (!data.timeFrom || !data.timeTo || !data.maxReads || data.fee === undefined || !data.recipient || !data.coinType) throw new Error("Missing parameters for Compound");
-                    params.timeFrom = BigInt(data.timeFrom);
-                    params.timeTo = BigInt(data.timeTo);
-                    params.maxReads = BigInt(data.maxReads);
-                    params.fee = BigInt(data.fee);
-                    params.recipient = data.recipient;
-                    params.coinType = data.coinType;
+                    if (data.timeFrom === undefined || data.timeTo === undefined || data.timeFrom >= data.timeTo || data.maxReads === undefined || data.maxReads < 1 || data.fee === undefined || data.fee < 0 || !data.recipient) throw new Error("Valid parameters required for Compound policy");
+                    finalParams = { ...baseParams, timeFrom: BigInt(data.timeFrom), timeTo: BigInt(data.timeTo), maxReads: BigInt(data.maxReads), fee: BigInt(data.fee), recipient: data.recipient };
                     break;
+                case 'no_policy':
+                    finalParams = { ...baseParams };
+                    break;
+                default:
+                    const exhaustiveCheck: never = data.messageType;
+                    throw new Error(`Unknown message type: ${exhaustiveCheck}`);
             }
 
-            mintSuperMessage(params as MintParams);
+            mintSuperMessage(finalParams);
         } catch (error) {
             console.error("Pre-mutation parameter error:", error);
             toaster.error({
@@ -379,7 +405,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         }
     };
 
-     const renderDatePickerField = (name: "timeFrom" | "timeTo", label: string, minDate?: Date, validation?: any) => (
+    const renderDatePickerField = (name: "timeFrom" | "timeTo", label: string, minDate?: Date, validation?: any) => (
         <Controller
             name={name}
             control={control}
@@ -389,7 +415,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     <Field.Label fontSize="sm">{label}</Field.Label>
                     <DatePicker
                         selected={field.value ? new Date(field.value * 1000) : null}
-                        onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : 0)}
+                        onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : undefined)} // Set undefined on clear
                         onBlur={field.onBlur}
                         customInput={<DatePickerInput w="full" />}
                         showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="yyyy-MM-dd HH:mm"
@@ -397,18 +423,18 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         disabled={isPending || isSubmitting}
                         popperPlacement="top-start"
                         minDate={minDate}
-                        filterTime={minDate && name === "timeTo" ? (time) => { if (!minDate || !field.value || !time) return true; const selectedDate = new Date(field.value * 1000); if (selectedDate.toDateString() === minDate.toDateString()) { return time.getTime() > minDate.getTime(); } return true; } : undefined}
+                        filterTime={minDate && name === "timeTo" ? (time) => { const selectedDate = field.value ? new Date(field.value * 1000) : null; if (!minDate || !selectedDate || !time) return true; if (selectedDate.toDateString() === minDate.toDateString()) { return time.getTime() > minDate.getTime(); } return true; } : undefined}
                     />
                     {fieldState.error && <Text fontSize="xs" color="red.500">{fieldState.error.message}</Text>}
                 </Field.Root>
             )}
         />
     );
-     const renderNumberField = (name: "maxReads" | "fee", label: string, helperText?: string, min: number = 0) => (
+    const renderNumberField = (name: "maxReads" | "fee", label: string, helperText?: string, min: number = 0) => (
         <Controller
             name={name}
             control={control}
-            rules={{ required: `${label} is required`, min: { value: min, message: `Must be >= ${min}` }, valueAsNumber: true }}
+            rules={{ required: `${label} is required`, min: { value: min, message: `Must be >= ${min}` } }}
             render={({ field: { onChange, onBlur, value, ref }, fieldState }) => (
                 <Field.Root flex={name === "fee" ? "1" : undefined} w={name === "maxReads" ? "full" : undefined} invalid={!!fieldState.error} >
                     <Field.Label fontSize="sm">{label}</Field.Label>
@@ -418,7 +444,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         disabled={isPending || isSubmitting}
                         min={min}
                         value={value === undefined || isNaN(value) ? '' : String(value)}
-                        onChange={(valStr, valNum) => onChange(isNaN(valNum) ? undefined : valNum)}
+                        onValueChange={(valNum) => onChange(valNum.valueAsNumber)}
                         onBlur={onBlur}
                         ref={ref}
                     >
@@ -431,7 +457,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             )}
         />
     );
-     const renderTextField = (name: "coinType" | "recipient", label: string, placeholder: string, flex: string, validation?: any) => (
+    const renderTextField = (name: "recipient", label: string, placeholder: string, flex: string, validation?: any) => (
         <Controller
             name={name}
             control={control}
@@ -451,17 +477,61 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             )}
         />
     );
-     const renderSpecificInputs = () => {  const inputStackProps = { gap: 2, w: "full" }; switch (messageType) { case 'time_lock': return <HStack {...inputStackProps}>{renderDatePickerField("timeFrom", "Start Time")}{renderDatePickerField("timeTo", "End Time", getValues("timeFrom") ? new Date(getValues("timeFrom") * 1000) : undefined, { required: true, validate: v => v > getValues("timeFrom") || "End > Start" })}</HStack>; case 'limited_read': return <Stack {...inputStackProps}>{renderNumberField("maxReads", "Max Reads", undefined, 1)}</Stack>; case 'fee_based': return <HStack align="start" {...inputStackProps}>{renderNumberField("fee", "Fee", "Atomic units")}{renderTextField("coinType", "Coin Type", "0x2::sui::SUI", "2")}{renderTextField("recipient", "Recipient", "0x...", "3", { required: true, pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } })}</HStack>; case 'compound': return <Stack {...inputStackProps}><HStack w="full" align="start"><HStack w="full">{renderDatePickerField("timeFrom", "Start Time")}{renderDatePickerField("timeTo", "End Time", getValues("timeFrom") ? new Date(getValues("timeFrom") * 1000) : undefined, { required: true, validate: v => v > getValues("timeFrom") || "End > Start" })}</HStack>{renderNumberField("maxReads", "Max Reads", undefined, 1)}</HStack><HStack w="full" align="start">{renderNumberField("fee", "Fee", "Atomic units")}{renderTextField("coinType", "Coin Type", "0x2::sui::SUI", "2")}{renderTextField("recipient", "Recipient", "0x...", "3", { required: true, pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } })}</HStack></Stack>; default: return null; } };
-     const policies = createListCollection({ items: [ { label: "No Policy", description: "Standard message, no access policy", value: "no_policy" as SuperMessageType }, { label: "Time Lock", description: "Access only within time window", value: "time_lock" as SuperMessageType }, { label: "Limited Read", description: "Limit total message reads", value: "limited_read" as SuperMessageType }, { label: "Fee Based", description: "Pay fee to access message", value: "fee_based" as SuperMessageType }, { label: "Compound", description: "Combine multiple rules", value: "compound" as SuperMessageType }, ] });
+    const renderSpecificInputs = () => {
+        const inputStackProps = { gap: 2, w: "full" };
+        const timeFromValue = getValues("timeFrom");
+        const minEndDate = timeFromValue ? new Date(timeFromValue * 1000) : new Date(); // Prevent end date being before start date
+
+        switch (messageType) {
+            case 'time_lock':
+                return <HStack {...inputStackProps}>
+                    {renderDatePickerField("timeFrom", "Start Time")}
+                    {renderDatePickerField("timeTo", "End Time", minEndDate, { required: true, validate: (v: number) => v > timeFromValue || "End > Start" })}
+                </HStack>;
+            case 'limited_read':
+                return <Stack {...inputStackProps}>
+                    {renderNumberField("maxReads", "Max Reads", undefined, 1)}
+                </Stack>;
+            case 'fee_based':
+                return <HStack align="start" {...inputStackProps}>
+                    {renderNumberField("fee", "Fee", "Atomic units (e.g., MIST for SUI)", 0)}
+                    {renderTextField("recipient", "Recipient", "0x...", "3", { required: true, pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } })}
+                </HStack>;
+            case 'compound':
+                return <Stack {...inputStackProps}>
+                    <HStack w="full" align="start">
+                        <HStack w="full">
+                            {renderDatePickerField("timeFrom", "Start Time")}
+                            {renderDatePickerField("timeTo", "End Time", minEndDate, { required: true, validate: (v: number) => v > timeFromValue || "End > Start" })}
+                        </HStack>
+                        {renderNumberField("maxReads", "Max Reads", undefined, 1)}
+                    </HStack>
+                    <HStack w="full" align="start">
+                        {renderNumberField("fee", "Fee", "Atomic units", 0)}
+                        {renderTextField("recipient", "Recipient", "0x...", "3", { required: true, pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } })}
+                    </HStack>
+                </Stack>;
+            default: return null;
+        }
+    };
+    const policies = createListCollection({
+        items: [
+            { label: "No Policy", description: "Standard message, no access policy", value: "no_policy" as SuperMessageType },
+            { label: "Time Lock", description: "Access only within time window", value: "time_lock" as SuperMessageType },
+            { label: "Limited Read", description: "Limit total message reads", value: "limited_read" as SuperMessageType },
+            { label: "Fee Based", description: "Pay fee to access message", value: "fee_based" as SuperMessageType },
+            { label: "Compound", description: "Combine multiple rules", value: "compound" as SuperMessageType },
+        ]
+    });
 
     return (
         <VStack
             w="full"
             p="3"
             bg="bg.100/75"
-             backdropBlur="2xl" shadow="custom.sm" rounded="3xl" gap={3} alignItems="stretch" {...props}
+            backdropFilter="blur(12px)" shadow="custom.sm" rounded="3xl" gap={3} alignItems="stretch" {...props}
         >
-            <HStack align="flex-start" gap={2}>
+            <HStack align="center" justify={"space-between"} gap={"1"}>
                 <Controller
                     name="messageType"
                     control={control}
@@ -477,7 +547,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                                 collection={policies}
                                 value={[field.value]}
                                 onValueChange={({ value }) => {
-                                    field.onChange(value[0]);
+                                    if (value && value.length > 0) field.onChange(value[0]);
                                     setIsSelectExpanded(false);
                                 }}
                                 onOpenChange={(d) => {
@@ -508,8 +578,28 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         </MotionVStack>
                     )}
                 />
-                 <Button size="sm" onClick={handleCreateGroupKey} variant="outline" ml="auto"><HiKey /></Button>
+
+                <Tooltip
+                    content={
+                        currentSessionKey && currentSessionKey instanceof SessionKey ?
+                            currentSessionKey.isExpired() ? "Session key expired" : currentSessionKey.getAddress()
+                            :
+                            "Create group key"
+                    }
+                >
+                    <Button
+                        size="sm"
+                        onClick={handleCreateGroupKey}
+                        colorPalette={currentSessionKey?.isExpired() ? "red" : "default"}
+                        variant="outline"
+                    >
+                        <HiKey />
+                    </Button>
+                </Tooltip>
+
             </HStack>
+
+            {renderSpecificInputs()}
 
             <VStack
                 pos="relative" gap={0} bg="bg.300"
@@ -521,6 +611,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     control={control}
                     render={({ field }) => (
                         <TextInput
+                            placeholder="Type your message here..."
                             onKeyDown={handleTextareaKeyDown}
                             {...field}
                         />
@@ -529,27 +620,30 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                 <Controller
                     name="contentAsFiles"
                     control={control}
-                    render={({ field }) => ( <MediaInput {...field} onFileAccept={(d) => field.onChange(d.files)}/> )}
+                    render={({ field }) =>
+                        <MediaInput
+                            onFileAccept={(d) => field.onChange(d.files)}
+                        />}
                 />
 
                 <Stack pos="absolute" bottom="4" right="4" direction="row" gap={"2"} alignItems="flex-end">
-                    {isError && ( <Text color="red.500" fontSize="xs"> Minting Error: {error?.message} </Text> )}
+                    {isError && (<Text color="red.500" fontSize="xs"> Minting Error: {error?.message} </Text>)}
                     <Button
                         type="button"
                         onClick={handleSubmit(onMintSubmit)}
-                        colorPalette="primary"
-                        isLoading={isPending || isSubmitting}
+                        colorScheme="primary" // Use colorScheme for Chakra Button
+                        loading={isPending || isSubmitting}
                         loadingText="Minting..."
                         size="sm"
-                        disabled={isPending || isSubmitting || !group?.id}
+                        disabled={isPending || isSubmitting || !group?.id} // Use isDisabled for Chakra Button
                     >
-                        <FaSuperpowers />
+                        <FaSuperpowers style={{ marginRight: '0.5em' }} />
                         Mint Message
                     </Button>
                 </Stack>
             </VStack>
 
-            {renderSpecificInputs()}
+
         </VStack>
     );
 }

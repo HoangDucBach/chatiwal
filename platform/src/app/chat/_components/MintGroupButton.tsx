@@ -1,6 +1,6 @@
 "use client"
 
-import { CloseButton, Text, Field, HStack, Icon, Input, Switch, Tag, TagLabel, Textarea, VStack, Wrap, SwitchRoot, SwitchLabel, useDisclosure, TagRoot, TagCloseTrigger, Heading, SwitchControl, SwitchHiddenInput } from "@chakra-ui/react";
+import { Text, Field, Icon, Input, TagLabel, Textarea, VStack, Wrap, SwitchRoot, SwitchLabel, useDisclosure, TagRoot, TagCloseTrigger, Heading, SwitchControl, SwitchHiddenInput } from "@chakra-ui/react";
 import { useSuiClient, useSignAndExecuteTransaction, useCurrentAccount } from "@mysten/dapp-kit";
 import { useMutation } from "@tanstack/react-query";
 import { IoIosAdd } from "react-icons/io";
@@ -14,8 +14,7 @@ import { type MetadataGroup, MetadataGroupSchema } from "@/libs/schema";
 import { useState } from "react";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
-import { DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTrigger } from "@/components/ui/dialog";
-import { z } from "zod";
+import { DialogBackdrop, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTrigger } from "@/components/ui/dialog";
 
 interface MintGroupFormData {
     name?: string;
@@ -61,8 +60,8 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
 
             const newGroupData = groupMintedEvent.parsedJson as { id: string };
             onSuccess?.(newGroupData.id);
-            await addGroupMembership(currentAccount?.address!, newGroupData.id);
-            
+            await addGroupMembership(currentAccount?.address, newGroupData.id);
+
             return newGroupData.id;
         },
         onSuccess: async (groupId: string) => {

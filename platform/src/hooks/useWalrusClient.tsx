@@ -1,5 +1,5 @@
 import { encode } from '@/libs';
-import { MessageBase } from '@/sdk';
+import { TMessage } from '@/types';
 import { NETWORK } from '@/utils/constants';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { WalrusClient } from '@mysten/walrus';
@@ -11,7 +11,7 @@ interface StoreOptions {
 }
 
 interface IWalrusClientActions {
-    storeMessage: (message: MessageBase, options?: StoreOptions) => Promise<MessageBase>;
+    storeMessage: (message: TMessage, options?: StoreOptions) => Promise<TMessage>;
     deleteMessage: (blobId: string) => Promise<void>;
     store(object: any): Promise<string>;
     read(blobIds: string[]): Promise<ArrayBuffer[]>;
@@ -102,16 +102,16 @@ export const useWalrusClient = (): IWalrusClientActions => {
         return encodedBlob.blobId;
     }
 
-    const storeMessage = async (message: MessageBase, options?: StoreOptions) => {
+    const storeMessage = async (message: TMessage, options?: StoreOptions) => {
         if (!currentAccount) {
             throw new Error('Not connected');
         }
 
         const { deletable = true, epochs = 1 } = options || {};
 
-        const messageBlobId = await store(message.getData().content, { deletable, epochs });
+        const messageBlobId = await store(message.content, { deletable, epochs });
 
-        message.getData().blobId = messageBlobId;
+        message.blobId = messageBlobId;
 
         return message;
     }
