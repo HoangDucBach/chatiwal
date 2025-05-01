@@ -220,6 +220,83 @@ public entry fun mint_super_message_limited_read_and_transfer(
     transfer::share_object(msg);
 }
 
+public entry fun mint_super_message_fee_based_and_transfer(
+    g_id: ID,
+    mt_b_id: String,
+    aux_id: vector<u8>,
+    fee: u64,
+    r: address,
+    c: &Clock,
+    ctx: &mut TxContext,
+) {
+    let s = tx_context::sender(ctx);
+    let p = message_policy::create_fee_based_policy(fee, r);
+
+    let msg = SuperMessage {
+        id: object::new(ctx),
+        group_id: g_id,
+        aux_id: aux_id,
+        message_blob_id: mt_b_id,
+        time_lock: option::none(),
+        limited_read: option::none(),
+        fee_policy: option::some(p),
+        owner: s,
+        fee_collected: balance::zero(),
+        readers: vec_set::empty(),
+        created_at: c.timestamp_ms(),
+    };
+
+    events::emit_super_message_minted(
+        object::id(&msg),
+        msg.group_id,
+        c.timestamp_ms(),
+    );
+
+    mint_message_owner_cap_and_transfer(object::id(&msg), ctx);
+    transfer::share_object(msg);
+}
+
+public entry fun mint_super_message_compound_and_transfer(
+    g_id: ID,
+    mt_b_id: String,
+    aux_id: vector<u8>,
+    tf: u64,
+    tt: u64,
+    max: u64,
+    fee: u64,
+    receipient: address,
+    c: &Clock,
+    ctx: &mut TxContext,
+) {
+    let s = tx_context::sender(ctx);
+    let tl = message_policy::create_time_lock_policy(tf, tt);
+    let lr = message_policy::create_limited_read_policy(max);
+    let fp = message_policy::create_fee_based_policy(fee, receipient);
+
+    let msg = SuperMessage {
+        id: object::new(ctx),
+        group_id: g_id,
+        aux_id: aux_id,
+        message_blob_id: mt_b_id,
+        time_lock: option::some(tl),
+        limited_read: option::some(lr),
+        fee_policy: option::some(fp),
+        owner: s,
+        fee_collected: balance::zero(),
+        readers: vec_set::empty(),
+        created_at: c.timestamp_ms(),
+    };
+
+    events::emit_super_message_minted(
+        object::id(&msg),
+        msg.group_id,
+        c.timestamp_ms(),
+    );
+
+    mint_message_owner_cap_and_transfer(object::id(&msg), ctx);
+    transfer::share_object(msg);
+}
+
 // === Message Reading Functions ===
 
 // Unified read message function
@@ -284,82 +361,6 @@ public entry fun read_message(
         paid_recored,
         now,
     );
-}
-
-public entry fun mint_super_message_fee_based_and_transfer(
-    g_id: ID,
-    mt_b_id: String,
-    fee: u64,
-    r: address,
-    c: &Clock,
-    ctx: &mut TxContext,
-) {
-    let s = tx_context::sender(ctx);
-    let p = message_policy::create_fee_based_policy(fee, r);
-
-    let msg = SuperMessage {
-        id: object::new(ctx),
-        group_id: g_id,
-        aux_id: vector::empty(),
-        message_blob_id: mt_b_id,
-        time_lock: option::none(),
-        limited_read: option::none(),
-        fee_policy: option::some(p),
-        owner: s,
-        fee_collected: balance::zero(),
-        readers: vec_set::empty(),
-        created_at: c.timestamp_ms(),
-    };
-
-    events::emit_super_message_minted(
-        object::id(&msg),
-        msg.group_id,
-        c.timestamp_ms(),
-    );
-
-    mint_message_owner_cap_and_transfer(object::id(&msg), ctx);
-    transfer::share_object(msg);
-}
-
-public entry fun mint_super_message_compound_and_transfer(
-    g_id: ID,
-    mt_b_id: String,
-    aux_id: vector<u8>,
-    tf: u64,
-    tt: u64,
-    max: u64,
-    fee: u64,
-    receipient: address,
-    c: &Clock,
-    ctx: &mut TxContext,
-) {
-    let s = tx_context::sender(ctx);
-    let tl = message_policy::create_time_lock_policy(tf, tt);
-    let lr = message_policy::create_limited_read_policy(max);
-    let fp = message_policy::create_fee_based_policy(fee, receipient);
-
-    let msg = SuperMessage {
-        id: object::new(ctx),
-        group_id: g_id,
-        aux_id: aux_id,
-        message_blob_id: mt_b_id,
-        time_lock: option::some(tl),
-        limited_read: option::some(lr),
-        fee_policy: option::some(fp),
-        owner: s,
-        fee_collected: balance::zero(),
-        readers: vec_set::empty(),
-        created_at: c.timestamp_ms(),
-    };
-
-    events::emit_super_message_minted(
-        object::id(&msg),
-        msg.group_id,
-        c.timestamp_ms(),
-    );
-
-    mint_message_owner_cap_and_transfer(object::id(&msg), ctx);
-    transfer::share_object(msg);
 }
 
 // === Fee Collection Functions ===
