@@ -50,7 +50,7 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
             }
 
             const messages = decode(decode(bufferArr[0]) as Uint8Array) as TMessage[];
-            console.log("messages", messages);
+
             onSuccess && onSuccess(messages);
             return messages;
         },

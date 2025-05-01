@@ -201,9 +201,13 @@ export class ChatiwalClient {
     }): Transaction {
         const tx = new Transaction();
         // aux_id is empty in Move, SUI coinType is implicit
-        this.messageModule.mint_super_message_fee_based_and_transfer({
-            arguments: [g_id, mt_b_id, fee, r],
-        })(tx);
+        try {
+            this.messageModule.mint_super_message_fee_based_and_transfer({
+                arguments: [g_id, mt_b_id, fee, r],
+            })(tx);
+        } catch (error) {
+            console.log(error)
+        }
         return tx;
     }
 

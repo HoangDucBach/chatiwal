@@ -1,20 +1,15 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { Heading, StackProps, Text, VStack, Center } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { Heading, StackProps, Text, VStack } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
-import { getMessagePolicyType, TMessage } from "@/types";
-import { useSealClient } from "@/hooks/useSealClient";
+import { TMessage } from "@/types";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
-import { toaster } from "@/components/ui/toaster";
 import { useGroup } from "../_hooks/useGroupId";
 import { Tag } from "@/components/ui/tag";
 import { ComposerInput } from "./ComposerInput";
-import { useSessionKeys } from "@/hooks/useSessionKeysStore";
-import { MessageBase } from "./messages";
 import { decode } from "@msgpack/msgpack";
 import { GroupControlPanel } from "./GroupControlPanel";
 

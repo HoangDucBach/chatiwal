@@ -41,33 +41,36 @@ export function GroupControlPanel({ chatTabProps, ...props }: Props) {
     })
     return (
         <TabsRootProvider value={tabs} variant={"subtle"} w={"full"} h={"full"} >
-            <TabsList
-                w={"full"}
-                pos={"relative"}
-                zIndex={"0"}
-                p={"3"}
-                bg={"bg.100/75"}
-                backdropFilter={"blur(256px)"}
-                rounded={"3xl"}
-                gap={"6"}
-                defaultValue={items[0].id}
-            >
-                {items.map((item) => (
-                    <TabsTrigger rounded={"2xl"} color={"fg.contrast"} _selected={{ bg: "bg.300", color: "fg" }} value={item.id} key={item.id}>
-                        <Icon color={"fg.contrast"} _selected={{ color: "fg" }}>
-                            {item.icon}
-                        </Icon>
-                        {item.title}
-                    </TabsTrigger>
-                ))}
-            </TabsList>
-            {
-                items.map((item) => (
-                    <TabsContent w={"full"} h={"90%"} value={item.id} key={item.id}>
-                        {item.content}
-                    </TabsContent>
-                ))
-            }
-        </TabsRootProvider>
+            <VStack h={"full"} w={"full"}>
+                <TabsList
+                    w={"full"}
+                    alignItems={"center"}
+                    pos={"relative"}
+                    zIndex={"0"}
+                    p={"3"}
+                    bg={"bg.100/75"}
+                    backdropFilter={"blur(256px)"}
+                    rounded={"3xl"}
+                    gap={"6"}
+                    defaultValue={items[0].id}
+                >
+                    {items.map((item) => (
+                        <TabsTrigger rounded={"2xl"} color={"fg.contrast"} _selected={{ bg: "bg.300", color: "fg" }} value={item.id} key={item.id}>
+                            <Icon color={"fg.contrast"} _selected={{ color: "fg" }}>
+                                {item.icon}
+                            </Icon>
+                            {item.title}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                {
+                    items.map((item) => (
+                        <TabsContent w={"full"} h={"90%"} value={item.id} key={item.id}>
+                            {item.content}
+                        </TabsContent>
+                    ))
+                }
+            </VStack>
+        </TabsRootProvider >
     )
 }

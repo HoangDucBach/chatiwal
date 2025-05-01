@@ -25,6 +25,8 @@ import {
     HStack,
     Span,
     SelectItemText,
+    Center,
+    Flex,
 } from "@chakra-ui/react";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,7 +45,7 @@ import { HiKey } from "react-icons/hi";
 import { useChannel } from "ably/react";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
 import { generateContentId } from "@/libs";
-import { fromHex } from "@mysten/sui/utils";
+import { fromHex, SUI_DECIMALS } from "@mysten/sui/utils";
 import { Tooltip } from "@/components/ui/tooltip";
 import { SessionKey } from "@mysten/seal";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -119,7 +121,6 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             if (!group?.id) throw new Error("Group ID is not available");
 
             let tx: Transaction;
-
             switch (params.type) {
                 case 'time_lock':
                     if (!params.timeFrom || !params.timeTo || !params.messageBlobId || !params.auxId) throw new Error("Missing parameters for Time Lock");
@@ -130,7 +131,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     tx = await mintSuperMessageLimitedReadAndTransfer(group.id, params.messageBlobId, params.auxId, params.maxReads);
                     break;
                 case 'fee_based':
-                    if (params.fee === undefined || !params.recipient || !params.messageBlobId) throw new Error("Missing parameters for Fee Based");
+                    if (params.fee === undefined || !params.recipient) throw new Error("Missing parameters for Fee Based");
                     tx = await mintSuperMessageFeeBasedAndTransfer(group.id, params.messageBlobId, BigInt(params.fee), params.recipient);
                     break;
                 case 'compound':
@@ -147,8 +148,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             }
             if (!tx) throw new Error("Transaction block generation failed");
 
-            let { digest, } = await signAndExecuteTransaction({ transaction: tx });
-
+            let { digest, effects } = await signAndExecuteTransaction({ transaction: tx });
+            
             const { events } = await suiClient.waitForTransaction({ digest });
 
             if (events) {
@@ -192,7 +193,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             maxReads: 1,
             fee: 0,
             recipient: currentAccount?.address ?? '',
-        }
+        },
     });
 
     const messageType = watch('messageType');
@@ -328,19 +329,19 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         let encryptedResult = await encrypt(auxId, encode(finalDataStructure));
         let blobId: string | undefined;
 
-        try {
-            blobId = await store(encryptedResult);
-            if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
-        } catch (storeError: any) {
-            toaster.error({ title: "Storage Error", description: storeError?.message ?? 'Failed to store message' });
-            return;
-        }
+        // try {
+        //     blobId = await store(encryptedResult);
+        //     if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
+        // } catch (storeError: any) {
+        //     toaster.error({ title: "Storage Error", description: storeError?.message ?? 'Failed to store message' });
+        //     return;
+        // }
 
         try {
             const baseParams: { type: SuperMessageType, groupId: string, messageBlobId: string, auxId: Uint8Array } = {
                 type: data.messageType,
                 groupId: group.id,
-                messageBlobId: blobId,
+                messageBlobId: "abc",
                 auxId
             };
 
@@ -357,11 +358,11 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     break;
                 case 'fee_based':
                     if (data.fee === undefined || data.fee < 0 || !data.recipient) throw new Error("Valid fee (>= 0) and recipient required");
-                    finalParams = { ...baseParams, fee: BigInt(data.fee), recipient: data.recipient };
+                    finalParams = { ...baseParams, fee: BigInt(Math.floor(data.fee * 10 ** SUI_DECIMALS)), recipient: data.recipient };
                     break;
                 case 'compound':
                     if (data.timeFrom === undefined || data.timeTo === undefined || data.timeFrom >= data.timeTo || data.maxReads === undefined || data.maxReads < 1 || data.fee === undefined || data.fee < 0 || !data.recipient) throw new Error("Valid parameters required for Compound policy");
-                    finalParams = { ...baseParams, timeFrom: BigInt(data.timeFrom), timeTo: BigInt(data.timeTo), maxReads: BigInt(data.maxReads), fee: BigInt(data.fee), recipient: data.recipient };
+                    finalParams = { ...baseParams, timeFrom: BigInt(data.timeFrom), timeTo: BigInt(data.timeTo), maxReads: BigInt(data.maxReads), fee: BigInt(Math.floor(data.fee * 10 ** SUI_DECIMALS)), recipient: data.recipient };
                     break;
                 case 'no_policy':
                     finalParams = { ...baseParams };
@@ -370,7 +371,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     const exhaustiveCheck: never = data.messageType;
                     throw new Error(`Unknown message type: ${exhaustiveCheck}`);
             }
-
+            console.log("Final params for minting:", finalParams);
             mintSuperMessage(finalParams);
         } catch (error) {
             console.error("Pre-mutation parameter error:", error);
@@ -398,8 +399,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                 <Field.Root invalid={!!fieldState.error} width="50%">
                     <Field.Label fontSize="sm">{label}</Field.Label>
                     <DatePicker
-                        selected={field.value ? new Date(field.value * 1000) : null}
-                        onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : undefined)} // Set undefined on clear
+                        selected={field.value ? new Date(field.value * 1000) : new Date()}
+                        onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : new Date())} // Set undefined on clear
                         onBlur={field.onBlur}
                         customInput={<DatePickerInput w="full" />}
                         showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="yyyy-MM-dd HH:mm"
@@ -427,7 +428,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         variant="subtle" size="sm"
                         disabled={isPending || isSubmitting}
                         min={min}
-                        value={value === undefined || isNaN(value) ? '' : String(value)}
+                        value={String(value)}
+                        step={name === "fee" ? 0.25 : 1}
                         onValueChange={(valNum) => onChange(valNum.valueAsNumber)}
                         onBlur={onBlur}
                         ref={ref}
@@ -441,11 +443,11 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             )}
         />
     );
-    const renderTextField = (name: "recipient", label: string, placeholder: string, flex: string, validation?: any) => (
+    const renderTextField = (name: "recipient", label: string, placeholder: string, flex: string, validation?: any, required?: boolean) => (
         <Controller
             name={name}
             control={control}
-            rules={validation || { required: `${label} is required` }}
+            rules={validation || (required ? { required: `${label} is required` } : {})}
             render={({ field, fieldState }) => (
                 <Field.Root flex={flex} invalid={!!fieldState.error} >
                     <Field.Label fontSize="sm">{label}</Field.Label>
@@ -478,8 +480,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                 </Stack>;
             case 'fee_based':
                 return <HStack align="start" {...inputStackProps}>
-                    {renderNumberField("fee", "Fee", "Atomic units (e.g., MIST for SUI)", 0)}
-                    {renderTextField("recipient", "Recipient", "0x...", "3", { required: true, pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } })}
+                    {renderNumberField("fee", "Fee", "SUI", 0)}
+                    {renderTextField("recipient", "Recipient", "0x...", "3", { required: true, pattern: { value: /^0x[a-fA-F0-9]{64}$/, message: "Invalid Sui address" } }, false)}
                 </HStack>;
             case 'compound':
                 return <Stack {...inputStackProps}>
@@ -516,71 +518,76 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             backdropFilter="blur(12px)" shadow="custom.sm" rounded="3xl" gap={3} alignItems="stretch" {...props}
         >
             <HStack align="center" justify={"space-between"} gap={"1"}>
-                <Controller
-                    name="messageType"
-                    control={control}
-                    rules={{ required: "Policy type is required" }}
-                    render={({ field }) => (
-                        <MotionVStack
-                            animate={{ width: isSelectExpanded ? "24rem" : "8rem" }}
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        >
-                            <SelectRoot
-                                size="md"
-                                disabled={isPending || isSubmitting}
-                                collection={policies}
-                                value={[field.value]}
-                                onValueChange={({ value }) => {
-                                    if (value && value.length > 0) field.onChange(value[0]);
-                                    setIsSelectExpanded(false);
-                                }}
-                                onOpenChange={(d) => {
-                                    setIsSelectExpanded(d.open);
-                                }}
-                                onInteractOutside={() => field.onBlur()}
+                <HStack flex={1} align="start">
+                    <Controller
+                        name="messageType"
+                        control={control}
+                        rules={{ required: "Policy type is required" }}
+                        render={({ field }) => (
+                            <MotionVStack
+                                animate={{ width: isSelectExpanded ? "24rem" : "8rem" }}
+                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
                             >
-                                <SelectHiddenSelect />
-                                <SelectControl>
-                                    <SelectTrigger>
-                                        <SelectValueText placeholder="Select policy" />
-                                    </SelectTrigger>
-                                </SelectControl>
-                                <SelectContent>
-                                    {policies.items.map((policy) => (
-                                        <SelectItem item={policy} key={policy.value}>
-                                            <Stack gap={0}>
-                                                <SelectItemText>{policy.label}</SelectItemText>
-                                                <Span color="fg.contrast" fontSize="xs">
-                                                    {policy.description}
-                                                </Span>
-                                            </Stack>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </SelectRoot>
-                            {errors.messageType && <Text fontSize="xs" color="red.500">{errors.messageType.message}</Text>}
-                        </MotionVStack>
-                    )}
-                />
-                <MessagesSnapshotButton messages={props.messages} />
-                <Tooltip
-                    content={
-                        currentSessionKey && currentSessionKey instanceof SessionKey ?
-                            currentSessionKey.isExpired() ? "Session key expired" : currentSessionKey.getAddress()
-                            :
-                            "Create group key"
-                    }
-                >
-                    <Button
-                        size="sm"
-                        onClick={handleCreateGroupKey}
-                        colorPalette={currentSessionKey ? currentSessionKey?.isExpired() ? "red" : "green" : "default"}
-                        variant="outline"
+                                <SelectRoot
+                                    size="md"
+                                    disabled={isPending || isSubmitting}
+                                    collection={policies}
+                                    value={[field.value]}
+                                    onValueChange={({ value }) => {
+                                        if (value && value.length > 0) field.onChange(value[0]);
+                                        setIsSelectExpanded(false);
+                                    }}
+                                    onOpenChange={(d) => {
+                                        setIsSelectExpanded(d.open);
+                                    }}
+                                    onInteractOutside={() => field.onBlur()}
+                                >
+                                    <SelectHiddenSelect />
+                                    <SelectControl>
+                                        <SelectTrigger>
+                                            <SelectValueText placeholder="Select policy" />
+                                        </SelectTrigger>
+                                    </SelectControl>
+                                    <SelectContent>
+                                        {policies.items.map((policy) => (
+                                            <SelectItem item={policy} key={policy.value}>
+                                                <Stack gap={0}>
+                                                    <SelectItemText>{policy.label}</SelectItemText>
+                                                    <Span color="fg.contrast" fontSize="xs">
+                                                        {policy.description}
+                                                    </Span>
+                                                </Stack>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </SelectRoot>
+                                {errors.messageType && <Text fontSize="xs" color="red.500">{errors.messageType.message}</Text>}
+                            </MotionVStack>
+                        )}
+                    />
+                </HStack>
+                <Center flex={2}>
+                    <MessagesSnapshotButton messages={props.messages} />
+                </Center>
+                <HStack flex={1} justify="end">
+                    <Tooltip
+                        content={
+                            currentSessionKey && currentSessionKey instanceof SessionKey ?
+                                currentSessionKey.isExpired() ? "Session key expired" : currentSessionKey.getAddress()
+                                :
+                                "Create group key"
+                        }
                     >
-                        <HiKey />
-                    </Button>
-                </Tooltip>
-
+                        <Button
+                            size="sm"
+                            onClick={handleCreateGroupKey}
+                            colorPalette={currentSessionKey ? currentSessionKey?.isExpired() ? "red" : "green" : "default"}
+                            variant="outline"
+                        >
+                            <HiKey />
+                        </Button>
+                    </Tooltip>
+                </HStack>
             </HStack>
 
             {renderSpecificInputs()}
@@ -607,11 +614,11 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     render={({ field }) =>
                         <MediaInput
                             onFileAccept={(d) => field.onChange(d.files)}
+                            formFiles={field.value}
                         />}
                 />
 
                 <Stack pos="absolute" bottom="4" right="4" direction="row" gap={"2"} alignItems="flex-end">
-                    {isError && (<Text color="red.500" fontSize="xs"> Minting Error: {error?.message} </Text>)}
                     <Button
                         type="button"
                         onClick={handleSubmit(onMintSubmit)}
@@ -626,7 +633,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     </Button>
                 </Stack>
             </VStack>
-
+            {isError && (<Text color="red.500" fontSize="xs"> {error?.message} </Text>)}
 
         </VStack>
     );

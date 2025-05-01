@@ -1,4 +1,4 @@
-import { useState, useCallback, forwardRef } from "react";
+import { useState, useCallback, forwardRef, useEffect } from "react";
 import {
     Textarea,
     Text,
@@ -76,9 +76,10 @@ export const TextInput = forwardRef<HTMLTextAreaElement, TextInputProps>((props,
 
 
 interface MediaInputProps extends FileUploadRootProps {
+    formFiles?: File[];
 }
 
-export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ ...props }, ref) => {
+export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ formFiles, ...props }, ref) => {
     const [files, setFiles] = useState<File[]>([]);
     const [error, setError] = useState<string | null>(null);
 
@@ -95,6 +96,12 @@ export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ ...pr
     const removeFile = useCallback((idToRemove: string) => {
         setFiles((prev) => prev.filter((file) => file.name !== idToRemove));
     }, []);
+
+    useEffect(() => {
+        if (formFiles) {
+            setFiles(formFiles);
+        }
+    }, [formFiles]);
 
     const acceptedFileTypes = [
         'image/*', 'video/*', 'audio/*', 'text/*', 'application/pdf'

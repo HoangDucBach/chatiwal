@@ -6,8 +6,6 @@ import { MessageBase, SuperMessagePolicy } from "./messages";
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import EmptyContent from "@/components/ui/empty-content";
-import { fromHex } from "@mysten/sui/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useGroup } from "../_hooks/useGroupId";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -44,11 +42,6 @@ export function MessageContainer({ messages, ...props }: Props) {
 
     return (
         <Center p={"6"} pos={"relative"} flex={"1"} w={"full"} h={"full"} {...props}>
-            {messages.length === 0 && superMessagesIds?.length === 0 && (
-                <EmptyContent
-                    emptyText={"No messages yet"}
-                />
-            )}
             <ScrollMotionVStack
                 px={"6"}
                 pos={"absolute"}

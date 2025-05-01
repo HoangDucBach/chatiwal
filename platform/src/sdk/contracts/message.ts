@@ -76,8 +76,6 @@ interface BaseOptions {
  */
 function init(packageId: ObjectId) {
 
-    const SUI_MODULE = `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`; // Define SUI module path if needed elsewhere
-
     // --- Entry Functions ---
 
     function mint_messages_snapshot_and_transfer(options: {
@@ -225,7 +223,7 @@ function init(packageId: ObjectId) {
             tx.moveCall({
                 target: `${packageId}::message::mint_super_message_fee_based_and_transfer`,
                 arguments: normalizeMoveArguments(args, moveArgsTypes),
-                typeArguments: [SUI_TYPE_ARG], // Explicitly SUI
+                typeArguments: [],
             });
     }
 
