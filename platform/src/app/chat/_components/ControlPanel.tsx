@@ -47,18 +47,18 @@ export function ControlPanel(props: Props) {
                 })
             );
 
-            await Promise.all(
-                groupDataList.map(async (item) => {
-                    try {
-                        if (item && item.metadata_blob_id) {
-                            const bufferArr = await read([item.metadata_blob_id]);
-                            groupMemberShips[item.index].metadata = MetadataGroupSchema.parse(decode(bufferArr[0]));
-                        }
-                    } catch (error) {
-                        console.log(error);
+            const groupDataListWithMetadata = groupDataList.map(async (item) => {
+                try {
+                    if (item && item.metadata_blob_id) {
+                        const bufferArr = await read([item.metadata_blob_id]);
+                        groupMemberShips[item.index].metadata = MetadataGroupSchema.parse(decode(bufferArr[0]));
                     }
-                })
-            );
+                } catch (error) {
+                    console.log(error);
+                }
+            })
+            
+            await Promise.all(groupDataListWithMetadata);
 
             return groupMemberShips;
         },
@@ -97,6 +97,7 @@ function ControlPanelBody({ myGroupsQuery }: ControlPanelBodyProps) {
             w={"full"}
             flex={"1 0"}
         >
+            <MintGroupButton />
             {isLoading ?
                 <Skeleton
                     h={"full"}
@@ -129,7 +130,7 @@ function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
     const { data: myGroups, isLoading } = myGroupsQuery;
 
     return (
-        <HStack w={"full"} px={"4"} py={"2"} justify={"space-between"} rounded={"2xl"}>
+        <HStack w={"full"} justify={"space-between"} rounded={"2xl"}>
             <Heading as={"h6"} size={"lg"}>Group</Heading>
             <Text color={"fg.700"} fontSize={"lg"}>{myGroups?.length || 0}</Text>
         </HStack>
@@ -139,7 +140,6 @@ function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
 function ControlPanelFooter() {
     return (
         <VStack w={"full"} gap={"4"}>
-            <MintGroupButton />
             <UserControlPanel />
         </VStack>
     )

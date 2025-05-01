@@ -11,6 +11,7 @@ import { fromHex } from "@mysten/sui/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useGroup } from "../_hooks/useGroupId";
 import { useSupabase } from "@/hooks/useSupabase";
+import { ChatHistoryBySnapshot } from "./ChatHistoryBySnapshot";
 
 const ScrollMotionVStack = motion.create(VStack);
 
@@ -59,6 +60,7 @@ export function MessageContainer({ messages, ...props }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.1 }}
             >
+                <ChatHistoryBySnapshot />
                 {superMessagesIds && superMessagesIds.length > 0 && (
                     superMessagesIds.map((id) => (
                         <SuperMessagePolicy

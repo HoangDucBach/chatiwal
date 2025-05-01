@@ -1,7 +1,7 @@
 import { ChatiwalPackageConfig } from "./types";
 
 export const TESTNET_CHATIWAL_PACKAGE_CONFIG: ChatiwalPackageConfig = {
-    chatiwalId: "0xc09d393ce569c4ee5008a28b42a6da4c4de9bd51e0cdd348cf8305bf36c730eb",
+    chatiwalId: "0x5aa076284f18921492f77f18193609e6662caef514191cc70fa390c4f7194a73",
 }
 export const MAINNET_CHATIWAL_PACKAGE_CONFIG: ChatiwalPackageConfig = {
     chatiwalId: "0x1",

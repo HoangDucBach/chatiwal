@@ -9,7 +9,10 @@ import {
   Spinner,
   useRecipe,
 } from "@chakra-ui/react"
+import { motion } from "framer-motion";
 import * as React from "react"
+
+const MotionButton = motion.create(ChakraButton);
 
 interface ButtonLoadingProps {
   loading?: boolean

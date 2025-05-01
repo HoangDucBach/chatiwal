@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChatiwalClient, GroupStruct, SuperMessageStruct, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
+import { ChatiwalClient, GroupStruct, MessagesSnapshotStruct, SuperMessageStruct, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
 import { ChatiwalClientConfig } from "@/sdk/types";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { InvalidGroupCapError } from "@/sdk/errors";
@@ -12,6 +12,7 @@ import { graphql } from '@mysten/sui/graphql/schemas/latest';
 
 type GroupData = typeof GroupStruct.$inferType;
 type SuperMessageData = typeof SuperMessageStruct.$inferType
+type MessagesSnapshotData = typeof MessagesSnapshotStruct.$inferType;
 
 export interface IGroupActions {
     mintGroupAndTransfer(metadataBlobId?: string): Promise<Transaction>;
@@ -22,6 +23,7 @@ export interface IGroupActions {
     sealApprove(id: Uint8Array, groupId: string): Promise<Transaction>;
     validateGroupCap(groupId: string): Promise<string>;
     getGroupData(groupdId: string): Promise<GroupData>;
+    getMessageSnapshotData(messagesSnapshotId: string): Promise<MessagesSnapshotData>;
 }
 
 export interface IMessageActions {
@@ -197,6 +199,30 @@ export function useChatiwalClient(): IChatiwalClientActions {
             return GroupStruct.fromBase64(bcs!);
         },
 
+        getMessageSnapshotData: async (messagesSnapshotId) => {
+            const res = await gqlClient.query({
+                query: graphql(`
+                    query ($messagesSnapshotId: SuiAddress!) {
+                    object(address: $messagesSnapshotId) {
+                        asMoveObject {
+                        contents {
+                            json 
+                            bcs
+                        }
+                        }
+                    }
+                    }
+                    `),
+                variables: {
+                    messagesSnapshotId
+                }
+            });
+
+            if (!res) throw new Error("No message snapshot found");
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+
+            return MessagesSnapshotStruct.fromBase64(bcs!);
+        },
 
     };
 

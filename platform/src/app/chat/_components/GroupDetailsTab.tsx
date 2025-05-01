@@ -1,4 +1,4 @@
-import { Heading, StackProps, VStack, Text, Link, HStack } from "@chakra-ui/react";
+import { Heading, StackProps, VStack, Text, Link, HStack, TagRoot, TagLabel } from "@chakra-ui/react";
 import { useGroup } from "../_hooks/useGroupId";
 import { formatAddress } from "@mysten/sui/utils";
 import { SUI_EXPLORER_URL } from "@/utils/constants";
@@ -16,13 +16,28 @@ export function GroupDetailsTab(props: Props) {
 
     return (
         <VStack w={"full"} p={"4"} gap={"6"} align={"start"} {...props}>
-            <VStack >
+            <VStack align={"start"}>
                 <Heading fontSize={"2xl"} as={"h2"} fontWeight={"bold"} color={"fg"}>
                     {group?.metadata ? group.metadata.name : formatAddress(group.id)}
                 </Heading>
                 <Link fontSize={"md"} fontWeight={"medium"} color={"secondary"} href={`${SUI_EXPLORER_URL}/object/${group.id}`} target="_blank" rel="noopener noreferrer">
                     {formatAddress(group.id)}
                 </Link>
+                {group.metadata?.tags && group.metadata.tags.length > 0 && (
+                    <HStack
+                        gap={"2"}
+                        flexWrap={"wrap"}
+                        justifyContent={"start"}
+                    >
+                        {group.metadata.tags.map((tag, index) => (
+                            <TagRoot rounded={"md"} bg={"bg.500"} shadow={"custom.xs"} key={index}>
+                                <TagLabel p={"1"}>
+                                    {tag}
+                                </TagLabel>
+                            </TagRoot>
+                        ))}
+                    </HStack>
+                )}
             </VStack>
             <GroupMembers />
         </VStack>

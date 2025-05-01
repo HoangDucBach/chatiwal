@@ -68,6 +68,7 @@ export function Chat(props: Props) {
         >
             <GroupControlPanel chatTabProps={{ messages }} />
             <ComposerInput
+                messages={messages}
                 messageInputProps={{
                     channelName,
                     onMessageSend

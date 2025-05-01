@@ -47,6 +47,7 @@ import { fromHex } from "@mysten/sui/utils";
 import { Tooltip } from "@/components/ui/tooltip";
 import { SessionKey } from "@mysten/seal";
 import { useSupabase } from "@/hooks/useSupabase";
+import { MessagesSnapshotButton } from "./MessagesSnapshotButton";
 
 const MotionVStack = motion.create(VStack);
 
@@ -76,6 +77,7 @@ interface FormValues {
 }
 
 interface ComposerInputProps extends StackProps {
+    messages?: TMessage[];
     messageInputProps: {
         channelName: string;
         onMessageSend: (plainMessage: TMessage) => void;
@@ -264,7 +266,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             readers: [],
             feeCollected: {
                 value: "0",
-            }
+            },
+            createdAt: Math.floor(Date.now() / 1000).toString(),
         } satisfies TMessage;
 
         onMessageSend(messageToEncrypt);
@@ -559,7 +562,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         </MotionVStack>
                     )}
                 />
-
+                <MessagesSnapshotButton messages={props.messages} />
                 <Tooltip
                     content={
                         currentSessionKey && currentSessionKey instanceof SessionKey ?

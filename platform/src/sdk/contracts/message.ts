@@ -44,6 +44,7 @@ export const SuperMessageStruct = bcs.struct("SuperMessage", {
     owner: bcs.Address,
     fee_collected: BalanceStruct(SuiCoinType), // Balance<SUI>
     readers: bcs.vector(bcs.Address), // VecSet<address>
+    created_at: bcs.U64,
 });
 
 
