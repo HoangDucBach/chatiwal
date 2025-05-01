@@ -217,6 +217,7 @@ fun test_mint_fee_based() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -256,6 +257,7 @@ fun test_mint_fee_based_fail_zero_fee() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             0,
             RECIPIENT,
             &clock,
@@ -653,6 +655,7 @@ fun test_read_message_fee_based_exact_payment() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -690,6 +693,7 @@ fun test_read_message_fee_based_extra_payment() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -728,6 +732,7 @@ fun test_read_message_fee_based_insufficient_payment() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -837,6 +842,7 @@ fun test_withdraw_fees() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -919,6 +925,7 @@ fun test_withdraw_fees_no_fees_collected() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -951,6 +958,7 @@ fun test_withdraw_fees_not_recipient() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
+            vector::empty(),
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
