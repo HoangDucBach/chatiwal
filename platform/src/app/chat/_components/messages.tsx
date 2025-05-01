@@ -25,6 +25,10 @@ import { decode } from "@msgpack/msgpack";
 import { SessionKey } from "@mysten/seal";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { Tooltip } from "@/components/ui/tooltip";
+import { motion } from "framer-motion";
+
+const MotionVStack = motion.create(VStack);
+
 
 interface ContentProps {
     self?: boolean;
@@ -310,9 +314,16 @@ export function MessageBase(props: MessageBaseProps) {
     }, [decryptError]);
 
     return (
-        <VStack
+        <MotionVStack
             w={"full"}
             align={self ? "end" : "start"}
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+            }}
         >
             <Avatar />
             <VStack
@@ -327,7 +338,7 @@ export function MessageBase(props: MessageBaseProps) {
                 {renderContent()}
                 {props.children}
             </VStack>
-        </VStack>
+        </MotionVStack>
     )
 }
 
@@ -364,7 +375,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                     limitedReadPolicy: superMsg.limited_read,
                     feePolicy: superMsg.fee_policy,
                     content: new Uint8Array(),
-                    createdAt: undefined,
+                    createdAt: superMsg.created_at,
                 };
 
                 return tMsg;

@@ -44,6 +44,7 @@ export const SuperMessageStruct = bcs.struct("SuperMessage", {
     owner: bcs.Address,
     fee_collected: BalanceStruct(SuiCoinType), // Balance<SUI>
     readers: bcs.vector(bcs.Address), // VecSet<address>
+    created_at: bcs.U64,
 });
 
 
@@ -74,8 +75,6 @@ interface BaseOptions {
  * @returns Object with all message module functions
  */
 function init(packageId: ObjectId) {
-
-    const SUI_MODULE = `${SUI_FRAMEWORK_ADDRESS}::sui::SUI`; // Define SUI module path if needed elsewhere
 
     // --- Entry Functions ---
 
@@ -204,6 +203,7 @@ function init(packageId: ObjectId) {
         arguments: [
             g_id: RawTransactionArgument<ObjectId>,          // ID
             mt_b_id: RawTransactionArgument<string>,       // String
+            aux_id: RawTransactionArgument<Uint8Array>,      // vector<u8>
             fee: RawTransactionArgument<bigint | number>,  // u64
             r: RawTransactionArgument<Address>,            // address (recipient)
             // aux_id is implicitly empty vector in Move function
@@ -212,6 +212,7 @@ function init(packageId: ObjectId) {
         const moveArgsTypes = [
             `${SUI_FRAMEWORK_ADDRESS}::object::ID`,     // g_id
             `${MOVE_STDLIB_ADDRESS}::string::String`,   // mt_b_id
+            `vector<u8>`,                               // aux_id
             `u64`,                                      // fee
             `address`,                                  // r (recipient)
             `${SUI_FRAMEWORK_ADDRESS}::clock::Clock`,   // c
@@ -224,7 +225,7 @@ function init(packageId: ObjectId) {
             tx.moveCall({
                 target: `${packageId}::message::mint_super_message_fee_based_and_transfer`,
                 arguments: normalizeMoveArguments(args, moveArgsTypes),
-                typeArguments: [SUI_TYPE_ARG], // Explicitly SUI
+                typeArguments: [],
             });
     }
 
@@ -259,7 +260,7 @@ function init(packageId: ObjectId) {
             tx.moveCall({
                 target: `${packageId}::message::mint_super_message_compound_and_transfer`,
                 arguments: normalizeMoveArguments(args, moveArgsTypes),
-                typeArguments: [SUI_TYPE_ARG], // Explicitly SUI
+                typeArguments: [],
             });
     }
 

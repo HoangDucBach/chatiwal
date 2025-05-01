@@ -41,92 +41,36 @@ export function GroupControlPanel({ chatTabProps, ...props }: Props) {
     })
     return (
         <TabsRootProvider value={tabs} variant={"subtle"} w={"full"} h={"full"} >
-            <TabsList
-                w={"full"}
-                pos={"relative"}
-                zIndex={"0"}
-                p={"3"}
-                bg={"bg.100/75"}
-                backdropFilter={"blur(256px)"}
-                rounded={"3xl"}
-                gap={"6"}
-                defaultValue={items[0].id}
-            >
-                {items.map((item) => (
-                    <TabsTrigger rounded={"2xl"} color={"fg.contrast"} _selected={{ bg: "bg.300", color: "fg" }} value={item.id} key={item.id}>
-                        <Icon color={"fg.contrast"} _selected={{ color: "fg" }}>
-                            {item.icon}
-                        </Icon>
-                        {item.title}
-                    </TabsTrigger>
-                ))}
-            </TabsList>
-            {
-                items.map((item) => (
-                    <TabsContent w={"full"} h={"90%"} value={item.id} key={item.id}>
-                        {item.content}
-                    </TabsContent>
-                ))
-            }
-        </TabsRootProvider>
-    )
-}
-
-function GroupControlPanelBody() {
-    const { group } = useGroup();
-    const { channel } = useChannel({ channelName: group.id });
-
-    const { data: memberPresence = new Set<string>() } = useQuery({
-        queryKey: ["group::members::presence"],
-        queryFn: async () => {
-            if (!channel) throw new Error("Channel not found");
-
-            const members = await channel.presence.get();
-            const memberPresence = new Set<string>();
-
-            members.forEach((member) => {
-                if (member.clientId) {
-                    memberPresence.add(member.clientId);
+            <VStack h={"full"} w={"full"}>
+                <TabsList
+                    w={"full"}
+                    alignItems={"center"}
+                    pos={"relative"}
+                    zIndex={"0"}
+                    p={"3"}
+                    bg={"bg.100/75"}
+                    backdropFilter={"blur(256px)"}
+                    rounded={"3xl"}
+                    gap={"6"}
+                    defaultValue={items[0].id}
+                >
+                    {items.map((item) => (
+                        <TabsTrigger rounded={"2xl"} color={"fg.contrast"} _selected={{ bg: "bg.300", color: "fg" }} value={item.id} key={item.id}>
+                            <Icon color={"fg.contrast"} _selected={{ color: "fg" }}>
+                                {item.icon}
+                            </Icon>
+                            {item.title}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                {
+                    items.map((item) => (
+                        <TabsContent w={"full"} h={"90%"} value={item.id} key={item.id}>
+                            {item.content}
+                        </TabsContent>
+                    ))
                 }
-            });
-            return memberPresence;
-        },
-        enabled: !!channel,
-    })
-
-    if (!group) return null;
-
-    return (
-        <VStack
-            w={"full"}
-            flex={"1 0"}
-        >
-            {[...group.members.values()].map((member) => (
-                <MemberCard
-                    key={member}
-                    member={member}
-                    group={group}
-                    isOnline={memberPresence?.has(member)}
-                />
-            ))}
-        </VStack>
-    )
-}
-function GroupControlPanelHeader() {
-    const { group } = useGroup();
-
-    return (
-        <HStack bg={"bg.200"} w={"full"} px={"4"} py={"2"} rounded={"2xl"}>
-            <Heading as={"h6"} size={"lg"}>Member</Heading>
-            <Text fontSize={"sm"} color={"fg.800"}>{group.members.size}</Text>
-        </HStack>
-    )
-}
-
-function GroupControlPanelFooter() {
-    return (
-        <VStack w={"full"} gap={"4"}>
-            <AddMember w="full" shadow={"custom.md"} />
-        </VStack>
+            </VStack>
+        </TabsRootProvider >
     )
 }

@@ -37,8 +37,8 @@ export type TMessage = {
     timeLockPolicy?: TTimeLockPolicy | null;
     limitedReadPolicy?: TLimitedReadPolicy | null;
     feePolicy?: TFeeBasedPolicy | null;
+    createdAt: SuperMessage['created_at'];
     content: Uint8Array
-    createdAt?: number;
 };
 
 export function hasTimeLock(msg: TMessage): msg is TMessage & { timeLockPolicy: TTimeLockPolicy } {
