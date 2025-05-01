@@ -8,6 +8,8 @@ import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { decode } from "@msgpack/msgpack";
 import { MessageBase, SuperMessagePolicy } from "./messages";
 import { useEffect } from "react";
+import { LoadingContent } from "@/components/ui/loading-content";
+import { ChatiwalMascotIcon } from "@/components/global/icons";
 
 interface Props extends StackProps {
     onSuccess?: (messages: TMessage[]) => void;
@@ -18,7 +20,7 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
     const { group } = useGroup();
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
-    const { data: messages, error } = useQuery({
+    const { data: messages, error, isLoading } = useQuery({
         queryKey: ["messages::history", group.id, currentAccount?.address],
         queryFn: async () => {
             if (!currentAccount) throw new Error("Not connected");
@@ -63,6 +65,20 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
             console.log(error);
         }
     }, [error]);
+
+    if (isLoading) {
+        return (
+            <LoadingContent
+                loadingIconProps={{
+                    loadingIcon: <ChatiwalMascotIcon />,
+                }}
+                loadingContentProps={{
+                    loadingTitle: "Loading group history",
+                    loadingDescription: "Getting history from your snapshot messages of this group",
+                }}
+            />
+        )
+    }
 
     if (!messages) {
         return null;

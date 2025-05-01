@@ -193,9 +193,10 @@ export class ChatiwalClient {
         return tx;
     }
 
-    mintSuperMessageFeeBasedAndTransfer({ g_id, mt_b_id, fee, r }: {
+    mintSuperMessageFeeBasedAndTransfer({ g_id, mt_b_id, aux_id, fee, r }: {
         g_id: ObjectId;
         mt_b_id: string;
+        aux_id: Uint8Array;
         fee: bigint | number;
         r: Address; // recipient
     }): Transaction {
@@ -203,7 +204,7 @@ export class ChatiwalClient {
         // aux_id is empty in Move, SUI coinType is implicit
         try {
             this.messageModule.mint_super_message_fee_based_and_transfer({
-                arguments: [g_id, mt_b_id, fee, r],
+                arguments: [g_id, mt_b_id, aux_id, fee, r],
             })(tx);
         } catch (error) {
             console.log(error)

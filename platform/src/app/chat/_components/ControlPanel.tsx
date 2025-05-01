@@ -57,7 +57,7 @@ export function ControlPanel(props: Props) {
                     console.log(error);
                 }
             })
-            
+
             await Promise.all(groupDataListWithMetadata);
 
             return groupMemberShips;
@@ -79,29 +79,28 @@ export function ControlPanel(props: Props) {
             {...props}
         >
             <ControlPanelHeader myGroupsQuery={myGroupsQuery} />
-            <ControlPanelBody myGroupsQuery={myGroupsQuery} />
+            <ControlPanelBody flex={1} myGroupsQuery={myGroupsQuery} />
             <ControlPanelFooter />
         </VStack>
     )
 }
 
-interface ControlPanelBodyProps {
+interface ControlPanelBodyProps extends StackProps {
     myGroupsQuery: ReturnType<typeof useQuery<TGroup[]>>,
 }
-function ControlPanelBody({ myGroupsQuery }: ControlPanelBodyProps) {
+function ControlPanelBody({ myGroupsQuery, ...props }: ControlPanelBodyProps) {
     const { id } = useParams();
     const { data: myGroups, isLoading } = myGroupsQuery;
 
     return (
         <VStack
             w={"full"}
-            flex={"1 0"}
+            {...props}
         >
-            <MintGroupButton />
             {isLoading ?
                 <Skeleton
-                    h={"full"}
                     w={"full"}
+                    flex={1}
                     bg={"bg.300"}
                     rounded={"3xl"}
                 />
@@ -122,24 +121,29 @@ function ControlPanelBody({ myGroupsQuery }: ControlPanelBodyProps) {
         </VStack>
     )
 }
-interface ControlPanelHeaderProps {
+interface ControlPanelHeaderProps extends StackProps {
     myGroupsQuery: ReturnType<typeof useQuery<TGroup[]>>,
 }
 
-function ControlPanelHeader({ myGroupsQuery }: ControlPanelHeaderProps) {
+function ControlPanelHeader({ myGroupsQuery, ...props }: ControlPanelHeaderProps) {
     const { data: myGroups, isLoading } = myGroupsQuery;
 
     return (
-        <HStack w={"full"} justify={"space-between"} rounded={"2xl"}>
-            <Heading as={"h6"} size={"lg"}>Group</Heading>
-            <Text color={"fg.700"} fontSize={"lg"}>{myGroups?.length || 0}</Text>
-        </HStack>
+        <VStack {...props} w={"full"} gap={"4"}>
+            <HStack w={"full"} justify={"space-between"} rounded={"2xl"}>
+                <Heading as={"h6"} size={"lg"}>Group</Heading>
+                <Text color={"fg.700"} fontSize={"lg"}>{myGroups?.length || 0}</Text>
+            </HStack>
+            <MintGroupButton />
+        </VStack>
+
     )
 }
 
-function ControlPanelFooter() {
+interface ControlPanelFooterProps extends StackProps { }
+function ControlPanelFooter(props: ControlPanelFooterProps) {
     return (
-        <VStack w={"full"} gap={"4"}>
+        <VStack w={"full"} gap={"4"} {...props}>
             <UserControlPanel />
         </VStack>
     )

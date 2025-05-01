@@ -132,7 +132,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     break;
                 case 'fee_based':
                     if (params.fee === undefined || !params.recipient) throw new Error("Missing parameters for Fee Based");
-                    tx = await mintSuperMessageFeeBasedAndTransfer(group.id, params.messageBlobId, BigInt(params.fee), params.recipient);
+                    tx = await mintSuperMessageFeeBasedAndTransfer(group.id, params.messageBlobId, params.auxId, BigInt(params.fee), params.recipient);
                     break;
                 case 'compound':
                     if (!params.timeFrom || !params.timeTo || !params.maxReads || params.fee === undefined || !params.recipient || !params.messageBlobId || !params.auxId) throw new Error("Missing parameters for Compound");
@@ -149,7 +149,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             if (!tx) throw new Error("Transaction block generation failed");
 
             let { digest, effects } = await signAndExecuteTransaction({ transaction: tx });
-            
+
             const { events } = await suiClient.waitForTransaction({ digest });
 
             if (events) {
@@ -329,19 +329,19 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         let encryptedResult = await encrypt(auxId, encode(finalDataStructure));
         let blobId: string | undefined;
 
-        // try {
-        //     blobId = await store(encryptedResult);
-        //     if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
-        // } catch (storeError: any) {
-        //     toaster.error({ title: "Storage Error", description: storeError?.message ?? 'Failed to store message' });
-        //     return;
-        // }
+        try {
+            blobId = await store(encryptedResult);
+            if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
+        } catch (storeError: any) {
+            toaster.error({ title: "Storage Error", description: storeError?.message ?? 'Failed to store message' });
+            return;
+        }
 
         try {
             const baseParams: { type: SuperMessageType, groupId: string, messageBlobId: string, auxId: Uint8Array } = {
                 type: data.messageType,
                 groupId: group.id,
-                messageBlobId: "abc",
+                messageBlobId: blobId,
                 auxId
             };
 

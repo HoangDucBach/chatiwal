@@ -32,7 +32,7 @@ export interface IMessageActions {
     mintSuperMessageNoPolicyAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array): Promise<Transaction>;
     mintSuperMessageTimeLockAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint): Promise<Transaction>;
     mintSuperMessageLimitedReadAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint): Promise<Transaction>;
-    mintSuperMessageFeeBasedAndTransfer(groupId: string, messageBlobId: string, fee: number | bigint, recipient: string): Promise<Transaction>;
+    mintSuperMessageFeeBasedAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, fee: number | bigint, recipient: string): Promise<Transaction>;
     mintSuperMessageCompoundAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string): Promise<Transaction>;
     readMessage(messageId: string, paymentCoinId: string): Promise<Transaction>;
     withdrawFees(messageId: string): Promise<Transaction>;
@@ -277,11 +277,12 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        mintSuperMessageFeeBasedAndTransfer: (groupId: string, messageBlobId: string, fee: number | bigint, recipient: string) => {
+        mintSuperMessageFeeBasedAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, fee: number | bigint, recipient: string) => {
             return executeTransaction(() =>
                 client.mintSuperMessageFeeBasedAndTransfer({
                     g_id: groupId,
                     mt_b_id: messageBlobId,
+                    aux_id: auxId,
                     fee: fee,
                     r: recipient
                 })
