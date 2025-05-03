@@ -153,8 +153,9 @@ export function Content(props: ContentProps) {
     if (!media) return null;
 
     return (
-        <VStack align={"start"}
-            justify={self ? "end" : "start"}
+        <VStack
+            align={self ? "end" : "start"}
+            justify={"start"}
             gap={"1"}
             w={isText ? "fit" : "full"}
             maxW={isAudio ? "80" : "full"}
@@ -506,7 +507,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 {
                     label: "Max Readers",
                     icon: <TiUserOutline />,
-                    value: message.limitedReadPolicy?.max || 0,
+                    value: message.limitedReadPolicy?.max || "No limit",
                 },
             ]
         },

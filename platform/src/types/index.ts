@@ -38,28 +38,31 @@ export type TMessage = {
     limitedReadPolicy?: TLimitedReadPolicy | null;
     feePolicy?: TFeeBasedPolicy | null;
     createdAt: SuperMessage['created_at'];
+    type?: MessageType;
     content: Uint8Array
 };
 
 export function hasTimeLock(msg: TMessage): msg is TMessage & { timeLockPolicy: TTimeLockPolicy } {
-    return msg.timeLockPolicy !== undefined;
+    return !!msg.timeLockPolicy;
 }
 
 export function hasLimitedRead(msg: TMessage): msg is TMessage & { limitedReadPolicy: TLimitedReadPolicy } {
-    return msg.limitedReadPolicy !== undefined;
+    return !!msg.limitedReadPolicy;
 }
 
 export function hasFeePolicy(msg: TMessage): msg is TMessage & { feePolicy: TFeeBasedPolicy } {
-    return msg.feePolicy !== undefined;
+    return !!msg.feePolicy;
 }
 
 export function getMessagePolicyType(msg: TMessage): MessageType {
-    const hasTL = hasTimeLock(msg);
-    const hasLR = hasLimitedRead(msg);
-    const hasFP = hasFeePolicy(msg);
+    if (msg.type) return msg.type;
 
-    if (hasTL || hasLR || hasFP) return MessageType.SUPER_MESSAGE
-
-    return MessageType.BASE;
-
+    try {
+        const hasTL = hasTimeLock(msg);
+        const hasLR = hasLimitedRead(msg);
+        const hasFP = hasFeePolicy(msg);
+        if (hasTL || hasLR || hasFP) return MessageType.SUPER_MESSAGE
+    } finally {
+        return MessageType.BASE;
+    }
 }

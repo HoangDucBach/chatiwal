@@ -1,6 +1,6 @@
 "use client";
 
-import { TMessage } from "@/types";
+import { getMessagePolicyType, MessageType, TMessage } from "@/types";
 import { Center, CenterProps, VStack } from "@chakra-ui/react";
 import { MessageBase, SuperMessagePolicy } from "./messages";
 import { motion } from "framer-motion";
@@ -62,13 +62,21 @@ export function MessageContainer({ messages, ...props }: Props) {
                         />
                     ))
                 )}
-                {messages.map((message: TMessage) => (
-                    <MessageBase
-                        key={message.id}
-                        message={message}
-                        self={message.owner === currentAccount?.address}
-                    />
-                ))}
+                {
+                    messages.map((message: TMessage) => (
+                        getMessagePolicyType(message) === MessageType.BASE ? (
+                            <MessageBase
+                                key={message.id}
+                                message={message}
+                                self={message.owner === currentAccount?.address}
+                            />
+                        ) :
+                            <SuperMessagePolicy
+                                key={message.id}
+                                messageId={message.id}
+                            />
+                    ))
+                }
 
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>

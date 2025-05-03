@@ -34,7 +34,7 @@ import { encode } from "@msgpack/msgpack";
 
 import { useGroup } from "../_hooks/useGroupId";
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "@/components/ui/select";
-import { MediaContent, TMessage } from "@/types";
+import { MediaContent, MessageType, TMessage } from "@/types";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { useSealClient } from "@/hooks/useSealClient";
 import { MediaInput, TextInput } from "./MessageInput";
@@ -119,6 +119,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
     const { mutate: mintSuperMessage, isPending, isError, error, reset: resetMutation } = useMutation({
         mutationFn: async (params: MintParams) => {
             if (!group?.id) throw new Error("Group ID is not available");
+            if (!currentAccount) throw new Error("Not connected");
 
             let tx: Transaction;
             switch (params.type) {
@@ -150,22 +151,40 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
 
             let { digest, effects } = await signAndExecuteTransaction({ transaction: tx });
 
-            const { events } = await suiClient.waitForTransaction({ digest });
+            const { events } = await suiClient.waitForTransaction({ digest, options: { showEvents: true } });
 
             if (events) {
                 const superMsgMintedEvent = events.find((e) => e.type === `${client.getPackageConfig().chatiwalId}::events::SuperMessageMinted`);
                 if (superMsgMintedEvent) {
                     const parsedJson = superMsgMintedEvent.parsedJson as { id: string, group_id: string };
                     await addSuperMessage(parsedJson.id, parsedJson.group_id);
+
+                    const encryptMessage = {
+                        id: parsedJson.id,
+                        type: MessageType.SUPER_MESSAGE,
+                        groupId: parsedJson.group_id,
+                        auxId: Array.from(params.auxId),
+                        content: new Uint8Array(),
+                        blobId: params.messageBlobId,
+                        createdAt: Math.floor(Date.now() / 1000).toString(),
+                        feeCollected: {
+                            value: "0",
+                        },
+                        owner: currentAccount?.address,
+                        readers: [],
+                    } as TMessage;
+
+                    return encryptMessage;
                 }
             }
-
-            return { digest };
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['superMessages', variables.groupId] });
             toaster.success({ title: "Success", description: "Super message minted successfully" });
-            if (onMessageMinted) onMessageMinted(data);
+            if (data) {
+                console.log("Minted message:", data);
+                publish(AblyChannelManager.EVENTS.MESSAGE_SEND, encode(data));
+            }
             resetMutation();
             resetForm();
         },
@@ -327,7 +346,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
 
         let encryptedResult = await encrypt(auxId, encode(finalDataStructure));
-        let blobId: string | undefined;
+        let blobId: string = "123";
 
         try {
             blobId = await store(encryptedResult);
@@ -371,7 +390,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     const exhaustiveCheck: never = data.messageType;
                     throw new Error(`Unknown message type: ${exhaustiveCheck}`);
             }
-            console.log("Final params for minting:", finalParams);
+
             mintSuperMessage(finalParams);
         } catch (error) {
             console.error("Pre-mutation parameter error:", error);
