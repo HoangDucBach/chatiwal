@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChatiwalClient, GroupStruct, MessagesSnapshotStruct, SuperMessageStruct, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
+import { ChatiwalClient, GroupCapStruct, GroupStruct, MessagesSnapshotStruct, SuperMessageStruct, TESTNET_CHATIWAL_PACKAGE_CONFIG } from "@/sdk";
 import { ChatiwalClientConfig } from "@/sdk/types";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { InvalidGroupCapError } from "@/sdk/errors";
@@ -13,6 +13,7 @@ import { graphql } from '@mysten/sui/graphql/schemas/latest';
 type GroupData = typeof GroupStruct.$inferType;
 type SuperMessageData = typeof SuperMessageStruct.$inferType
 type MessagesSnapshotData = typeof MessagesSnapshotStruct.$inferType;
+type GroupCapData = typeof GroupCapStruct.$inferType;
 
 export interface IGroupActions {
     mintGroupAndTransfer(metadataBlobId?: string): Promise<Transaction>;
@@ -23,6 +24,7 @@ export interface IGroupActions {
     sealApprove(id: Uint8Array, groupId: string): Promise<Transaction>;
     validateGroupCap(groupId: string): Promise<string>;
     getGroupData(groupdId: string): Promise<GroupData>;
+    getGroupCapData(groupCapId: string): Promise<GroupCapData>;
     getMessageSnapshotData(messagesSnapshotId: string): Promise<MessagesSnapshotData>;
 }
 
@@ -224,6 +226,28 @@ export function useChatiwalClient(): IChatiwalClientActions {
             return MessagesSnapshotStruct.fromBase64(bcs!);
         },
 
+        getGroupCapData: async (groupCapId: string) => {
+            const res = await gqlClient.query({
+                query: graphql(`
+                    query ($groupCapId: SuiAddress!) {
+                    object(address: $groupCapId) {
+                        asMoveObject {
+                        contents {
+                            json
+                            bcs
+                        }
+                        }
+                    }
+                    }
+                    `),
+                variables: {
+                    groupCapId
+                }
+            });
+            if (!res) throw new Error("No group cap found");
+            const bcs = res.data?.object?.asMoveObject?.contents?.bcs;
+            return GroupCapStruct.fromBase64(bcs!);
+        },
     };
 
     const messageActions: IMessageActions = {

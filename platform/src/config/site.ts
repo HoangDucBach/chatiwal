@@ -11,15 +11,7 @@ export const siteConfig = {
     navLinks: [
         {
             name: "Docs",
-            href: "/docs",
-        },
-        {
-            name: "Features",
-            href: "/features",
-        },
-        {
-            name: "About",
-            href: "/about",
+            href: "https://chatiwal.gitbook.io/chatiwal-docs/",
         },
     ],
 }

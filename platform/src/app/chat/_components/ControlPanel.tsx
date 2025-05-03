@@ -25,7 +25,7 @@ export function ControlPanel(props: Props) {
     const { read } = useWalrusClient();
 
     const myGroupsQuery = useQuery({
-        queryKey: ["groups::members"],
+        queryKey: ["groups::memberships", currentAccount?.address],
         queryFn: async () => {
             if (!currentAccount) throw new Error("Not connected");
 

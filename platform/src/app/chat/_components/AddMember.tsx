@@ -2,7 +2,7 @@ import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { Button, ButtonProps } from "@/components/ui/button";
 import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot } from "@/components/ui/dialog";
 import { DialogBackdrop, DialogTrigger, Field, Heading, Icon, Input, Text, useDisclosure, VStack } from "@chakra-ui/react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { useGroup } from "../_hooks/useGroupId";
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
@@ -22,7 +22,7 @@ export default function AddMember(
     props: AddMemberProps
 ) {
     const { group } = useGroup();
-    const { onOpen, open, setOpen } = useDisclosure()
+    const { onClose, open, setOpen } = useDisclosure()
     const {
         handleSubmit,
         control,
@@ -37,7 +37,7 @@ export default function AddMember(
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const { addMember, validateGroupCap } = useChatiwalClient();
     const suiClient = useSuiClient();
-
+    const queryClient = useQueryClient();
     const { data: group_cap, isSuccess } = useQuery({
         queryKey: ["group::members::group_cap"],
         queryFn: async () => {
@@ -70,6 +70,10 @@ export default function AddMember(
                 title: "Error",
                 description: error.message,
             });
+            queryClient.invalidateQueries({
+                queryKey: ["group", group.id],
+            })
+            onClose();
         },
 
         onSuccess: () => {
