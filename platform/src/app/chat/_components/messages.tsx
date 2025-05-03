@@ -178,7 +178,6 @@ export function MessageBase(props: MessageBaseProps) {
     const currentAccount = useCurrentAccount();
     const { read } = useWalrusClient();
 
-    console.log("messageType", message);
     const { data: decryptedContent, isLoading: isDecrypting, error: decryptError, refetch } = useQuery({
         queryKey: ["messages::group::decrypt", message.id],
         queryFn: async (): Promise<MediaContent[] | null> => {
@@ -217,7 +216,7 @@ export function MessageBase(props: MessageBaseProps) {
         refetchOnMount: false,
         refetchOnWindowFocus: false,
         staleTime: 5 * 60 * 1000,
-        retry: 0,
+        retry: 2,
     });
 
     const { data: isOnline } = useQuery({
@@ -436,9 +435,6 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
     const createMessageKey = useCallback(async () => {
         const sessionKey = await createSessionKey();
-        queryClient.invalidateQueries({
-            queryKey: ["messages::group::decrypt", messageId],
-        });
         setSessionKey(messageId, sessionKey);
     }, [messageId, message]);
 
@@ -459,6 +455,9 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
         if (isReader) {
             await createMessageKey();
+            queryClient.invalidateQueries({
+                queryKey: ["messages::group::decrypt", messageId],
+            });
             return;
         }
 
