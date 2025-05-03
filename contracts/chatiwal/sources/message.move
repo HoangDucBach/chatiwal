@@ -10,7 +10,7 @@
 module chatiwal::message;
 
 use chatiwal::events;
-use chatiwal::group::{Group, approve_internal};
+use chatiwal::group::Group;
 use chatiwal::message_policy::{Self, TimeLockPolicy, LimitedReadPolicy, FeeBasedPolicy};
 use chatiwal::utils::is_prefix;
 use std::string::String;
@@ -21,7 +21,11 @@ use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 use sui::vec_set::{Self, VecSet};
 
+// === Module Identifier ===
+const MODULE_PREFIX: vector<u8> = b"chatiwal::message";
+
 // === Error Codes ===
+
 const ETimeLockTooEarly: u64 = 2001;
 const ETimeLockExpired: u64 = 2002;
 const EMaxReadsReached: u64 = 2003;
@@ -32,6 +36,7 @@ const ENoFeesToWithdraw: u64 = 2007;
 const ENoAccess: u64 = 2008;
 const ENotMessageRecipient: u64 = 2009;
 const ENotMatch: u64 = 2010;
+const EHaveModulePrefix: u64 = 2011;
 
 // === Access Control ===
 public struct MessageOwnerCap has key {
@@ -125,6 +130,9 @@ public entry fun mint_super_message_no_policy_and_transfer(
     ctx: &mut TxContext,
 ) {
     let s = tx_context::sender(ctx);
+
+    assert!(is_prefix(MODULE_PREFIX, aux_id), EHaveModulePrefix);
+
     let msg = SuperMessage {
         id: object::new(ctx),
         group_id: g_id,
@@ -161,6 +169,8 @@ public entry fun mint_super_message_time_lock_and_transfer(
     let s = tx_context::sender(ctx);
     let p = message_policy::create_time_lock_policy(from, to);
 
+    assert!(is_prefix(MODULE_PREFIX, aux_id), EHaveModulePrefix);
+
     let msg = SuperMessage {
         id: object::new(ctx),
         group_id: g_id,
@@ -195,6 +205,8 @@ public entry fun mint_super_message_limited_read_and_transfer(
 ) {
     let s = tx_context::sender(ctx);
     let p = message_policy::create_limited_read_policy(max);
+
+    assert!(is_prefix(MODULE_PREFIX, aux_id), EHaveModulePrefix);
 
     let msg = SuperMessage {
         id: object::new(ctx),
@@ -231,6 +243,8 @@ public entry fun mint_super_message_fee_based_and_transfer(
 ) {
     let s = tx_context::sender(ctx);
     let p = message_policy::create_fee_based_policy(fee, r);
+
+    assert!(is_prefix(MODULE_PREFIX, aux_id), EHaveModulePrefix);
 
     let msg = SuperMessage {
         id: object::new(ctx),
@@ -272,6 +286,8 @@ public entry fun mint_super_message_compound_and_transfer(
     let tl = message_policy::create_time_lock_policy(tf, tt);
     let lr = message_policy::create_limited_read_policy(max);
     let fp = message_policy::create_fee_based_policy(fee, receipient);
+
+    assert!(is_prefix(MODULE_PREFIX, aux_id), EHaveModulePrefix);
 
     let msg = SuperMessage {
         id: object::new(ctx),
@@ -409,6 +425,10 @@ fun check_policy(id: vector<u8>, msg: &SuperMessage, c: &Clock, ctx: &TxContext)
     let mut pass = true;
 
     // Check prefixx
+    if (!is_prefix(MODULE_PREFIX, id)) {
+        return false
+    };
+
     if (msg.aux_id !=id) {
         return false
     };
