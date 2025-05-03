@@ -2,7 +2,7 @@
 
 import { Text, Field, Icon, Input, TagLabel, Textarea, VStack, Wrap, SwitchRoot, SwitchLabel, useDisclosure, TagRoot, TagCloseTrigger, Heading, SwitchControl, SwitchHiddenInput } from "@chakra-ui/react";
 import { useSuiClient, useSignAndExecuteTransaction, useCurrentAccount } from "@mysten/dapp-kit";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { IoIosAdd } from "react-icons/io";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -36,7 +36,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
     const suiClient = useSuiClient();
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction()
     const currentAccount = useCurrentAccount();
-
+    const queryClient = useQueryClient();
     const { mutate: mint, isPending } = useMutation({
         mutationKey: ["groups::mint"],
         mutationFn: async (metatadataBlobId?: string) => {
@@ -69,6 +69,10 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                 title: "Group created",
                 description: "Group created successfully",
             });
+            queryClient.invalidateQueries({
+                queryKey: ["groups::members"],
+            });
+            onClose();
         },
         onError: (error: any) => {
             onError?.(error);

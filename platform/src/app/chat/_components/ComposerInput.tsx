@@ -109,6 +109,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
     const { client } = useChatiwalClient();
     const { addSuperMessage } = useSupabase();
 
+    const moduleMessagePrefix = client.getPackageConfig().moduleMessagePrefix;
+
     const [isSelectExpanded, setIsSelectExpanded] = useState(false);
     const currentSessionKey = useMemo<SessionKey | null>(() => {
         let s = getSessionKey(group.id);
@@ -307,7 +309,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         if (!currentAccount) throw new Error("Not connected");
         if (!group?.id) throw new Error("Group not loaded");
 
-        const auxId = generateContentId(fromHex(group.id));
+        const auxId = generateContentId(moduleMessagePrefix);
+
         const mediaContentAsText = { id: nanoid(), mimeType: "text/plain", raw: data.contentAsText } satisfies MediaContent;
         const fileProcessingPromises = data.contentAsFiles.map(file => {
             const reader = new FileReader();

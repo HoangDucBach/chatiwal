@@ -9,6 +9,7 @@ export type Address = string;
  */
 export interface ChatiwalPackageConfig {
     chatiwalId: string;
+    moduleMessagePrefix: Uint8Array;
 }
 
 type SuiClientConfig = {
