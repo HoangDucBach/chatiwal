@@ -79,7 +79,8 @@ export function useSealClient(): ISealActions {
         const content = message.content;
         const contentAsBytes = new Uint8Array(content);
         const groupObjectBytes = fromHex(message.groupId);
-        const auxId = Uint8Array.from(message.auxId) || generateContentId(groupObjectBytes);
+        const moduleMessagePrefix = client.getPackageConfig().moduleMessagePrefix;
+        const auxId = Uint8Array.from(message.auxId) || generateContentId(moduleMessagePrefix);
         const id = toHex(auxId);
 
         const { encryptedObject } = await sealClient.encrypt({

@@ -71,7 +71,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                 description: "Group created successfully",
             });
             queryClient.invalidateQueries({
-                queryKey: ["groups::memberships", currentAccount?.address],
+                queryKey: ["groups::memberships"],
             })
             onClose();
         },
