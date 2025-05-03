@@ -16,6 +16,8 @@ use sui::test_scenario::{Self as ts, Scenario, next_tx, ctx};
 use sui::test_utils::{Self, assert_eq};
 
 // === Test Constants ===
+const MESSAGE_MODULE_PREFIX: vector<u8> = b"chatiwal::message";
+
 const OWNER: address = @0xA;
 const GROUP_ID: address = @0xB;
 const READER_1: address = @0xB;
@@ -61,13 +63,14 @@ fun return_owner_cap(owner: address, cap: MessageOwnerCap) {
 #[test]
 fun test_mint_no_policy() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_no_policy_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             &clock,
             ctx(&mut scenario),
         );
@@ -91,6 +94,7 @@ fun test_mint_no_policy() {
 
 #[test]
 fun test_mint_time_lock() {
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
     let (mut scenario, clock) = setup_scenario();
 
     next_tx(&mut scenario, OWNER);
@@ -98,7 +102,7 @@ fun test_mint_time_lock() {
         message::mint_super_message_time_lock_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             START_TIME,
             END_TIME,
             &clock,
@@ -130,6 +134,7 @@ fun test_mint_time_lock() {
 #[test]
 #[expected_failure(abort_code = message_policy::EInvalidTimeRange)]
 fun test_mint_time_lock_fail_invalid_range() {
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
     let (mut scenario, clock) = setup_scenario();
 
     next_tx(&mut scenario, OWNER);
@@ -137,7 +142,7 @@ fun test_mint_time_lock_fail_invalid_range() {
         message::mint_super_message_time_lock_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             END_TIME,
             START_TIME,
             &clock,
@@ -153,12 +158,14 @@ fun test_mint_time_lock_fail_invalid_range() {
 fun test_mint_limited_read() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_limited_read_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             MAX_READS,
             &clock,
             ctx(&mut scenario),
@@ -192,12 +199,14 @@ fun test_mint_limited_read() {
 fun test_mint_limited_read_fail_zero_max() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_limited_read_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             0,
             &clock,
             ctx(&mut scenario),
@@ -212,12 +221,14 @@ fun test_mint_limited_read_fail_zero_max() {
 fun test_mint_fee_based() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -252,12 +263,14 @@ fun test_mint_fee_based() {
 fun test_mint_fee_based_fail_zero_fee() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             0,
             RECIPIENT,
             &clock,
@@ -273,12 +286,14 @@ fun test_mint_fee_based_fail_zero_fee() {
 fun test_mint_compound() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_compound_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             START_TIME,
             END_TIME,
             MAX_READS,
@@ -326,12 +341,14 @@ fun test_mint_compound() {
 fun test_seal_approve_super_message() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_compound_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             START_TIME,
             END_TIME,
             MAX_READS,
@@ -350,13 +367,15 @@ fun test_seal_approve_super_message() {
 fun test_read_message_no_policy() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // First create a message with no policy
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_no_policy_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             &clock,
             ctx(&mut scenario),
         );
@@ -386,13 +405,17 @@ fun test_read_message_no_policy() {
 fun test_read_message_time_lock_success() {
     let (mut scenario, mut clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // Create message with time lock
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_time_lock_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             START_TIME,
             END_TIME,
             &clock,
@@ -428,13 +451,15 @@ fun test_read_message_time_lock_success() {
 fun test_read_message_time_lock_too_early() {
     let (mut scenario, mut clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // Create message with time lock
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_time_lock_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             START_TIME,
             END_TIME,
             &clock,
@@ -465,13 +490,15 @@ fun test_read_message_time_lock_too_early() {
 fun test_read_message_time_lock_expired() {
     let (mut scenario, mut clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // Create message with time lock
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_time_lock_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             START_TIME,
             END_TIME,
             &clock,
@@ -501,13 +528,15 @@ fun test_read_message_time_lock_expired() {
 fun test_read_message_limited_read_success() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // Create message with limited read
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_limited_read_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             MAX_READS,
             &clock,
             ctx(&mut scenario),
@@ -557,13 +586,15 @@ fun test_read_message_limited_read_success() {
 fun test_read_message_limited_read_max_reached() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // Create message with limited read of 2
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_limited_read_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             MAX_READS, // MAX_READS = 2
             &clock,
             ctx(&mut scenario),
@@ -608,6 +639,7 @@ fun test_read_message_limited_read_max_reached() {
 #[expected_failure(abort_code = message::EAlreadyPaid)]
 fun test_read_message_already_read() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with no policy
     next_tx(&mut scenario, OWNER);
@@ -615,7 +647,7 @@ fun test_read_message_already_read() {
         message::mint_super_message_no_policy_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             &clock,
             ctx(&mut scenario),
         );
@@ -648,6 +680,7 @@ fun test_read_message_already_read() {
 #[test]
 fun test_read_message_fee_based_exact_payment() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with fee policy
     next_tx(&mut scenario, OWNER);
@@ -655,7 +688,7 @@ fun test_read_message_fee_based_exact_payment() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -686,6 +719,7 @@ fun test_read_message_fee_based_exact_payment() {
 #[test]
 fun test_read_message_fee_based_extra_payment() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with fee policy
     next_tx(&mut scenario, OWNER);
@@ -693,7 +727,7 @@ fun test_read_message_fee_based_extra_payment() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -726,13 +760,15 @@ fun test_read_message_fee_based_extra_payment() {
 fun test_read_message_fee_based_insufficient_payment() {
     let (mut scenario, clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // Create message with fee policy
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -759,6 +795,7 @@ fun test_read_message_fee_based_insufficient_payment() {
 #[expected_failure(abort_code = message::EPaymentNotAllowed)]
 fun test_read_message_no_policy_with_payment() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with no policy
     next_tx(&mut scenario, OWNER);
@@ -766,7 +803,7 @@ fun test_read_message_no_policy_with_payment() {
         message::mint_super_message_no_policy_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             &clock,
             ctx(&mut scenario),
         );
@@ -791,13 +828,15 @@ fun test_read_message_no_policy_with_payment() {
 fun test_read_message_compound_success() {
     let (mut scenario, mut clock) = setup_scenario();
 
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
+
     // Create compound message with all policies
     next_tx(&mut scenario, OWNER);
     {
         message::mint_super_message_compound_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             START_TIME,
             END_TIME,
             MAX_READS,
@@ -835,6 +874,7 @@ fun test_read_message_compound_success() {
 #[test]
 fun test_withdraw_fees() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with fee policy
     next_tx(&mut scenario, OWNER);
@@ -842,7 +882,7 @@ fun test_withdraw_fees() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -887,6 +927,7 @@ fun test_withdraw_fees() {
 #[expected_failure(abort_code = message::ENoFeesToWithdraw)]
 fun test_withdraw_fees_no_fee_policy() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with no policy
     next_tx(&mut scenario, OWNER);
@@ -894,7 +935,7 @@ fun test_withdraw_fees_no_fee_policy() {
         message::mint_super_message_no_policy_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             &clock,
             ctx(&mut scenario),
         );
@@ -918,6 +959,7 @@ fun test_withdraw_fees_no_fee_policy() {
 #[expected_failure(abort_code = message::ENoFeesToWithdraw)]
 fun test_withdraw_fees_no_fees_collected() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with fee policy
     next_tx(&mut scenario, OWNER);
@@ -925,7 +967,7 @@ fun test_withdraw_fees_no_fees_collected() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
@@ -951,6 +993,7 @@ fun test_withdraw_fees_no_fees_collected() {
 #[expected_failure(abort_code = message::ENotMessageRecipient)]
 fun test_withdraw_fees_not_recipient() {
     let (mut scenario, clock) = setup_scenario();
+    let aux_id: vector<u8> = MESSAGE_MODULE_PREFIX;
 
     // Create message with fee policy
     next_tx(&mut scenario, OWNER);
@@ -958,7 +1001,7 @@ fun test_withdraw_fees_not_recipient() {
         message::mint_super_message_fee_based_and_transfer(
             GROUP_ID.to_id(),
             string_blob(),
-            vector::empty(),
+            aux_id,
             FEE_AMOUNT,
             RECIPIENT,
             &clock,
