@@ -8,6 +8,7 @@ import { useGroup } from "../_hooks/useGroupId";
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { toaster } from "@/components/ui/toaster";
+import { useSupabase } from "@/hooks/useSupabase";
 
 type FormValues = {
     member: string;
@@ -38,6 +39,8 @@ export default function AddMember(
     const { addMember, validateGroupCap } = useChatiwalClient();
     const suiClient = useSuiClient();
     const queryClient = useQueryClient();
+    const { addGroupMembership } = useSupabase();
+
     const { data: group_cap, isSuccess } = useQuery({
         queryKey: ["group::members::group_cap"],
         queryFn: async () => {
@@ -62,6 +65,8 @@ export default function AddMember(
             if (errors) {
                 throw new Error("Transaction failed");
             }
+
+            await addGroupMembership(member, groupId);
 
             return true;
         },

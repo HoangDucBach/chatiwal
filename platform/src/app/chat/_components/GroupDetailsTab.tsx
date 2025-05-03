@@ -38,6 +38,9 @@ export function GroupDetailsTab(props: Props) {
                         ))}
                     </HStack>
                 )}
+                <Text fontSize={"md"} color={"fg"} w={"full"}>
+                    {group?.metadata?.description || "No description"}
+                </Text>
             </VStack>
             <GroupMembers />
         </VStack>
