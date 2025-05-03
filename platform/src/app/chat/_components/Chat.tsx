@@ -35,7 +35,6 @@ export function Chat(props: Props) {
         try {
             const messageData = decode(message.data) as TMessage;
             setMessages((previousMessages) => [...previousMessages, messageData]);
-            console.log([messageData, messages]);
         } catch (error) {
             console.log(error)
         }

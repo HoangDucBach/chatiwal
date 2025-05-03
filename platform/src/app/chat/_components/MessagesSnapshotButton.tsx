@@ -19,9 +19,9 @@ export function MessagesSnapshotButton({ messages, ...props }: Props) {
     const { group } = useGroup();
     const { mintMessagesSnapshotAndTransfer } = useChatiwalClient();
     const { store } = useWalrusClient();
-    const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+    const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const currentAccount = useCurrentAccount();
-    const { mutate: snap } = useMutation({
+    const { mutate: snap, isPending } = useMutation({
         mutationKey: ["mint::messages::snapshot", messages, currentAccount?.address],
         mutationFn: async () => {
             if (!currentAccount) throw new Error("Not connected");
@@ -30,7 +30,7 @@ export function MessagesSnapshotButton({ messages, ...props }: Props) {
             const blobId = await store(messages);
             const tx = await mintMessagesSnapshotAndTransfer(group.id, blobId);
 
-            return signAndExecuteTransaction({ transaction: tx });
+            await signAndExecuteTransaction({ transaction: tx })
         },
         onSuccess: () => {
             toaster.success({
@@ -47,7 +47,13 @@ export function MessagesSnapshotButton({ messages, ...props }: Props) {
     })
 
     return (
-        <Button variant={"plain"} onClick={() => snap()} {...props}>
+        <Button
+            variant={"plain"}
+            loading={isPending}
+            loadingText="Creating snapshot..."
+            disabled={!messages || messages.length === 0}
+            onClick={() => snap()} {...props}
+        >
             <Icon>
                 <TbScreenshot />
             </Icon>

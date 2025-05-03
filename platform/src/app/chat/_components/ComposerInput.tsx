@@ -182,7 +182,6 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             queryClient.invalidateQueries({ queryKey: ['superMessages', variables.groupId] });
             toaster.success({ title: "Success", description: "Super message minted successfully" });
             if (data) {
-                console.log("Minted message:", data);
                 publish(AblyChannelManager.EVENTS.MESSAGE_SEND, encode(data));
             }
             resetMutation();
@@ -279,6 +278,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         // Create a structure suitable for encryptMessage
         const messageToEncrypt = {
             id: plainMessageId,
+            type: MessageType.BASE,
             owner: currentAccount.address,
             groupId: group.id,
             auxId: Array.from(auxId),
@@ -346,7 +346,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
         const finalDataStructure: MediaContent[] = [mediaContentAsText, ...resolvedMediaContentFiles].filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
 
         let encryptedResult = await encrypt(auxId, encode(finalDataStructure));
-        let blobId: string = "123";
+        let blobId: string | undefined;
 
         try {
             blobId = await store(encryptedResult);

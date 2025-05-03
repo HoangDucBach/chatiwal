@@ -46,12 +46,11 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
 
             const snapShot = await getMessageSnapshotData(lastestSnapshot.data?.objectId);
             const bufferArr = await read([snapShot.messages_blob_id]);
-            console.log("bufferArr", bufferArr);
             if (!bufferArr) {
                 return [];
             }
 
-            const messages = decode(decode(bufferArr[0]) as Uint8Array) as TMessage[];
+            const messages = decode(bufferArr[0]) as TMessage[];
 
             onSuccess && onSuccess(messages);
             return messages;

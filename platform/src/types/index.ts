@@ -38,7 +38,7 @@ export type TMessage = {
     limitedReadPolicy?: TLimitedReadPolicy | null;
     feePolicy?: TFeeBasedPolicy | null;
     createdAt: SuperMessage['created_at'];
-    type?: MessageType;
+    type: MessageType;
     content: Uint8Array
 };
 
@@ -55,14 +55,5 @@ export function hasFeePolicy(msg: TMessage): msg is TMessage & { feePolicy: TFee
 }
 
 export function getMessagePolicyType(msg: TMessage): MessageType {
-    if (msg.type) return msg.type;
-
-    try {
-        const hasTL = hasTimeLock(msg);
-        const hasLR = hasLimitedRead(msg);
-        const hasFP = hasFeePolicy(msg);
-        if (hasTL || hasLR || hasFP) return MessageType.SUPER_MESSAGE
-    } finally {
-        return MessageType.BASE;
-    }
+    return msg.type;
 }

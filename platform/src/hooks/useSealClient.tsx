@@ -162,7 +162,6 @@ export function useSealClient(): ISealActions {
 
         const encryptedData = encryptedMessage.content;
         const encryptedObject = EncryptedObject.parse(new Uint8Array(encryptedData));
-        console.log("encryptedObjectParsed", encryptedObject);
 
 
         const tx = new Transaction();
@@ -190,7 +189,6 @@ export function useSealClient(): ISealActions {
                 sessionKey,
                 txBytes: txBytes,
             });
-            console.log("decryptedBytes", decryptedBytes);
             return decryptedBytes;
         } catch (e) {
             console.error("Error decrypting message", e);

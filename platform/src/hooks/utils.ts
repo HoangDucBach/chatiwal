@@ -17,7 +17,6 @@ export async function getFundedKeypair() {
     const keypair = Ed25519Keypair.fromSecretKey(
         'suiprivkey1qzmcxscyglnl9hnq82crqsuns0q33frkseks5jw0fye3tuh83l7e6ajfhxx',
     );
-    console.log(keypair.toSuiAddress());
 
     const balance = await suiClient.getBalance({
         owner: keypair.toSuiAddress(),
@@ -34,7 +33,6 @@ export async function getFundedKeypair() {
         owner: keypair.toSuiAddress(),
         coinType: `0x8270feb7375eee355e64fdb69c50abb6b5f9393a722883c1cf45f8e26048810a::wal::WAL`,
     });
-    console.log('wal balance:', walBalance.totalBalance);
 
     if (Number(walBalance.totalBalance) < Number(MIST_PER_SUI) / 2) {
         const tx = new Transaction();
@@ -74,7 +72,6 @@ export async function getFundedKeypair() {
             },
         });
 
-        console.log(effects);
     }
 
     return keypair;

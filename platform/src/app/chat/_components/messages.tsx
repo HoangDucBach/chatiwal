@@ -178,6 +178,7 @@ export function MessageBase(props: MessageBaseProps) {
     const currentAccount = useCurrentAccount();
     const { read } = useWalrusClient();
 
+    console.log("messageType", message);
     const { data: decryptedContent, isLoading: isDecrypting, error: decryptError, refetch } = useQuery({
         queryKey: ["messages::group::decrypt", message.id],
         queryFn: async (): Promise<MediaContent[] | null> => {
@@ -198,7 +199,6 @@ export function MessageBase(props: MessageBaseProps) {
                 try {
                     const res = await read([blob_id]);
                     message.content = decode(res[0]) as Uint8Array;
-                    console.log("message content after:", message.content);
                 } catch (err) {
                     console.error(err);
                 }
@@ -210,7 +210,6 @@ export function MessageBase(props: MessageBaseProps) {
 
             const decryptedBytes = await decryptMessage(message, messageType, sessionKey);
             const decodedData = decode(decryptedBytes) as MediaContent[];
-            console.log("Decrypted data:", decryptedBytes);
             return decodedData;
         },
         enabled: (!!message && !!getSessionKey(message.id)) || !!getSessionKey(message.groupId),
@@ -366,6 +365,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
             try {
                 const tMsg: TMessage = {
                     id: messageId,
+                    type: MessageType.SUPER_MESSAGE,
                     owner: superMsg.owner,
                     groupId: superMsg.group_id,
                     auxId: superMsg.aux_id, // Ensure conversion
@@ -436,6 +436,9 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
     const createMessageKey = useCallback(async () => {
         const sessionKey = await createSessionKey();
+        queryClient.invalidateQueries({
+            queryKey: ["messages::group::decrypt", messageId],
+        });
         setSessionKey(messageId, sessionKey);
     }, [messageId, message]);
 
