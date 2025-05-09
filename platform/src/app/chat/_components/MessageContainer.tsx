@@ -62,21 +62,21 @@ export function MessageContainer({ messages, ...props }: Props) {
                         />
                     ))
                 )}
-                {
-                    messages.map((message: TMessage) => (
-                        getMessagePolicyType(message) === MessageType.BASE ? (
+                {messages.map((message: TMessage) => (
+                    message.type !== MessageType.SUPER_MESSAGE ?
+                        (
                             <MessageBase
                                 key={message.id}
                                 message={message}
                                 self={message.owner === currentAccount?.address}
                             />
-                        ) :
+                        ) : (
                             <SuperMessagePolicy
                                 key={message.id}
                                 messageId={message.id}
                             />
-                    ))
-                }
+                        )
+                ))}
 
                 <div ref={messagesEndRef} />
             </ScrollMotionVStack>

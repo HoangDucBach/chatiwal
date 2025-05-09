@@ -13,9 +13,9 @@ import { TiUserOutline } from "react-icons/ti";
 import { RiCoinLine } from "react-icons/ri";
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
-import { generateColorFromAddress } from "@/libs";
+import { formatTime, generateColorFromAddress, parseSuiError } from "@/libs";
 import { getMessagePolicyType, MediaContent, MessageType, TMessage } from "@/types";
-import { SuperMessageStruct } from "@/sdk/contracts"; // Unified struct
+import { EAlreadyPaid, EHaveModulePrefix, EInsufficientPayment, EMaxReadsReached, ENoAccess, ENoFeesToWithdraw, ENotMatch, ENotMessageRecipient, EPaymentNotAllowed, ETimeLockExpired, ETimeLockTooEarly } from "@/sdk/contracts"; // Unified struct
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { Button } from "@/components/ui/button";
 import { toaster } from "@/components/ui/toaster";
@@ -26,9 +26,23 @@ import { SessionKey } from "@mysten/seal";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { Tooltip } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
+import { HiKey } from "react-icons/hi";
 
 const MotionVStack = motion.create(VStack);
 
+const ErrorMessages: Record<number, string> = {
+    [ETimeLockExpired]: "Time lock expired",
+    [ETimeLockTooEarly]: "Time lock too early",
+    [EMaxReadsReached]: "Max reads reached",
+    [EInsufficientPayment]: "Insufficient payment",
+    [EAlreadyPaid]: "Already paid",
+    [EPaymentNotAllowed]: "Payment not allowed",
+    [ENoFeesToWithdraw]: "No fees to withdraw",
+    [ENoAccess]: "No access",
+    [ENotMessageRecipient]: "Not message recipient",
+    [ENotMatch]: "Not match",
+    [EHaveModulePrefix]: "Have module prefix",
+};
 
 interface ContentProps {
     self?: boolean;
@@ -253,10 +267,7 @@ export function MessageBase(props: MessageBaseProps) {
     };
 
     const Header = () => {
-        const formattedTime = message.createdAt
-        new Date(message.createdAt || Date.now()).toLocaleString("en-US", {
-            hour: "2-digit", minute: "2-digit"
-        })
+        const formattedTime = formatTime(Number(message.createdAt));
 
         return (
             <HStack flexDirection={self ? "row-reverse" : "row"} align="center">
@@ -405,6 +416,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 transaction: tx,
             });
 
+            console.log("Transaction result:", res.effects);
             const { errors } = await suiClient.waitForTransaction(res);
 
             if (errors) {
@@ -426,9 +438,13 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         },
 
         onError: (error) => {
+            const parsedError = parseSuiError(error.message);
+            const errorCode = parsedError.code;
+            const errorMessage = errorCode ? ErrorMessages[errorCode] : "Unknown error";
+
             toaster.error({
                 title: "Error",
-                description: error.message,
+                description: errorMessage,
             });
         }
     })
@@ -464,6 +480,36 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         subscribe();
     }, [message]);
 
+    const preCheckBeforeRead = useMemo<{
+        disabled: boolean;
+        label: string | null;
+    }>(() => {
+        if (!message) return { disabled: false, label: null };
+        let disabled = false;
+        let label = null;
+
+        if (message.timeLockPolicy) {
+            const now = Date.now();
+            if (message.timeLockPolicy.from && Number(message.timeLockPolicy.from) > now) {
+                disabled = true;
+                label = "Time lock not started";
+            }
+
+            if (message.timeLockPolicy.to && Number(message.timeLockPolicy.to) < now) {
+                disabled = true;
+                label = "Time lock expired";
+            }
+        }
+        if (message.limitedReadPolicy) {
+            if (message.limitedReadPolicy.max && message.readers.length >= Number(message.limitedReadPolicy.max)) {
+                disabled = true;
+                label = "Max readers reached";
+            }
+        }
+
+        return { disabled, label };
+    }, [message, new Date()]);
+
     if (isLoading) return <Box p={3}><Text color="fg.muted">Loading message...</Text></Box>;
     if (error) return <Box p={3}><Text color="red.500">Error loading message: {error.message}</Text></Box>;
     if (!message) return <Box p={3}><Text color="fg.muted">Message not found.</Text></Box>;
@@ -485,14 +531,14 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                     label: "Start",
                     icon: <TbCalendarPause />,
                     value: message.timeLockPolicy?.from
-                        ? new Date(Number(message.timeLockPolicy.from) * 1000).toLocaleString()
+                        ? formatTime(Number(message.timeLockPolicy.from))
                         : "-",
                 },
                 {
                     label: "End",
                     icon: <TbCalendar />,
                     value: message.timeLockPolicy?.to
-                        ? new Date(Number(message.timeLockPolicy.to) * 1000).toLocaleString()
+                        ? formatTime(Number(message.timeLockPolicy.to))
                         : "-",
                 },
             ]
@@ -513,34 +559,25 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 },
             ]
         },
-        {
-            label: "Fee Policy",
-            hasPolicy: message.feePolicy !== undefined,
-            fields: [
-                {
-                    label: "Fee Amount",
-                    icon: <RiCoinLine />,
-                    value: message.feePolicy?.fee_amount || 0,
-                },
-            ]
-        }
     ];
 
     return (
         <MessageBase message={message} self={self}>
-            <VStack p={"4"} bg={"bg.200/75"} rounded={"3xl"} align={"end"} justify={"center"} shadow={"custom.md"}>
-                <Heading as={"h6"} size={"md"} fontWeight={"medium"} textAlign={"start"} w={"full"}>
-                    Super Message Policy
-                </Heading>
-                <VStack gap={"2"} align={"start"}>
+            <VStack p={"3"} bg={"bg.100/75"} rounded={"3xl"} align={"end"} justify={"center"} shadow={"custom.md"}>
+                <HStack rounded={"2xl"} w={"full"} bg={"bg.300"} p={"2"}>
+                    <Heading as={"h6"} size={"md"} fontWeight={"medium"} textAlign={"start"} w={"full"}>
+                        Super Message Policy
+                    </Heading>
+                </HStack>
+                <VStack gap={"2"} align={"start"} w={"full"}>
                     {items.map((item, index) => (
                         item.hasPolicy && (
                             <DataListRoot orientation={"horizontal"} key={index}>
-                                <HStack gap={"6"}>
+                                <HStack gap={"6"} justify={"space-between"} w={"full"}>
                                     {
                                         item.fields.map((field, fieldIndex) => (
                                             <DataListItem key={fieldIndex}>
-                                                <DataListItemLabel color={"fg.contrast"}>
+                                                <DataListItemLabel minW={"fit"} color={"fg.contrast"}>
                                                     <Icon size={"sm"}>
                                                         {field.icon}
                                                     </Icon>
@@ -557,14 +594,32 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                         )
                     ))}
                 </VStack>
-                <Button
-                    size="sm"
-                    colorPalette={"primary"}
-                    loading={isLoading}
-                    onClick={handleSubscribeOrRead}
-                >
-                    {message.readers.includes(currentAccount.address) ? "Read" : "Subscribe"}
-                </Button>
+                <HStack justify={"space-between"} gap={"1"} w={"full"}>
+                    <VStack align={"start"} gap={"0"}>
+                        <Text fontSize={"sm"} fontWeight={"semibold"} color={"fg"}>
+                            {message.feePolicy?.fee_amount ? `${message.feePolicy.fee_amount} SUI` : "Free"}
+                        </Text>
+                        <Text fontSize={"xs"} color={"fg.contrast"}>
+                            Fee per read
+                        </Text>
+                    </VStack>
+                    <Button
+                        size="sm"
+                        variant={message.readers.includes(currentAccount.address) ? "outline" : "solid"}
+                        colorPalette={preCheckBeforeRead.disabled ? "red" : "primary"}
+                        disabled={preCheckBeforeRead.disabled}
+                        loading={isLoading}
+                        onClick={handleSubscribeOrRead}
+                    >
+                        {
+                            message.readers.includes(currentAccount.address)
+                                ? <HiKey />
+                                : preCheckBeforeRead.disabled
+                                    ? preCheckBeforeRead.label
+                                    : "Subscribe"
+                        }
+                    </Button>
+                </HStack>
             </VStack>
         </MessageBase>
     );

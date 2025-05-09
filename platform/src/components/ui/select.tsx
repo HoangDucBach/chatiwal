@@ -55,7 +55,7 @@ export const SelectContent = React.forwardRef<
   return (
     <Portal disabled={!portalled} container={portalRef}>
       <ChakraSelect.Positioner bg={"transparent"}>
-        <ChakraSelect.Content bg={"bg.300/75"} shadow={"custom.md"} p={"3"} backdropFilter={"blur(16px)"} rounded={"3xl"} {...rest} ref={ref} />
+        <ChakraSelect.Content bg={"bg.300/75"} shadow={"custom.md"} p={"3"} backdropFilter={"blur(64px)"} rounded={"3xl"} {...rest} ref={ref} />
       </ChakraSelect.Positioner>
     </Portal>
   )

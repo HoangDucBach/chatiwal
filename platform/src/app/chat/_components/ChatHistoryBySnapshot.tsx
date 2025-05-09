@@ -56,7 +56,12 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
             return messages;
         },
         enabled: !!group.id && !!currentAccount,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
+        refetchInterval: false,
         staleTime: Infinity,
+        retry: false,
     })
 
     useEffect(() => {
