@@ -26,7 +26,6 @@ import {
     Span,
     SelectItemText,
     Center,
-    Flex,
 } from "@chakra-ui/react";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -353,7 +352,11 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             switch (data.messageType) {
                 case 'time_lock':
                     if (data.timeFrom === undefined || data.timeTo === undefined || data.timeFrom >= data.timeTo) throw new Error("Valid time parameters required (End > Start)");
-                    finalParams = { ...baseParams, timeFrom: BigInt(data.timeFrom), timeTo: BigInt(data.timeTo) };
+                    finalParams = {
+                        ...baseParams,
+                        timeFrom: BigInt(data.timeFrom * 1000), // Convert to milliseconds
+                        timeTo: BigInt(data.timeTo * 1000), // Convert to milliseconds
+                    };
                     break;
                 case 'limited_read':
                     if (data.maxReads === undefined || data.maxReads < 1) throw new Error("Valid maxReads required (>= 1)");
@@ -365,7 +368,15 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     break;
                 case 'compound':
                     if (data.timeFrom === undefined || data.timeTo === undefined || data.timeFrom >= data.timeTo || data.maxReads === undefined || data.maxReads < 1 || data.fee === undefined || data.fee < 0 || !data.recipient) throw new Error("Valid parameters required for Compound policy");
-                    finalParams = { ...baseParams, timeFrom: BigInt(data.timeFrom), timeTo: BigInt(data.timeTo), maxReads: BigInt(data.maxReads), fee: BigInt(Math.floor(data.fee * 10 ** SUI_DECIMALS)), recipient: data.recipient };
+
+                    finalParams = {
+                        ...baseParams,
+                        timeFrom: BigInt(data.timeFrom * 1000),
+                        timeTo: BigInt(data.timeTo * 1000),
+                        maxReads: BigInt(data.maxReads),
+                        fee: BigInt(Math.floor(data.fee * 10 ** SUI_DECIMALS)),
+                        recipient: data.recipient
+                    };
                     break;
                 case 'no_policy':
                     finalParams = { ...baseParams };
@@ -374,7 +385,6 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                     const exhaustiveCheck: never = data.messageType;
                     throw new Error(`Unknown message type: ${exhaustiveCheck}`);
             }
-            console.log("Final params for minting:", finalParams);
             mintSuperMessage(finalParams);
         } catch (error) {
             console.error("Pre-mutation parameter error:", error);
@@ -386,7 +396,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
     };
 
 
-    const handleTextareaKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleTextareaKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             handleSubmit(onSendSubmit)();
@@ -406,11 +416,12 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : new Date())} // Set undefined on clear
                         onBlur={field.onBlur}
                         customInput={<DatePickerInput w="full" />}
-                        showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="yyyy-MM-dd HH:mm"
+                        showTimeSelect timeFormat="HH:mm" timeIntervals={5} dateFormat="yyyy-MM-dd HH:mm"
                         isClearable placeholderText={`Select ${label.toLowerCase()}`}
                         disabled={isPending || isSubmitting}
                         popperPlacement="top-start"
                         minDate={minDate}
+                        value={field.value ? new Date(field.value * 1000).toString() : new Date().toString()}
                         filterTime={minDate && name === "timeTo" ? (time) => { const selectedDate = field.value ? new Date(field.value * 1000) : null; if (!minDate || !selectedDate || !time) return true; if (selectedDate.toDateString() === minDate.toDateString()) { return time.getTime() > minDate.getTime(); } return true; } : undefined}
                     />
                     {fieldState.error && <Text fontSize="xs" color="red.500">{fieldState.error.message}</Text>}
@@ -516,11 +527,13 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
     return (
         <VStack
             w="full"
-            p="3"
+            p="2"
             bg="bg.100/75"
-            backdropFilter="blur(12px)" shadow="custom.sm" rounded="3xl" gap={3} alignItems="stretch" {...props}
+            backdropFilter="blur(12px)"
+            shadow="custom.sm" rounded="3xl"
+            alignItems="stretch" {...props}
         >
-            <HStack align="center" justify={"space-between"} gap={"1"}>
+            <HStack bg={"bg.200"} rounded={"2xl"} p={"2"} align="center" justify={"space-between"} gap={"1"}>
                 <HStack flex={1} align="start">
                     <Controller
                         name="messageType"
@@ -596,9 +609,8 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
             {renderSpecificInputs()}
 
             <VStack
-                pos="relative" gap={0} bg="bg.300"
-                _focusWithin={{ outline: "1px solid", outlineColor: "fg", outlineOffset: "2px" }}
-                p={2} rounded="3xl"
+                pos="relative" gap={0}
+                rounded="3xl"
             >
                 <Controller
                     name="contentAsText"
@@ -611,17 +623,16 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         />
                     )}
                 />
-                <Controller
-                    name="contentAsFiles"
-                    control={control}
-                    render={({ field }) =>
-                        <MediaInput
-                            onFileAccept={(d) => field.onChange(d.files)}
-                            formFiles={field.value}
-                        />}
-                />
-
-                <Stack pos="absolute" bottom="4" right="4" direction="row" gap={"2"} alignItems="flex-end">
+                <HStack pos="sticky" p={"2"} direction="row" gap={"2"} justify={"space-between"} alignItems="flex-end" w={"full"}>
+                    <Controller
+                        name="contentAsFiles"
+                        control={control}
+                        render={({ field }) =>
+                            <MediaInput
+                                onFileAccept={(d) => field.onChange(d.files)}
+                                formFiles={field.value}
+                            />}
+                    />
                     <Button
                         type="button"
                         onClick={handleSubmit(onMintSubmit)}
@@ -634,7 +645,7 @@ export function ComposerInput({ messageInputProps, ...props }: ComposerInputProp
                         <FaSuperpowers style={{ marginRight: '0.5em' }} />
                         Mint Message
                     </Button>
-                </Stack>
+                </HStack>
             </VStack>
             {isError && (<Text color="red.500" fontSize="xs"> {error?.message} </Text>)}
 

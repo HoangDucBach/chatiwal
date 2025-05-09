@@ -24,12 +24,14 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
             const metadata_blob_id = group.metadata_blob_id;
             let metadata;
 
-            if (metadata_blob_id) {
-                const bufferArr = await read([metadata_blob_id]);
-                const metadataStr = decode(bufferArr[0]);
-                metadata = MetadataGroupSchema.parse(metadataStr);
+            try {
+                if (metadata_blob_id) {
+                    const bufferArr = await read([metadata_blob_id]);
+                    const metadataStr = decode(bufferArr[0]);
+                    metadata = MetadataGroupSchema.parse(metadataStr);
+                }
+            } catch (error) {
             }
-
             return {
                 id: group.id,
                 members: new Set(group.members),
@@ -38,6 +40,12 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
 
         },
         enabled: !!id,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
+        refetchInterval: false,
+        staleTime: 0,
+        retry: false,
     })
 
     if (isLoading) return (

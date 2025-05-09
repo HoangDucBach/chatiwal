@@ -51,18 +51,17 @@ export const SuperMessageStruct = bcs.struct("SuperMessage", {
 /**
  * Error constants matching the Move module
  */
-export const MessageErrorCodes = {
-    ETimeLockTooEarly: 2001,
-    ETimeLockExpired: 2002,
-    EMaxReadsReached: 2003,
-    EInsufficientPayment: 2004,
-    EAlreadyPaid: 2005,
-    EPaymentNotAllowed: 2006,
-    ENoFeesToWithdraw: 2007,
-    ENoAccess: 2008,
-    ENotMessageRecipient: 2009,
-    ENotMatch: 2010,
-} as const;
+export const ETimeLockTooEarly = 2001;
+export const ETimeLockExpired = 2002;
+export const EMaxReadsReached = 2003;
+export const EInsufficientPayment = 2004;
+export const EAlreadyPaid = 2005;
+export const EPaymentNotAllowed = 2006;
+export const ENoFeesToWithdraw = 2007;
+export const ENoAccess = 2008;
+export const ENotMessageRecipient = 2009;
+export const ENotMatch = 2010;
+export const EHaveModulePrefix = 2011;
 
 // Define common option types
 interface BaseOptions {

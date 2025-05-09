@@ -8,12 +8,14 @@ import {
     FileUpload,
     For,
     VStack,
-    TextareaProps,
     FileUploadRootProps,
+    Input,
+    InputProps,
 } from "@chakra-ui/react";
 import { HiDocumentText, HiPhotograph, HiFilm } from "react-icons/hi";
 import { ImAttachment } from "react-icons/im";
 import { Tooltip } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 const MAX_FILE_SIZE = 60 * 1024; // 60 KB
 function FileCard({ file, removeFile }: { file: File, removeFile: () => void }) {
@@ -53,12 +55,12 @@ function FileCard({ file, removeFile }: { file: File, removeFile: () => void }) 
         </HStack>
     )
 }
-interface TextInputProps extends TextareaProps {
+interface TextInputProps extends InputProps {
 }
 
-export const TextInput = forwardRef<HTMLTextAreaElement, TextInputProps>((props, ref) => {
+export const TextInput = forwardRef<HTMLInputElement, TextInputProps>((props, ref) => {
     return (
-        <Textarea
+        <Input
             ref={ref}
             resize="none"
             focusRing="none"
@@ -84,7 +86,6 @@ export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ formF
     const [error, setError] = useState<string | null>(null);
 
     const handleFileChange = (file: File) => {
-        console.log(file);
         if (file.size > MAX_FILE_SIZE) {
             setError("File size exceeds 60 KB");
             return;
@@ -129,8 +130,10 @@ export const MediaInput = forwardRef<HTMLInputElement, MediaInputProps>(({ formF
                     {...props}
                 >
                     <FileUpload.HiddenInput />
-                    <FileUpload.Trigger p={"2"}>
-                        <Icon as={ImAttachment} />
+                    <FileUpload.Trigger asChild p={"2"}>
+                        <Button size={"sm"} variant={"ghost"} colorPalette={"default"}>
+                            <Icon as={ImAttachment} />
+                        </Button>
                     </FileUpload.Trigger>
                 </FileUpload.Root>
             )

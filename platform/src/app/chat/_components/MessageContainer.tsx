@@ -62,6 +62,10 @@ export function MessageContainer({ messages, ...props }: Props) {
                         />
                     ))
                 )}
+                <SuperMessagePolicy
+                    key={"super-message-policy"}
+                    messageId={"0xa48d9ef615a4d3f12f310e36507ecc06f7ee3d420440cdd6a941553f2f80fdcb"}
+                />
                 {messages.map((message: TMessage) => (
                     <MessageBase
                         key={message.id}

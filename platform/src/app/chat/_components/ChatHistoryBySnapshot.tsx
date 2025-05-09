@@ -46,7 +46,7 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
 
             const snapShot = await getMessageSnapshotData(lastestSnapshot.data?.objectId);
             const bufferArr = await read([snapShot.messages_blob_id]);
-            console.log("bufferArr", bufferArr);
+
             if (!bufferArr) {
                 return [];
             }
@@ -57,7 +57,12 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
             return messages;
         },
         enabled: !!group.id && !!currentAccount,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
+        refetchInterval: false,
         staleTime: Infinity,
+        retry: false,
     })
 
     useEffect(() => {

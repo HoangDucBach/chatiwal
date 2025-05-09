@@ -35,3 +35,51 @@ export function extractPrefixFromContentId(contentId: Uint8Array): Uint8Array {
 export function extractContentHashBytes(contentId: Uint8Array): Uint8Array {
     return contentId.slice(SUI_ADDRESS_LENGTH);
 }
+
+type SuiError = {
+    message: string;
+    code: number | null;
+};
+
+export function parseSuiError(error: any): SuiError {
+    if (!error) {
+        return { message: "Unknown error", code: null };
+    }
+
+    try {
+        if (typeof error.message === 'string' && error.message.startsWith('{')) {
+            return JSON.parse(error.message);
+        }
+    } catch (_) {
+    }
+
+    const errorMessage = error.message || error.toString();
+
+    const moveAbortMatch = errorMessage.match(/MoveAbort\(.*?, (\d+)\)/);
+    if (moveAbortMatch && moveAbortMatch[1]) {
+        return {
+            message: errorMessage,
+            code: moveAbortMatch[1]
+        };
+    }
+
+    const errorCodeMatch = errorMessage.match(/E[A-Za-z]+/);
+    const errorCode = errorCodeMatch ? errorCodeMatch[0] : null;
+
+    return {
+        message: errorMessage,
+        code: parseInt(errorCode, 10) || null
+    };
+}
+
+export function formatTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    const options: Intl.DateTimeFormatOptions = {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    };
+    return date.toLocaleString("en-US", options);
+}
