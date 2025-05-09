@@ -5,7 +5,7 @@ export const siteConfig = {
     hotFeatures: [
         "End-to-End Encryption",
         "Envolving Conversations",
-        "Policy Messages",
+        "Programmable Messages",
         "Full Control"
     ],
     navLinks: [
