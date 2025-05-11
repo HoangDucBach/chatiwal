@@ -103,6 +103,14 @@ export class ChatiwalClient {
         return tx;
     }
 
+    sealApproveForDirect({ id }: {
+        id: Uint8Array;
+        groupId: ObjectId;
+    }): Transaction {
+        const tx = new Transaction();
+        this.groupModule.seal_approve_for_direct({ arguments: [id] })(tx);
+        return tx;
+    }
     // --- Group View Methods (as transaction calls) ---
 
     groupGetGroupId({ groupId }: { groupId: ObjectId }): Transaction {
