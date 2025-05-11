@@ -9,16 +9,16 @@ module chatiwal::group;
 use chatiwal::events;
 use chatiwal::utils::is_prefix;
 use std::string::String;
+use sui::bcs;
 use sui::clock::Clock;
 use sui::vec_set::{Self, VecSet};
-
 
 // === Error Constants ===
 
 const EInvalidGroupCap: u64 = 1000;
 const EMemberAlreadyExists: u64 = 1001;
 const EMemberNotExists: u64 = 1002;
-const ESealNotApproved: u64 = 1004;
+const ENoAccess: u64 = 1004;
 
 // === Access Control ===
 
@@ -31,6 +31,7 @@ public struct Group has key {
     id: UID,
     members: VecSet<address>,
     metadata_blob_id: String,
+    created_at: u64,
 }
 
 // === Initialization ===
@@ -81,7 +82,7 @@ public entry fun leave_group(g: &mut Group, user: address, c: &Clock) {
 // === Internal Functions ===
 
 fun do_mint_group(metadata_blob_id: String, c: &Clock, ctx: &mut TxContext): Group {
-    let g = mint_group_impl(metadata_blob_id, ctx);
+    let g = mint_group_impl(metadata_blob_id, c, ctx);
     events::emit_group_minted(object::id(&g), g.metadata_blob_id, c.timestamp_ms());
     g
 }
@@ -130,11 +131,12 @@ fun leave_group_impl(user: address, g: &mut Group) {
 
 fun init_impl(ctx: &mut TxContext) {}
 
-fun mint_group_impl(metadata_blob_id: String, ctx: &mut TxContext): Group {
+fun mint_group_impl(metadata_blob_id: String, c: &Clock, ctx: &mut TxContext): Group {
     Group {
         id: object::new(ctx),
         members: vec_set::empty(),
         metadata_blob_id,
+        created_at: c.timestamp_ms(),
     }
 }
 
@@ -142,7 +144,7 @@ public fun namespace(g: &Group): vector<u8> {
     object::id_to_bytes(&object::id(g))
 }
 
-// === Seal Interface ===
+// === Seal Interface for Group ===
 
 public(package) fun approve_internal(id: vector<u8>, caller: address, g: &Group): bool {
     let namespace = namespace(g);
@@ -155,7 +157,18 @@ public(package) fun approve_internal(id: vector<u8>, caller: address, g: &Group)
 }
 
 public entry fun seal_approve(id: vector<u8>, g: &Group, ctx: &TxContext) {
-    assert!(approve_internal(id, tx_context::sender(ctx), g), ESealNotApproved);
+    assert!(approve_internal(id, tx_context::sender(ctx), g), ENoAccess);
+}
+
+// === Seal Interface for Direct Messages ===
+
+public(package) fun check_policy_for_direct(id: vector<u8>, ctx: &TxContext): bool {
+    let caller_bytes = bcs::to_bytes(&ctx.sender());
+    id == caller_bytes
+}
+
+entry fun seal_approve_for_direct(id: vector<u8>, ctx: &TxContext) {
+    assert!(check_policy_for_direct(id, ctx), ENoAccess);
 }
 
 // === Helper Functions ===
