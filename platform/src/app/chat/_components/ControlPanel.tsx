@@ -1,6 +1,6 @@
 "use client"
 
-import { Heading, HStack, Skeleton, StackProps, VStack, Text } from "@chakra-ui/react";
+import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 
@@ -53,9 +53,7 @@ export function ControlPanel(props: Props) {
                         const bufferArr = await read([item.metadata_blob_id]);
                         groupMemberShips[item.index].metadata = MetadataGroupSchema.parse(decode(bufferArr[0]));
                     }
-                } catch (error) {
-                    console.log(error);
-                }
+                } catch (_) { }
             })
 
             await Promise.all(groupDataListWithMetadata);
@@ -63,6 +61,10 @@ export function ControlPanel(props: Props) {
             return groupMemberShips;
         },
         enabled: !!currentAccount,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
+        staleTime: Infinity,
         retry: 0,
     });
 
@@ -71,14 +73,10 @@ export function ControlPanel(props: Props) {
             zIndex={"0"}
             h={"full"}
             p={"4"}
-            bg={"bg.200/75"}
-            backdropFilter={"blur(256px)"}
-            rounded={"4xl"}
+            bg={"bg.100"}
             gap={"6"}
-            shadow={"custom.md"}
             {...props}
         >
-            <ControlPanelHeader myGroupsQuery={myGroupsQuery} />
             <ControlPanelBody flex={1} myGroupsQuery={myGroupsQuery} />
             <ControlPanelFooter />
         </VStack>
@@ -97,27 +95,34 @@ function ControlPanelBody({ myGroupsQuery, ...props }: ControlPanelBodyProps) {
             w={"full"}
             {...props}
         >
-            {isLoading ?
-                <Skeleton
-                    w={"full"}
-                    flex={1}
-                    bg={"bg.300"}
-                    rounded={"3xl"}
-                />
-                :
-                (myGroups && myGroups?.length) ?
-                    myGroups.map((group, index) => (
-                        <GroupCard
-                            key={index}
-                            group={group}
-                            isSelected={group.id === id}
+            <MenuGroupItem
+                label={"GROUP"}
+                endContent={<MintGroupButton />}
+            >
+                <VStack w={"full"}>
+                    {isLoading ?
+                        <Skeleton
+                            w={"full"}
+                            flex={1}
+                            bg={"bg.300"}
+                            rounded={"3xl"}
                         />
-                    ))
-                    :
-                    <EmptyContent
-                        emptyText={"No groups found"}
-                    />
-            }
+                        :
+                        (myGroups && myGroups?.length) ?
+                            myGroups.map((group, index) => (
+                                <GroupCard
+                                    key={index}
+                                    group={group}
+                                    isSelected={group.id === id}
+                                />
+                            ))
+                            :
+                            <EmptyContent
+                                emptyText={"No groups found"}
+                            />
+                    }
+                </VStack>
+            </MenuGroupItem>
         </VStack>
     )
 }
@@ -130,13 +135,46 @@ function ControlPanelHeader({ myGroupsQuery, ...props }: ControlPanelHeaderProps
 
     return (
         <VStack {...props} w={"full"} gap={"4"}>
-            <HStack w={"full"} justify={"space-between"} rounded={"2xl"}>
-                <Heading as={"h6"} size={"lg"}>Group</Heading>
-                <Text color={"fg.700"} fontSize={"lg"}>{myGroups?.length || 0}</Text>
-            </HStack>
-            <MintGroupButton />
         </VStack>
 
+    )
+}
+
+interface MenuGroupItemProps extends StackProps {
+    label?: string;
+    icon?: React.ReactNode;
+    endContent?: React.ReactNode;
+}
+function MenuGroupItem({
+    label,
+    icon,
+    endContent,
+    children,
+    ...props
+}: MenuGroupItemProps) {
+    return (
+        <VStack w={"full"} {...props}>
+            <HStack justify={"space-between"} w={"full"}>
+                <Text pl={"2"} fontSize={"md"} fontWeight={"medium"} color={"fg.900"} textTransform="uppercase">
+                    {icon}
+                    {label}
+                </Text>
+                {endContent}
+            </HStack>
+            {children}
+        </VStack>
+    )
+}
+
+interface MenuItemProps extends StackProps {
+}
+function MenuItem({ children, ...props }: MenuItemProps) {
+    return (
+        <Center
+            w={"full"}
+        >
+            {children}
+        </Center>
     )
 }
 

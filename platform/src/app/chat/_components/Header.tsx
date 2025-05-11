@@ -1,6 +1,6 @@
 "use client"
 
-import { Header as HeaderComponent } from '@/components/global/header'
+import { Header as HeaderComponent } from '@/components/global/bars'
 import { siteConfig } from '@/config/site'
 import { BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbRoot, For } from '@chakra-ui/react'
 

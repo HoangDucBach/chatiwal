@@ -5,6 +5,7 @@ import { Image as ChakraImage } from "@chakra-ui/react"
 import NextImage from "next/image"
 import NextLink from "next/link"
 import { siteConfig } from "@/config/site";
+import { ChatiwalMascotIcon } from "./icons";
 
 interface Props extends StackProps { }
 
@@ -42,5 +43,23 @@ const Brand = () => {
                 </VStack>
             </NextLink>
         </HStack>
+    )
+}
+
+interface LeftBarProps extends StackProps {
+}
+
+export function LeftBar({ children, ...props }: LeftBarProps) {
+    return (
+        <chakra.aside
+            w={"fit"}
+            h={"full"}
+            p={"4"}
+            {...props}
+        >
+            <VStack align={"center"} w={"full"} h={"full"}>
+                <ChatiwalMascotIcon size={32}/>
+            </VStack>
+        </chakra.aside>
     )
 }

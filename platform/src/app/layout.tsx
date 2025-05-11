@@ -30,7 +30,7 @@ export default function RootLayout({
       <body className={`${poppins.className}`}>
         <Provider>
           <Toaster />
-          <Center overflow={"hidden"} p={"6"} w={"full"} h={"svh"} textStyle={"body"}>
+          <Center bg={"bg"} overflow={"hidden"} w={"full"} h={"svh"} textStyle={"body"}>
             {children}
           </Center>
         </Provider>

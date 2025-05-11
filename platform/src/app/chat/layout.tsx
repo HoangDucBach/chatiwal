@@ -5,6 +5,7 @@ import { Effects } from "./_components/Effects";
 import ChatGuard from "./_components/ChatGuard";
 import { LayoutLayout } from "@/components/ui/layout";
 import { Header } from "./_components/Header";
+import { LeftBar } from "@/components/global/bars";
 
 export default function Layout({
     children,
@@ -13,9 +14,8 @@ export default function Layout({
         <ChatGuard>
             <Provider>
                 <LayoutLayout>
-                    <Effects />
-                    <Header />
-                    <HStack gap={"6"} w={"full"} h={"full"}>
+                    <HStack w={"full"} h={"full"}>
+                        <LeftBar />
                         <ControlPanel flex={"1"} />
                         {children}
                     </HStack>

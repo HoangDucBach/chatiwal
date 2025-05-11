@@ -16,7 +16,7 @@ interface LayoutLayoutProps extends StackProps {
 }
 export function LayoutLayout({ children, ...props }: LayoutLayoutProps) {
     return (
-        <VStack zIndex={"0"} w={"full"} h={"full"} gap={"6"} {...props}>
+        <VStack zIndex={"0"} w={"full"} h={"full"} {...props}>
             {children}
         </VStack>
     )

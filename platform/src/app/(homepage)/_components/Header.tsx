@@ -1,4 +1,4 @@
-import { Header as HeaderComponent } from "@/components/global/header"
+import { Header as HeaderComponent } from "@/components/global/bars"
 import { siteConfig } from "@/config/site"
 import { HStack, Link as ChakraLink } from "@chakra-ui/react"
 import Link from "next/link"
