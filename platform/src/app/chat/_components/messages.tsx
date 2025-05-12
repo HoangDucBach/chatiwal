@@ -1,8 +1,8 @@
 "use client";
 
-import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Center, Heading, DataListRoot, DataListItem, DataListItemValue, DataListItemLabel } from "@chakra-ui/react";
-import { formatAddress, fromBase64 } from "@mysten/sui/utils";
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Heading, DataListRoot, DataListItem, DataListItemValue, DataListItemLabel, Link } from "@chakra-ui/react";
+import { formatAddress } from "@mysten/sui/utils";
+import { useMemo, useCallback, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { useChannel } from "ably/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,11 +10,10 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@
 import { TbCalendar } from "react-icons/tb";
 import { TbCalendarPause } from "react-icons/tb";
 import { TiUserOutline } from "react-icons/ti";
-import { RiCoinLine } from "react-icons/ri";
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { formatTime, generateColorFromAddress, parseSuiError } from "@/libs";
-import { getMessagePolicyType, MediaContent, MessageType, TMessage } from "@/types";
+import { MediaContent, MessageType, TMessage } from "@/types";
 import { EAlreadyPaid, EHaveModulePrefix, EInsufficientPayment, EMaxReadsReached, ENoAccess, ENoFeesToWithdraw, ENotMatch, ENotMessageRecipient, EPaymentNotAllowed, ETimeLockExpired, ETimeLockTooEarly } from "@/sdk/contracts"; // Unified struct
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { Button } from "@/components/ui/button";
@@ -22,11 +21,13 @@ import { toaster } from "@/components/ui/toaster";
 import { useSealClient } from "@/hooks/useSealClient";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
 import { decode } from "@msgpack/msgpack";
-import { SessionKey } from "@mysten/seal";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
-import { Tooltip } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 import { HiKey } from "react-icons/hi";
+import { AblyChannelManager } from "@/libs/ablyHelpers";
+import { useChannelName } from "../_hooks/useChannelName";
+import { SessionKey } from "@mysten/seal";
+import { SUI_EXPLORER_URL } from "@/utils/constants";
 
 const MotionVStack = motion.create(VStack);
 
@@ -184,21 +185,41 @@ interface MessageBaseProps extends BoxProps {
     self?: boolean;
 }
 export function MessageBase(props: MessageBaseProps) {
-    const { message, self = true, ...restBoxProps } = props;
-    const channelName = message.groupId;
+    const { message, self = true } = props;
+    const { channelName } = useChannelName();
     const { channel } = useChannel({ channelName });
-    const { decryptMessage } = useSealClient();
-    const { getSessionKey } = useSessionKeys();
-    const currentAccount = useCurrentAccount();
+    const channelType = AblyChannelManager.getChannelType(channelName);
+    const { decrypt } = useSealClient();
+    const { getSessionKey, sessionKeys } = useSessionKeys();
     const { read } = useWalrusClient();
+    const currentAccount = useCurrentAccount();
+
+    const sessionKey = useMemo(() => {
+        let sessionKey;
+        console.log("Type of message:", message.type);
+        switch (message.type) {
+            case MessageType.GROUP:
+                sessionKey = getSessionKey(channelName);
+                break;
+            case MessageType.DIRECT:
+                sessionKey = getSessionKey(channelName);
+                break;
+            case MessageType.SUPER_MESSAGE:
+                sessionKey = getSessionKey(message.id);
+                break;
+            default:
+                sessionKey = getSessionKey(channelName);
+                break;
+        }
+        if (!sessionKey) {
+            return null;
+        }
+        return sessionKey;
+    }, [message, sessionKeys]);
 
     const { data: decryptedContent, isLoading: isDecrypting, error: decryptError, refetch } = useQuery({
-        queryKey: ["messages::group::decrypt", message.id],
+        queryKey: ["messages::group::decrypt", message.id, sessionKey],
         queryFn: async (): Promise<MediaContent[] | null> => {
-
-            const messageType = getMessagePolicyType(message);
-            const sessionKey = messageType === MessageType.BASE ? getSessionKey(message.groupId) : getSessionKey(message.id);
-
             if (!currentAccount) {
                 return null;
             }
@@ -221,11 +242,14 @@ export function MessageBase(props: MessageBaseProps) {
                 return null;
             }
 
-            const decryptedBytes = await decryptMessage(message, messageType, sessionKey);
+            const decryptedBytes = await decrypt(message.content, sessionKey, {
+                type: channelType,
+                groupId: message.groupId,
+            });
             const decodedData = decode(decryptedBytes) as MediaContent[];
             return decodedData;
         },
-        enabled: (!!message && !!getSessionKey(message.id)) || !!getSessionKey(message.groupId),
+        enabled: !!message && !!sessionKey,
         refetchInterval: 5 * 60 * 1000,
         refetchOnMount: false,
         refetchOnWindowFocus: false,
@@ -234,7 +258,7 @@ export function MessageBase(props: MessageBaseProps) {
     });
 
     const { data: isOnline } = useQuery({
-        queryKey: ["messages::group::get::status", message.owner], // Key by owner address
+        queryKey: ["messages::group::get::status", message.owner],
         queryFn: async () => {
             if (!channel) return false;
             try {
@@ -254,9 +278,9 @@ export function MessageBase(props: MessageBaseProps) {
 
     const Avatar = () => {
         return (
-            <ChakraAvatar.Root bg={"transparent"}>
-                <Icon as={ChatiwalMascotIcon} boxSize={"8"} color={generateColorFromAddress(message.owner)} />
-                <Float placement="bottom-end" offsetX="1" offsetY="1">
+            <ChakraAvatar.Root size={"md"}>
+                <Icon as={ChatiwalMascotIcon} size={"lg"} color={generateColorFromAddress(message.owner)} />
+                <Float placement="bottom-end" offsetX="1" offsetY="2">
                     <Circle
                         bg={isOnline ? "green.500" : "gray.500"}
                         size="8px"
@@ -271,13 +295,15 @@ export function MessageBase(props: MessageBaseProps) {
 
         return (
             <HStack flexDirection={self ? "row-reverse" : "row"} align="center">
-                <Text
-                    fontSize={"md"}
-                    color={generateColorFromAddress(message.owner)}
-                    fontWeight={"medium"}
-                >
-                    {self ? "You" : formatAddress(message.owner)}
-                </Text>
+                <Link href={`${SUI_EXPLORER_URL}/account/${message.owner}`} target="_blank" rel="noopener noreferrer">
+                    <Text
+                        fontSize={"md"}
+                        color={generateColorFromAddress(message.owner)}
+                        fontWeight={"medium"}
+                    >
+                        {self ? "You" : formatAddress(message.owner)}
+                    </Text>
+                </Link>
                 <Text
                     fontSize={"sm"}
                     color={"fg.contrast"}

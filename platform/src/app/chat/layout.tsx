@@ -14,7 +14,7 @@ export default function Layout({
         <ChatGuard>
             <Provider>
                 <LayoutLayout>
-                    <HStack w={"full"} h={"full"}>
+                    <HStack w={"full"} h={"full"} gap={0}>
                         <LeftBar />
                         <ControlPanel flex={"1"} />
                         {children}

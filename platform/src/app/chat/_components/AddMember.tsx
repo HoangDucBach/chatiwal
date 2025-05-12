@@ -4,11 +4,12 @@ import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot } fro
 import { DialogBackdrop, DialogTrigger, Field, Heading, Icon, Input, Text, useDisclosure, VStack } from "@chakra-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
-import { useGroup } from "../_hooks/useGroupId";
+import { useGroup } from "../_hooks/useGroup";
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { toaster } from "@/components/ui/toaster";
 import { useSupabase } from "@/hooks/useSupabase";
+import { MdAdd } from "react-icons/md";
 
 type FormValues = {
     member: string;
@@ -108,7 +109,8 @@ export default function AddMember(
     return (
         <DialogRoot lazyMount open={open} onOpenChange={(e) => setOpen(e.open)} placement={"center"}>
             <DialogTrigger asChild {...props}>
-                <Button colorPalette={"primary"} loading={open} loadingText={"Adding"}  {...props}>
+                <Button colorPalette={"default"} size={"sm"} variant={"plain"} loading={open} loadingText={"Adding"}  {...props}>
+                    <Icon as={MdAdd} />
                     Add member
                 </Button>
             </DialogTrigger>

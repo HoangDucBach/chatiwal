@@ -36,8 +36,8 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
                 id: group.id,
                 members: new Set(group.members),
                 metadata: metadata,
+                createdAt: group.created_at,
             } as TGroup;
-
         },
         enabled: !!id,
         refetchOnWindowFocus: false,
@@ -49,7 +49,7 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
     })
 
     if (isLoading) return (
-        <Skeleton flex={"4"} height={"100%"} backdropFilter={"blur(256px)"} rounded="3xl" css={{
+        <Skeleton flex={"4"} height={"100%"} css={{
             "--start-color": "colors.bg.100",
             "--end-color": "colors.bg.200",
         }}

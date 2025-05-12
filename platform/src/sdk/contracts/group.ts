@@ -18,6 +18,7 @@ export const GroupStruct = bcs.struct("Group", {
     id: bcs.Address,
     members: bcs.vector(bcs.Address),
     metadata_blob_id: bcs.String,
+    created_at: bcs.U64,
 });
 
 /**

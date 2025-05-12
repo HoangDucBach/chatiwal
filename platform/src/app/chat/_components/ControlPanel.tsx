@@ -1,6 +1,6 @@
 "use client"
 
-import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center } from "@chakra-ui/react";
+import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center, For } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 
@@ -16,6 +16,11 @@ import { useSupabase } from "@/hooks/useSupabase";
 import { MintGroupButton } from "./MintGroupButton";
 import { MetadataGroupSchema } from "@/libs/schema";
 import { decode } from "@msgpack/msgpack";
+import { AddDirectMessage } from "./AddDirectMessage";
+import { useDirectMessages } from "../_hooks/useDirectMessages";
+import { UserCard } from "./UserCard";
+import { useMembershipGroups } from "../_hooks/useMembershipGroups";
+import { MenuGroupItem, MenuItem } from "@/components/ui/layout";
 
 interface Props extends StackProps { }
 export function ControlPanel(props: Props) {
@@ -23,6 +28,8 @@ export function ControlPanel(props: Props) {
     const { getGroupData } = useChatiwalClient();
     const { getGroupMemberships } = useSupabase();
     const { read } = useWalrusClient();
+    const { addMembership } = useMembershipGroups();
+
 
     const myGroupsQuery = useQuery({
         queryKey: ["groups::memberships", currentAccount?.address],
@@ -30,20 +37,27 @@ export function ControlPanel(props: Props) {
             if (!currentAccount) throw new Error("Not connected");
 
             const groupMembershipIds = await getGroupMemberships(currentAccount.address);
-            const groupMemberShips: TGroup[] = [];
 
+            const groupMemberShips: TGroup[] = [];
             const groupDataList = await Promise.all(
                 groupMembershipIds.map(async (groupId) => {
-                    const data = await getGroupData(groupId);
-                    if (data) {
-                        groupMemberShips.push({
-                            id: groupId,
-                            members: new Set<string>(data.members),
-                            metadata: null as any,
-                        });
-                        return { index: groupMemberShips.length - 1, metadata_blob_id: data.metadata_blob_id };
+                    addMembership(groupId);
+                    try {
+                        const data = await getGroupData(groupId);
+                        if (data) {
+                            groupMemberShips.push({
+                                id: groupId,
+                                members: new Set<string>(data.members),
+                                metadata: null as any,
+                                createdAt: data.created_at,
+                            });
+                            return { index: groupMemberShips.length - 1, metadata_blob_id: data.metadata_blob_id };
+                        }
+                        return null;
+                    } catch (error) {
+                        console.error("Error fetching group data:", error);
+                        return null;
                     }
-                    return null;
                 })
             );
 
@@ -89,12 +103,31 @@ interface ControlPanelBodyProps extends StackProps {
 function ControlPanelBody({ myGroupsQuery, ...props }: ControlPanelBodyProps) {
     const { id } = useParams();
     const { data: myGroups, isLoading } = myGroupsQuery;
+    const { directChatAddresses } = useDirectMessages();
 
     return (
         <VStack
             w={"full"}
             {...props}
         >
+            <MenuGroupItem
+                label={"DIRECT MESSAGES"}
+                endContent={<AddDirectMessage />}
+            >
+                {
+                    <For each={directChatAddresses}>
+                        {(address, index) => (
+                            <MenuItem key={index}>
+                                <UserCard
+                                    key={address}
+                                    address={address}
+                                    isSelected={address === id}
+                                />
+                            </MenuItem>
+                        )}
+                    </For>
+                }
+            </MenuGroupItem>
             <MenuGroupItem
                 label={"GROUP"}
                 endContent={<MintGroupButton />}
@@ -110,11 +143,13 @@ function ControlPanelBody({ myGroupsQuery, ...props }: ControlPanelBodyProps) {
                         :
                         (myGroups && myGroups?.length) ?
                             myGroups.map((group, index) => (
-                                <GroupCard
-                                    key={index}
-                                    group={group}
-                                    isSelected={group.id === id}
-                                />
+                                <MenuItem key={index}>
+                                    <GroupCard
+                                        key={index}
+                                        group={group}
+                                        isSelected={group.id === id}
+                                    />
+                                </MenuItem>
                             ))
                             :
                             <EmptyContent
@@ -140,43 +175,6 @@ function ControlPanelHeader({ myGroupsQuery, ...props }: ControlPanelHeaderProps
     )
 }
 
-interface MenuGroupItemProps extends StackProps {
-    label?: string;
-    icon?: React.ReactNode;
-    endContent?: React.ReactNode;
-}
-function MenuGroupItem({
-    label,
-    icon,
-    endContent,
-    children,
-    ...props
-}: MenuGroupItemProps) {
-    return (
-        <VStack w={"full"} {...props}>
-            <HStack justify={"space-between"} w={"full"}>
-                <Text pl={"2"} fontSize={"md"} fontWeight={"medium"} color={"fg.900"} textTransform="uppercase">
-                    {icon}
-                    {label}
-                </Text>
-                {endContent}
-            </HStack>
-            {children}
-        </VStack>
-    )
-}
-
-interface MenuItemProps extends StackProps {
-}
-function MenuItem({ children, ...props }: MenuItemProps) {
-    return (
-        <Center
-            w={"full"}
-        >
-            {children}
-        </Center>
-    )
-}
 
 interface ControlPanelFooterProps extends StackProps { }
 function ControlPanelFooter(props: ControlPanelFooterProps) {

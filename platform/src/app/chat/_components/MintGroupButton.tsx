@@ -131,6 +131,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
         <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)} placement={"center"}>
             <DialogTrigger asChild>
                 <Button
+                    p={"1"}
                     colorPalette={"default"}
                     variant={"ghost"}
                     disabled={!currentAccount || isPending}

@@ -1,6 +1,6 @@
-import { Chat } from "../../_components/Chat";
+import { Chat } from "../../../_components/Chat";
 import Provider from "./provider";
-import { GroupProvider } from "../../_hooks/useGroupId";
+import { GroupProvider } from "../../../_hooks/useGroup";
 
 export default async function Page({
     params,
@@ -11,10 +11,11 @@ export default async function Page({
 }>) {
     const { id } = await params;
 
+
     return (
-        <Provider channelName={id}>
+        <Provider id={id}>
             <GroupProvider id={id}>
-                <Chat flex={"4"} />
+                <Chat channelType="GROUP_CHAT" flex={"4"} />
             </GroupProvider>
         </Provider>
     );

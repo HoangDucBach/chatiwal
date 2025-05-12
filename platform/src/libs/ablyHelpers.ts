@@ -1,10 +1,20 @@
+import { MessageType } from "@/types";
+
 export class AblyChannelManager {
     static readonly CHANNELS = {
-        GROUP_CHAT: (groupId: string) => `group::${groupId}`,
-        GROUP_PRESENCE: (groupId: string) => `presence::group::${groupId}`
+        GROUP_CHAT: (groupId: string) => `chat:group:${groupId}`,
+        DIRECT_CHAT: (addressA: string, addressB: string) => {
+            const [a, b] = [addressA, addressB].sort();
+            return `chat:direct:${a}:${b}`;
+        },
+        GROUP_PRESENCE: (groupId: string) => `presence:group:${groupId}`,
+        INBOX: (address: string) => `inbox:${address}`,
     } as const;
 
     static readonly EVENTS = {
+        // Notification
+        NOTIFICATION_RECEIVED: 'notification-received',
+
         // Snapshot
         MESSAGES_SNAPSHOT_MINTED: 'messages-snapshot-minted',
         MESSAGES_SNAPSHOT_CAP_MINTED: 'messages-snapshot-cap-minted',
@@ -24,9 +34,13 @@ export class AblyChannelManager {
         GROUP_MEMBER_REMOVED: 'group-member-removed'
     } as const;
 
-    static getChannel(type: keyof typeof AblyChannelManager.CHANNELS | string, ...params: string[]): string {
-        const definition = AblyChannelManager.CHANNELS[type as keyof typeof AblyChannelManager.CHANNELS];
-        if (typeof definition === 'function') {
+    static getChannel(type: "GROUP_CHAT", groupId: string): string;
+    static getChannel(type: "DIRECT_CHAT", addressA: string, addressB: string): string;
+    static getChannel(type: "GROUP_PRESENCE", groupId: string): string;
+    static getChannel(type: "INBOX", address: string): string;
+    static getChannel(type: keyof typeof AblyChannelManager.CHANNELS, ...params: string[]): string {
+        const definition = AblyChannelManager.CHANNELS[type];
+        if (typeof definition === "function") {
             return (definition as (...args: string[]) => string)(...params);
         }
         return definition as string;
@@ -35,7 +49,32 @@ export class AblyChannelManager {
     static getEvent(type: keyof typeof AblyChannelManager.EVENTS): string {
         return AblyChannelManager.EVENTS[type];
     }
-}
 
-export type ChannelType = keyof typeof AblyChannelManager.CHANNELS;
-export type EventType = keyof typeof AblyChannelManager.EVENTS;
+    static parseChannel(channel: string): {
+        type: "GROUP_CHAT" | "DIRECT_CHAT" | "GROUP_PRESENCE";
+        ids: string[];
+    } {
+        if (channel.startsWith('chat:group:')) {
+            const groupId = channel.split(':')[2];
+            return { type: "GROUP_CHAT", ids: [groupId] };
+        } else if (channel.startsWith('chat:direct:')) {
+            const [, , addressA, addressB] = channel.split(':');
+            return { type: "DIRECT_CHAT", ids: [addressA, addressB] };
+        } else if (channel.startsWith('presence:group:')) {
+            const groupId = channel.split(':')[2];
+            return { type: "GROUP_PRESENCE", ids: [groupId] };
+        }
+
+        throw new Error(`Unknown channel format: ${channel}`);
+    }
+
+    static getChannelType(channel: string): MessageType {
+        if (channel.startsWith('chat:group:')) {
+            return MessageType.GROUP;
+        } else if (channel.startsWith('chat:direct:')) {
+            return MessageType.DIRECT;
+        }
+
+        throw new Error(`Unknown channel type: ${channel}`);
+    }
+}
