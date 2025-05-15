@@ -1,14 +1,21 @@
-import { StackProps, VStack } from "@chakra-ui/react";
+"use client"
+import { StackProps, VStack, Heading, Center, CenterProps } from "@chakra-ui/react";
 import { useGroup } from "../_hooks/useGroup";
 import { formatAddress } from "@mysten/sui/utils";
+import { useDirectMessageId } from "../_hooks/useDirectMessageId";
 
-interface Props extends StackProps {
+interface Props extends CenterProps {
 
 }
 
 export function ChatInfo({ ...props }: Props) {
     return (
-        <></>
+        <Center
+            h="full"
+            {...props}
+        >
+            <GroupInfo />
+        </Center>
     )
 }
 
@@ -19,6 +26,7 @@ export function GroupInfo({ ...props }: GroupInfoProps) {
 
     return (
         <VStack
+            w={"full"}
             p={"4"}
             {...props}
         >
@@ -37,4 +45,25 @@ export function GroupInfo({ ...props }: GroupInfoProps) {
 }
 
 interface DirectInfoProps extends StackProps {
+
+}
+export function DirectInfo({ ...props }: DirectInfoProps) {
+    const { id } = useDirectMessageId();
+    return (
+        <VStack
+            w={"full"}
+            p={"4"}
+            {...props}
+        >
+            <VStack>
+                <Heading
+                    fontSize={"lg"}
+                    fontWeight={"bold"}
+                    color={"fg.900"}
+                >
+                </Heading>
+            </VStack>
+
+        </VStack>
+    )
 }

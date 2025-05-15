@@ -1,11 +1,11 @@
 "use client"
 
-import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center, For } from "@chakra-ui/react";
+import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center, For, Image } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
+import NextImage from "next/image";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
-
 import { GroupCard } from "./GroupCard";
 import { UserControlPanel } from "./UserControlPanel";
 import { TGroup } from "@/types";
@@ -86,14 +86,37 @@ export function ControlPanel(props: Props) {
         <VStack
             zIndex={"0"}
             h={"full"}
-            p={"4"}
-            bg={"bg.100"}
             gap={"6"}
             {...props}
         >
+            <Brand />
             <ControlPanelBody flex={1} myGroupsQuery={myGroupsQuery} />
             <ControlPanelFooter />
         </VStack>
+    )
+}
+
+interface BrandProps extends StackProps { }
+function Brand(props: BrandProps) {
+    return (
+        <HStack
+            w={"full"}
+            align={"start"}
+            {...props}
+        >
+            <Image
+                asChild
+            >
+                <NextImage
+                    alt="logo"
+                    width={32}
+                    height={32}
+                    src={"/BgFavicon.png"}
+                >
+
+                </NextImage>
+            </Image>
+        </HStack>
     )
 }
 

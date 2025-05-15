@@ -90,6 +90,7 @@ export function GroupProfile() {
                 >
                     <Button
                         size="sm"
+                        p={"1"}
                         onClick={handleCreateGroupKey}
                         colorPalette={currentSessionKey ? currentSessionKey.isExpired() ? "red" : "green" : "default"}
                         variant="outline"

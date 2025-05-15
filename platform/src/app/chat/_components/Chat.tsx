@@ -42,12 +42,8 @@ export function Chat({ channelType, ...props }: Props) {
     return (
         <VStack
             pos={"relative"}
-            bg={"bg.100"}
             h={"full"}
-            p={"4"}
             zIndex={"0"}
-            borderLeft={"1.5px solid var(--chakra-colors-bg-200)"}
-            shadow={"custom.md"}
             {...props}
         >
             <ChatControlPanel channelType={channelType} />

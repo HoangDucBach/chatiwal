@@ -30,6 +30,7 @@ import { SessionKey } from "@mysten/seal";
 import { SUI_EXPLORER_URL } from "@/utils/constants";
 
 const MotionVStack = motion.create(VStack);
+const MotionHStack = motion.create(HStack);
 
 const ErrorMessages: Record<number, string> = {
     [ETimeLockExpired]: "Time lock expired",
@@ -149,7 +150,7 @@ export function Content(props: ContentProps) {
         if (isText && typeof media.raw === 'string') {
             return (
                 <Text
-                    fontSize={"md"}
+                    fontSize={"sm"}
                     color={"fg"}
                     w={"fit"}
                 >
@@ -169,12 +170,10 @@ export function Content(props: ContentProps) {
 
     return (
         <VStack
-            align={self ? "end" : "start"}
+            align={"start"}
             justify={"start"}
             gap={"1"}
-            w={isText ? "fit" : "full"}
-            maxW={isAudio ? "80" : "full"}
-            aspectRatio={getAspectRatio()}
+            w={"full"}
         >
             {mediaNode}
         </VStack>
@@ -196,7 +195,6 @@ export function MessageBase(props: MessageBaseProps) {
 
     const sessionKey = useMemo(() => {
         let sessionKey;
-        console.log("Type of message:", message.type);
         switch (message.type) {
             case MessageType.GROUP:
                 sessionKey = getSessionKey(channelName);
@@ -278,7 +276,7 @@ export function MessageBase(props: MessageBaseProps) {
 
     const Avatar = () => {
         return (
-            <ChakraAvatar.Root size={"md"}>
+            <ChakraAvatar.Root size={"md"} bg={"transparent"}>
                 <Icon as={ChatiwalMascotIcon} size={"lg"} color={generateColorFromAddress(message.owner)} />
                 <Float placement="bottom-end" offsetX="1" offsetY="2">
                     <Circle
@@ -294,7 +292,7 @@ export function MessageBase(props: MessageBaseProps) {
         const formattedTime = formatTime(Number(message.createdAt));
 
         return (
-            <HStack flexDirection={self ? "row-reverse" : "row"} align="center">
+            <HStack w={"full"} align="center" justify={"space-between"}>
                 <Link href={`${SUI_EXPLORER_URL}/account/${message.owner}`} target="_blank" rel="noopener noreferrer">
                     <Text
                         fontSize={"md"}
@@ -305,7 +303,7 @@ export function MessageBase(props: MessageBaseProps) {
                     </Text>
                 </Link>
                 <Text
-                    fontSize={"sm"}
+                    fontSize={"xs"}
                     color={"fg.contrast"}
                     fontWeight={"normal"}
                 >
@@ -350,9 +348,9 @@ export function MessageBase(props: MessageBaseProps) {
     }, [decryptError]);
 
     return (
-        <MotionVStack
+        <MotionHStack
             w={"full"}
-            align={self ? "end" : "start"}
+            align={"start"}
             initial={{ opacity: 0, y: 10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{
@@ -363,18 +361,15 @@ export function MessageBase(props: MessageBaseProps) {
         >
             <Avatar />
             <VStack
-                align={self ? "end" : "start"}
-                justify={"end"}
+                align={"start"}
                 gap={"1"}
                 w={"full"}
-                maxW={["90%", "80%", "70%", "60%"]}
-                rounded="xl"
             >
                 <Header />
                 {renderContent()}
                 {props.children}
             </VStack>
-        </MotionVStack>
+        </MotionHStack>
     )
 }
 
@@ -589,7 +584,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
     return (
         <MessageBase message={message} self={self}>
-            <VStack p={"3"} bg={"bg.100/75"} rounded={"3xl"} align={"end"} justify={"center"} shadow={"custom.md"}>
+            <VStack p={"3"} bg={"bg.200"} rounded={"3xl"} justify={"center"} shadow={"custom.md"} w={"full"}>
                 <HStack rounded={"2xl"} w={"full"} bg={"bg.300"} p={"2"}>
                     <Heading as={"h6"} size={"md"} fontWeight={"medium"} textAlign={"start"} w={"full"}>
                         Super Message Policy
@@ -598,7 +593,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 <VStack gap={"2"} align={"start"} w={"full"}>
                     {items.map((item, index) => (
                         item.hasPolicy && (
-                            <DataListRoot orientation={"horizontal"} key={index}>
+                            <DataListRoot w={"full"} orientation={"horizontal"} key={index}>
                                 <HStack gap={"6"} justify={"space-between"} w={"full"}>
                                     {
                                         item.fields.map((field, fieldIndex) => (

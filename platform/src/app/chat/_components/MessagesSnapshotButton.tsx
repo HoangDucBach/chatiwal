@@ -56,6 +56,7 @@ export function MessagesSnapshotButton({ messages, ...props }: Props) {
     return (
         <Button
             size={"sm"}
+            p={"1"}
             variant={"outline"}
             colorPalette={"default"}
             loading={isPending}

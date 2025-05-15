@@ -53,6 +53,7 @@ export function MessageContainer({ ...props }: Props) {
             <ScrollMotionVStack
                 px={"6"}
                 pos={"absolute"}
+                gap={"6"}
                 flex={"1"}
                 w={"full"}
                 h={"full"}
