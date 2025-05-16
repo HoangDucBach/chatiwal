@@ -4,7 +4,6 @@ import { ControlPanel } from "./_components/ControlPanel";
 import { Effects } from "./_components/Effects";
 import ChatGuard from "./_components/ChatGuard";
 import { LayoutLayout } from "@/components/ui/layout";
-import { Header } from "./_components/Header";
 import { LeftBar } from "@/components/global/bars";
 
 export default function Layout({

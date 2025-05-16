@@ -22,12 +22,12 @@ export function GroupCard({ isSelected, ...props }: Props) {
 
     return (
         <HStack
+            role="group"
             w={"full"}
             p={"3"}
             transition="all 0.2s ease-in-out"
             _hover={{
                 bg: "bg.300",
-                color: "fg",
             }}
             bg={isSelected ? "bg.300" : "transparent"}
             backdropBlur={"2xl"}
@@ -38,6 +38,9 @@ export function GroupCard({ isSelected, ...props }: Props) {
         >
             <Text
                 color={isSelected ? "fg" : "fg.900"}
+                _groupHover={{
+                    color: "fg",
+                }}
                 fontSize={"sm"}
                 fontWeight={"medium"}
             >

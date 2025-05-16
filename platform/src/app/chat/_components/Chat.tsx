@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react";
-import { Heading, StackProps, Text, VStack } from "@chakra-ui/react";
+import { Center, Heading, StackProps, Text, VStack } from "@chakra-ui/react";
 import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
@@ -60,26 +60,30 @@ export function Chat({ channelType, ...props }: Props) {
     )
 }
 
-export function ChatWelcomePlaceholder(props: Omit<Props, "channelName">) {
+export function ChatWelcomePlaceholder() {
     return (
-        <VStack
-            pos={"relative"}
-            bg={"bg.200/75"}
-            h={"full"}
-            rounded={"4xl"}
-            p={"4"}
-            gap={"4"}
-            justifyContent={"center"}
-            alignItems={"center"}
-            backdropFilter={"blur(256px)"}
-            overflow={"hidden"}
-            {...props}
-        >
-            <Heading as="h3" size={"4xl"} fontWeight={"semibold"}>Welcome to Chatiwal</Heading>
-            <Text color={"fg.900"}>Select group to chat and chill</Text>
-            <Tag colorPalette={"white"} fontSize={"lg"} outlineWidth={"8px"} py="1" px={"2"}>
-                Your chat, your key, your storage
-            </Tag>
-        </VStack>
+        <Center w={"full"} h={"full"} px={"4"}>
+            <VStack
+                pos={"relative"}
+                bg={"bg.200"}
+                h={"full"}
+                w={"full"}
+                rounded={"4xl"}
+                p={"4"}
+                gap={"4"}
+                border={"1px solid"}
+                borderColor={"bg.300"}
+                justifyContent={"center"}
+                alignItems={"center"}
+                backdropFilter={"blur(256px)"}
+                overflow={"hidden"}
+            >
+                <Heading as="h3" size={"4xl"} fontWeight={"semibold"}>Welcome to Chatiwal</Heading>
+                <Text color={"fg.900"}>Select group to chat and chill</Text>
+                <Tag colorPalette={"white"} fontSize={"lg"} outlineWidth={"8px"} py="1" px={"2"}>
+                    Your chat, your key, your storage
+                </Tag>
+            </VStack>
+        </Center>
     )
 }
