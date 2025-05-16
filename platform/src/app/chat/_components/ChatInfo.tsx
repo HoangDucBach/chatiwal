@@ -132,15 +132,14 @@ export function GroupInfo({ ...props }: GroupInfoProps) {
                 gap={0}
                 align={"start"}
             >
-                {
-                    group?.members?.entries().map(([member, _]) => (
-                        <MemberCard
-                            key={member}
-                            member={member}
-                            group={group}
-                            isOnline={memberPresence?.has(member)}
-                        />
-                    ))
+                {[...group?.members?.entries() || []].map(([member, _]) => (
+                    <MemberCard
+                        key={member}
+                        member={member}
+                        group={group}
+                        isOnline={memberPresence?.has(member)}
+                    />
+                ))
                 }
             </VStack>
         )
