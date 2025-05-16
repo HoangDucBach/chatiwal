@@ -8,10 +8,10 @@ export const siteConfig = {
         "Programmable Messages",
         "Full Control"
     ],
-    navLinks: [
-        {
+    navLinks: {
+        doc: {
             name: "Docs",
             href: "https://chatiwal.gitbook.io/chatiwal-docs/",
-        },
-    ],
+        }
+    }
 }

@@ -4,7 +4,7 @@ import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { MetadataGroupSchema } from "@/libs/schema";
 import { TGroup } from "@/types";
-import { Skeleton } from "@chakra-ui/react";
+import { Center, Skeleton } from "@chakra-ui/react";
 import { decode } from "@msgpack/msgpack";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
@@ -36,8 +36,8 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
                 id: group.id,
                 members: new Set(group.members),
                 metadata: metadata,
+                createdAt: group.created_at,
             } as TGroup;
-
         },
         enabled: !!id,
         refetchOnWindowFocus: false,
@@ -49,11 +49,13 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
     })
 
     if (isLoading) return (
-        <Skeleton flex={"4"} height={"100%"} backdropFilter={"blur(256px)"} rounded="3xl" css={{
-            "--start-color": "colors.bg.100",
-            "--end-color": "colors.bg.200",
-        }}
-        />
+        <Center flex={"4"} w={"full"} h={"full"} px={"4"}>
+            <Skeleton w={"full"} h={"full"} rounded={"3xl"} css={{
+                "--start-color": "colors.bg.100",
+                "--end-color": "colors.bg.200",
+            }}
+            />
+        </Center>
     );
 
     if (!group) return null;

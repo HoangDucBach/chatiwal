@@ -3,8 +3,9 @@
 import { Text, Field, Icon, Input, TagLabel, Textarea, VStack, Wrap, SwitchRoot, SwitchLabel, useDisclosure, TagRoot, TagCloseTrigger, Heading, SwitchControl, SwitchHiddenInput } from "@chakra-ui/react";
 import { useSuiClient, useSignAndExecuteTransaction, useCurrentAccount } from "@mysten/dapp-kit";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { IoIosAdd } from "react-icons/io";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
+import { MdAdd } from "react-icons/md";
 
 import { Button, ButtonProps } from "@/components/ui/button";
 import { toaster } from "@/components/ui/toaster";
@@ -12,7 +13,6 @@ import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useSupabase } from "@/hooks/useSupabase";
 import { type MetadataGroup, MetadataGroupSchema } from "@/libs/schema";
 import { useState } from "react";
-import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { DialogBackdrop, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTrigger } from "@/components/ui/dialog";
 
@@ -131,22 +131,19 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
         <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)} placement={"center"}>
             <DialogTrigger asChild>
                 <Button
-                    colorPalette={"primary"}
-                    w={"full"}
+                    p={"1"}
+                    colorPalette={"default"}
+                    variant={"ghost"}
                     disabled={!currentAccount || isPending}
                     {...props}
                 >
-                    <Icon as={IoIosAdd} />
-                    Mint group
+                    <Icon size={"md"} as={MdAdd} />
                 </Button>
             </DialogTrigger>
             <DialogBackdrop />
             <DialogContent>
-                <DialogHeader flexDirection={"row"} justifyContent={"space-between"} alignItems={"start"} rounded={"3xl"} shadow={"custom.sm"} bg={"bg.50"}>
-                    <VStack align={"start"}>
-                        <Heading as={"h6"} size={"lg"}>Mint New Group</Heading>
-                        <Text fontSize={"sm"} color={"fg.700"}>Mint group with optional metadata</Text>
-                    </VStack>
+                <DialogHeader flexDirection={"row"} justifyContent={"space-between"} alignItems={"start"}>
+                    <Heading as={"h6"} size={"lg"}>Mint New Group</Heading>
                     <SwitchRoot
                         id='enable-metadata-switch'
                         checked={isMetadataEnabled}
@@ -154,7 +151,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                         colorPalette="primary"
                     >
                         <SwitchHiddenInput />
-                        <SwitchControl />
+                        <SwitchControl/>
                         <SwitchLabel>
                             Enable metadata
                         </SwitchLabel>

@@ -2,6 +2,7 @@ import { PageLayout } from "@/components/ui/layout";
 import HeroSection from "./_components/HeroSection";
 import { Effects } from "./_components/Effects";
 import { Center, VStack } from "@chakra-ui/react";
+import { Posters } from "./_components/Posters";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         >
           <Effects />
           <HeroSection />
+          <Posters />
         </VStack>
       </Center>
     </PageLayout>

@@ -1,13 +1,11 @@
 "use client"
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
-import { Button } from "@/components/ui/button"
 import { generateColorFromAddress } from "@/libs";
 import { TGroup } from "@/types";
 import { SUI_EXPLORER_URL } from "@/utils/constants";
-import { HStack, StackProps, Text, VStack, Avatar, Icon, Float, Circle, Link, MenuRoot, MenuTrigger, MenuContent, For, MenuItem, MenuItemText, Box, MenuPositioner, Portal } from "@chakra-ui/react"
+import { HStack, StackProps, Text, VStack, Avatar, Icon, Float, Circle, Link, MenuRoot, MenuTrigger, MenuContent, For, MenuItem, MenuItemText, Box, MenuPositioner, Portal, AvatarRoot, Tag, TagRoot, TagLabel } from "@chakra-ui/react"
 import { formatAddress } from "@mysten/sui/utils";
-import { useRef, useState } from "react"
 import { GiBilledCap } from "react-icons/gi";
 import { EllipsisVertical } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -72,31 +70,31 @@ export function MemberCard(props: Props) {
             {...props}
         >
             <HStack gap={"2"} align={"center"}>
-                <Avatar.Root variant="subtle" bg="transparent">
-                    <Icon color={generateColorFromAddress(member)}>
-                        <ChatiwalMascotIcon size={32} />
-                    </Icon>
-                    <Float placement="bottom-end" offsetX="1" offsetY="1">
+                <AvatarRoot size={"md"} bg={"transparent"}>
+                    <Icon as={ChatiwalMascotIcon} size={"lg"} color={generateColorFromAddress(member)} />
+                    <Float placement="bottom-end" offsetX="1" offsetY="2">
                         <Circle
                             bg={isOnline ? "green.500" : "gray.500"}
                             size="8px"
                         />
                     </Float>
-                </Avatar.Root>
+                </AvatarRoot>
                 <Link
                     color={"fg"}
-                    fontWeight={"medium"}
+                    fontSize={"sm"}
                     href={`${SUI_EXPLORER_URL}/object/${member}`}
                 >
                     {formatAddress(member)}
                 </Link>
                 {hasCap && (
                     <Tooltip
-                        content={"Admin"}
+                        content={"Full access to group"}
                     >
-                        <Icon color={"primary"}>
-                            <GiBilledCap />
-                        </Icon>
+                        <TagRoot rounded="full" colorPalette={"primary"}>
+                            <TagLabel>
+                                Admin
+                            </TagLabel>
+                        </TagRoot>
                     </Tooltip>
                 )}
             </HStack>
@@ -198,10 +196,10 @@ const MemberMenu = ({ member, group }: MemberCardProps) => {
             </MenuTrigger>
             <Portal>
                 <MenuPositioner>
-                    <MenuContent rounded={"2xl"} bg={"bg.300/75"} backdropFilter={"bllur(64px)"} shadow={"custom.sm"}>
+                    <MenuContent rounded={"2xl"} bg={"bg.300"} border={"1px solid"} borderColor={"bg.400"} shadow={"custom.sm"}>
                         <For each={items} fallback={<Text>No actions available</Text>}>
                             {(item) => (
-                                <MenuItem _hover={{ bg: "bg.400/75" }} rounded={"lg"} key={item.label} value={item.label} onClick={item.onClick}>
+                                <MenuItem _hover={{ bg: "bg.400" }} rounded={"lg"} key={item.label} value={item.label} onClick={item.onClick}>
                                     <Icon color={"fg.contrast"} boxSize={4} mr={2}>
                                         {item.icon}
                                     </Icon>

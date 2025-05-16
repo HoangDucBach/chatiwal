@@ -6,7 +6,7 @@ import {
     MOVE_STDLIB_ADDRESS,
     SUI_FRAMEWORK_ADDRESS,
 } from '@mysten/sui/utils';
-import { Address, ChatiwalClientConfig, ObjectId } from '..';
+import { Address, ChatiwalClientConfig, ENoAccess, ObjectId } from '..';
 
 
 export const GroupCapStruct = bcs.struct("GroupCap", {
@@ -18,6 +18,7 @@ export const GroupStruct = bcs.struct("Group", {
     id: bcs.Address,
     members: bcs.vector(bcs.Address),
     metadata_blob_id: bcs.String,
+    created_at: bcs.U64,
 });
 
 /**
@@ -27,7 +28,7 @@ export const GroupErrorCodes = { // Renamed from ErrorCodes for clarity
     EInvalidGroupCap: 1000,
     EMemberAlreadyExists: 1001,
     EMemberNotExists: 1002,
-    ESealNotApproved: 1004, // Assuming this corresponds to ESealApprovalFailed in Move
+    ENoAccess: 1004, // Assuming this corresponds to ESealApprovalFailed in Move
 };
 
 /**
@@ -197,6 +198,23 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
             });
     }
 
+    function seal_approve_for_direct(options: {
+        arguments: [
+            id: RawTransactionArgument<Uint8Array>, // vector<u8>
+        ]
+    }) {
+        const moveArgsTypes = [
+            `vector<u8>`,
+        ];
+
+        return (tx: Transaction) =>
+            tx.moveCall({
+                target: `${packageId}::group::seal_approve_for_direct`,
+                arguments: normalizeMoveArguments(options.arguments, moveArgsTypes),
+                typeArguments: []
+            });
+    }
+
     // --- View Functions (Transaction Builders) ---
 
     /**
@@ -348,6 +366,7 @@ function init(packageId: ObjectId, config?: ChatiwalClientConfig) {
         remove_member,
         leave_group,
         seal_approve,
+        seal_approve_for_direct,
         group_get_group_id,
         group_get_group_member,
         group_get_group_metadata_blob_id,

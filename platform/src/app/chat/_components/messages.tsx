@@ -1,8 +1,8 @@
 "use client";
 
-import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Center, Heading, DataListRoot, DataListItem, DataListItemValue, DataListItemLabel } from "@chakra-ui/react";
-import { formatAddress, fromBase64 } from "@mysten/sui/utils";
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Heading, DataListRoot, DataListItem, DataListItemValue, DataListItemLabel, Link } from "@chakra-ui/react";
+import { formatAddress, SUI_DECIMALS } from "@mysten/sui/utils";
+import { useMemo, useCallback, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { useChannel } from "ably/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,11 +10,11 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@
 import { TbCalendar } from "react-icons/tb";
 import { TbCalendarPause } from "react-icons/tb";
 import { TiUserOutline } from "react-icons/ti";
-import { RiCoinLine } from "react-icons/ri";
+import BigNumber from "bignumber.js";
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { formatTime, generateColorFromAddress, parseSuiError } from "@/libs";
-import { getMessagePolicyType, MediaContent, MessageType, TMessage } from "@/types";
+import { MediaContent, MessageType, TMessage } from "@/types";
 import { EAlreadyPaid, EHaveModulePrefix, EInsufficientPayment, EMaxReadsReached, ENoAccess, ENoFeesToWithdraw, ENotMatch, ENotMessageRecipient, EPaymentNotAllowed, ETimeLockExpired, ETimeLockTooEarly } from "@/sdk/contracts"; // Unified struct
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,16 @@ import { toaster } from "@/components/ui/toaster";
 import { useSealClient } from "@/hooks/useSealClient";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
 import { decode } from "@msgpack/msgpack";
-import { SessionKey } from "@mysten/seal";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
-import { Tooltip } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 import { HiKey } from "react-icons/hi";
+import { AblyChannelManager } from "@/libs/ablyHelpers";
+import { useChannelName } from "../_hooks/useChannelName";
+import { SessionKey } from "@mysten/seal";
+import { SUI_EXPLORER_URL } from "@/utils/constants";
 
 const MotionVStack = motion.create(VStack);
+const MotionHStack = motion.create(HStack);
 
 const ErrorMessages: Record<number, string> = {
     [ETimeLockExpired]: "Time lock expired",
@@ -148,7 +151,7 @@ export function Content(props: ContentProps) {
         if (isText && typeof media.raw === 'string') {
             return (
                 <Text
-                    fontSize={"md"}
+                    fontSize={"sm"}
                     color={"fg"}
                     w={"fit"}
                 >
@@ -168,12 +171,10 @@ export function Content(props: ContentProps) {
 
     return (
         <VStack
-            align={self ? "end" : "start"}
+            align={"start"}
             justify={"start"}
             gap={"1"}
-            w={isText ? "fit" : "full"}
-            maxW={isAudio ? "80" : "full"}
-            aspectRatio={getAspectRatio()}
+            w={"full"}
         >
             {mediaNode}
         </VStack>
@@ -184,21 +185,40 @@ interface MessageBaseProps extends BoxProps {
     self?: boolean;
 }
 export function MessageBase(props: MessageBaseProps) {
-    const { message, self = true, ...restBoxProps } = props;
-    const channelName = message.groupId;
+    const { message, self = true } = props;
+    const { channelName } = useChannelName();
     const { channel } = useChannel({ channelName });
-    const { decryptMessage } = useSealClient();
-    const { getSessionKey } = useSessionKeys();
-    const currentAccount = useCurrentAccount();
+    const channelType = AblyChannelManager.getChannelType(channelName);
+    const { decrypt } = useSealClient();
+    const { getSessionKey, sessionKeys } = useSessionKeys();
     const { read } = useWalrusClient();
+    const currentAccount = useCurrentAccount();
+
+    const sessionKey = useMemo(() => {
+        let sessionKey;
+        switch (message.type) {
+            case MessageType.GROUP:
+                sessionKey = getSessionKey(channelName);
+                break;
+            case MessageType.DIRECT:
+                sessionKey = getSessionKey(channelName);
+                break;
+            case MessageType.SUPER_MESSAGE:
+                sessionKey = getSessionKey(message.id);
+                break;
+            default:
+                sessionKey = getSessionKey(channelName);
+                break;
+        }
+        if (!sessionKey) {
+            return null;
+        }
+        return sessionKey;
+    }, [message, sessionKeys]);
 
     const { data: decryptedContent, isLoading: isDecrypting, error: decryptError, refetch } = useQuery({
-        queryKey: ["messages::group::decrypt", message.id],
+        queryKey: ["messages::group::decrypt", message.id, sessionKey],
         queryFn: async (): Promise<MediaContent[] | null> => {
-
-            const messageType = getMessagePolicyType(message);
-            const sessionKey = messageType === MessageType.BASE ? getSessionKey(message.groupId) : getSessionKey(message.id);
-
             if (!currentAccount) {
                 return null;
             }
@@ -221,11 +241,14 @@ export function MessageBase(props: MessageBaseProps) {
                 return null;
             }
 
-            const decryptedBytes = await decryptMessage(message, messageType, sessionKey);
+            const decryptedBytes = await decrypt(message.content, sessionKey, {
+                type: channelType,
+                groupId: message.groupId,
+            });
             const decodedData = decode(decryptedBytes) as MediaContent[];
             return decodedData;
         },
-        enabled: (!!message && !!getSessionKey(message.id)) || !!getSessionKey(message.groupId),
+        enabled: !!message && !!sessionKey,
         refetchInterval: 5 * 60 * 1000,
         refetchOnMount: false,
         refetchOnWindowFocus: false,
@@ -234,7 +257,7 @@ export function MessageBase(props: MessageBaseProps) {
     });
 
     const { data: isOnline } = useQuery({
-        queryKey: ["messages::group::get::status", message.owner], // Key by owner address
+        queryKey: ["messages::group::get::status", message.owner],
         queryFn: async () => {
             if (!channel) return false;
             try {
@@ -254,9 +277,9 @@ export function MessageBase(props: MessageBaseProps) {
 
     const Avatar = () => {
         return (
-            <ChakraAvatar.Root bg={"transparent"}>
-                <Icon as={ChatiwalMascotIcon} boxSize={"8"} color={generateColorFromAddress(message.owner)} />
-                <Float placement="bottom-end" offsetX="1" offsetY="1">
+            <ChakraAvatar.Root size={"md"} bg={"transparent"}>
+                <Icon as={ChatiwalMascotIcon} size={"lg"} color={generateColorFromAddress(message.owner)} />
+                <Float placement="bottom-end" offsetX="1" offsetY="2">
                     <Circle
                         bg={isOnline ? "green.500" : "gray.500"}
                         size="8px"
@@ -270,16 +293,18 @@ export function MessageBase(props: MessageBaseProps) {
         const formattedTime = formatTime(Number(message.createdAt));
 
         return (
-            <HStack flexDirection={self ? "row-reverse" : "row"} align="center">
+            <HStack w={"full"} align="center" justify={"space-between"}>
+                <Link href={`${SUI_EXPLORER_URL}/account/${message.owner}`} target="_blank" rel="noopener noreferrer">
+                    <Text
+                        fontSize={"md"}
+                        color={generateColorFromAddress(message.owner)}
+                        fontWeight={"medium"}
+                    >
+                        {self ? "You" : formatAddress(message.owner)}
+                    </Text>
+                </Link>
                 <Text
-                    fontSize={"md"}
-                    color={generateColorFromAddress(message.owner)}
-                    fontWeight={"medium"}
-                >
-                    {self ? "You" : formatAddress(message.owner)}
-                </Text>
-                <Text
-                    fontSize={"sm"}
+                    fontSize={"xs"}
                     color={"fg.contrast"}
                     fontWeight={"normal"}
                 >
@@ -324,9 +349,9 @@ export function MessageBase(props: MessageBaseProps) {
     }, [decryptError]);
 
     return (
-        <MotionVStack
+        <MotionHStack
             w={"full"}
-            align={self ? "end" : "start"}
+            align={"start"}
             initial={{ opacity: 0, y: 10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{
@@ -337,18 +362,15 @@ export function MessageBase(props: MessageBaseProps) {
         >
             <Avatar />
             <VStack
-                align={self ? "end" : "start"}
-                justify={"end"}
+                align={"start"}
                 gap={"1"}
                 w={"full"}
-                maxW={["90%", "80%", "70%", "60%"]}
-                rounded="xl"
             >
                 <Header />
                 {renderContent()}
                 {props.children}
             </VStack>
-        </MotionVStack>
+        </MotionHStack>
     )
 }
 
@@ -509,6 +531,12 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
         return { disabled, label };
     }, [message, new Date()]);
+    const formatFee = useMemo(() => {
+        if (!message) return "Free";
+        if (!message.feePolicy) return "Free";
+        const fee = new BigNumber(message.feePolicy.fee_amount).dividedBy(10 ** SUI_DECIMALS);
+        return fee.isZero() ? "Free" : `${fee.toFormat()} SUI`;
+    }, [message]);
 
     if (isLoading) return <Box p={3}><Text color="fg.muted">Loading message...</Text></Box>;
     if (error) return <Box p={3}><Text color="red.500">Error loading message: {error.message}</Text></Box>;
@@ -561,9 +589,10 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         },
     ];
 
+
     return (
         <MessageBase message={message} self={self}>
-            <VStack p={"3"} bg={"bg.100/75"} rounded={"3xl"} align={"end"} justify={"center"} shadow={"custom.md"}>
+            <VStack p={"3"} bg={"bg.200"} rounded={"3xl"} justify={"center"} shadow={"custom.md"} w={"full"}>
                 <HStack rounded={"2xl"} w={"full"} bg={"bg.300"} p={"2"}>
                     <Heading as={"h6"} size={"md"} fontWeight={"medium"} textAlign={"start"} w={"full"}>
                         Super Message Policy
@@ -572,7 +601,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 <VStack gap={"2"} align={"start"} w={"full"}>
                     {items.map((item, index) => (
                         item.hasPolicy && (
-                            <DataListRoot orientation={"horizontal"} key={index}>
+                            <DataListRoot w={"full"} orientation={"horizontal"} key={index}>
                                 <HStack gap={"6"} justify={"space-between"} w={"full"}>
                                     {
                                         item.fields.map((field, fieldIndex) => (
@@ -597,7 +626,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 <HStack justify={"space-between"} gap={"1"} w={"full"}>
                     <VStack align={"start"} gap={"0"}>
                         <Text fontSize={"sm"} fontWeight={"semibold"} color={"fg"}>
-                            {message.feePolicy?.fee_amount ? `${message.feePolicy.fee_amount} SUI` : "Free"}
+                            {formatFee}
                         </Text>
                         <Text fontSize={"xs"} color={"fg.contrast"}>
                             Fee per read

@@ -8,7 +8,7 @@ import { TbScreenshot } from "react-icons/tb";
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { TMessage } from "@/types";
-import { useGroup } from "../_hooks/useGroupId";
+import { useGroup } from "../_hooks/useGroup";
 import { toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 interface Props extends ButtonProps {
@@ -39,6 +39,13 @@ export function MessagesSnapshotButton({ messages, ...props }: Props) {
             });
         },
         onError: (error) => {
+            if(error.message === "No messages to snapshot") {
+                toaster.warning({
+                    title: "Empty snapshot",
+                    description: "No messages to snapshot.",
+                });
+                return;
+            }
             toaster.error({
                 title: "Snapshot failed",
                 description: error.message,
@@ -48,16 +55,16 @@ export function MessagesSnapshotButton({ messages, ...props }: Props) {
 
     return (
         <Button
-            variant={"plain"}
+            size={"sm"}
+            p={"1"}
+            variant={"outline"}
+            colorPalette={"default"}
             loading={isPending}
-            loadingText="Creating snapshot..."
-            disabled={!messages || messages.length === 0}
+            loadingText="Snapshoting..."
+            disabled={isPending}
             onClick={() => snap()} {...props}
         >
-            <Icon>
-                <TbScreenshot />
-            </Icon>
-            Snapshot
+            <Icon as={TbScreenshot} />
         </Button>
     )
 }

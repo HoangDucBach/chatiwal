@@ -17,7 +17,7 @@ export default function EmptyContent({ emptyIcon, emptyText, ...rest }: Props) {
                     </Icon>
                 </Center>
             </Box>
-            <Text color={"fg.700"}>{emptyText}</Text>
+            <Text fontSize={"sm"} color={"fg.700"}>{emptyText}</Text>
         </Center>
     );
 }

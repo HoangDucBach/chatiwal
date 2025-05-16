@@ -1,15 +1,17 @@
 import { Heading, StackProps, VStack, Text, Link, HStack, TagRoot, TagLabel } from "@chakra-ui/react";
-import { useGroup } from "../_hooks/useGroupId";
+import { useGroup } from "../_hooks/useGroup";
 import { formatAddress } from "@mysten/sui/utils";
 import { SUI_EXPLORER_URL } from "@/utils/constants";
 import { MemberCard } from "./MemberCard";
 import { useChannel } from "ably/react";
 import { useQuery } from "@tanstack/react-query";
 import AddMember from "./AddMember";
+import { AblyChannelManager } from "@/libs/ablyHelpers";
 
 interface Props extends StackProps {
+
 }
-export function GroupDetailsTab(props: Props) {
+export function GroupInfo(props: Props) {
     const { group } = useGroup();
 
     if (!group) return null;
@@ -49,7 +51,7 @@ export function GroupDetailsTab(props: Props) {
 
 function GroupMembers() {
     const { group } = useGroup();
-    const { channel } = useChannel({ channelName: group.id });
+    const { channel } = useChannel({ channelName: AblyChannelManager.getChannel("GROUP_CHAT", group.id) });
 
     const { data: memberPresence = new Set<string>() } = useQuery({
         queryKey: ["group::members::presence"],

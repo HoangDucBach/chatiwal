@@ -12,10 +12,12 @@ export type TGroup = {
     id: string;
     members: Set<string>;
     metadata?: MetadataGroup;
+    createdAt?: string;
 };
 
 export enum MessageType {
-    BASE,
+    GROUP,
+    DIRECT,
     SUPER_MESSAGE,
 }
 
@@ -29,7 +31,7 @@ type SuperMessage = typeof SuperMessageStruct.$inferType;
 export type TMessage = {
     id: SuperMessage['id'];
     owner: SuperMessage['owner'];
-    groupId: SuperMessage['group_id'];
+    groupId?: SuperMessage['group_id'];
     auxId: SuperMessage['aux_id'];
     blobId?: SuperMessage['message_blob_id'];
     readers: SuperMessage['readers'];
@@ -40,6 +42,7 @@ export type TMessage = {
     createdAt: SuperMessage['created_at'];
     type: MessageType;
     content: Uint8Array
+    channelName?: string;
 };
 
 export function hasTimeLock(msg: TMessage): msg is TMessage & { timeLockPolicy: TTimeLockPolicy } {

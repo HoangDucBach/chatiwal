@@ -4,17 +4,17 @@ const tokens = defineTokens({
     colors: {
         danger: { value: "{colors.red}" },
         bg: {
-            DEFAULT: { value: "#151613" },
-            50: { value: "#191919" },
-            100: { value: "#191A1C" },
-            200: { value: "#272729" },
-            300: { value: "#383838" },
-            400: { value: "#545255" },
-            500: { value: "#6A6967" },
-            600: { value: "#807E7C" },
-            700: { value: "#969492" },
-            800: { value: "#ACAAA8" },
-            900: { value: "#C2C0BE" },
+            DEFAULT: { value: "#050505" },
+            50: { value: "#0F0F0F" },
+            100: { value: "#161616" },
+            200: { value: "#1C1C1C" },
+            300: { value: "#2E2E2E" },
+            400: { value: "#474747" },
+            500: { value: "#656565" },
+            600: { value: "#9C9C9C" },
+            700: { value: "#CCCCCC" },
+            800: { value: "#EFEFEF" },
+            900: { value: "#FFFFFF" }
         },
         fg: {
             DEFAULT: { value: "#FFFFFF" },
@@ -43,18 +43,18 @@ const tokens = defineTokens({
             900: { value: "#FFFFFF" }
         },
         primary: {
-            DEFAULT: { value: "#6EDFE7" },
-            fg: { value: "#08525E" },
-            50: { value: "#041519" },
-            100: { value: "#0B323D" },
-            200: { value: "#185560" },
-            300: { value: "#297F89" },
-            400: { value: "#3CA8B4" },
-            500: { value: "#6EDFE7" },
-            600: { value: "#56D3E1" },
-            700: { value: "#8AE1EB" },
-            800: { value: "#BEEFF5" },
-            900: { value: "#F2FDFF" },
+            DEFAULT: { value: "#97FDEA" },
+            fg: { value: "#001F2D" },
+            50: { value: "#08141D" },
+            100: { value: "#283E44" },
+            200: { value: "#568484" },
+            300: { value: "#77BFB6" },
+            400: { value: "#8DEADA" },
+            500: { value: "#97FDEA" },
+            600: { value: "#A5FBEB" },
+            700: { value: "#BFFBF0" },
+            800: { value: "#D1FCF4" },
+            900: { value: "#DCFDF7" },
 
         },
         secondary: {
@@ -77,17 +77,17 @@ const semanticTokens = defineSemanticTokens({
     colors: {
         danger: { value: "{colors.red}" },
         bg: {
-            DEFAULT: { value: "#191A1C" },
-            50: { value: "#1A1A1A" },
-            100: { value: "#191A1C" },
-            200: { value: "#242527" },
-            300: { value: "#383838" },
-            400: { value: "#545255" },
-            500: { value: "#6A6967" },
-            600: { value: "#807E7C" },
-            700: { value: "#969492" },
-            800: { value: "#ACAAA8" },
-            900: { value: "#C2C0BE" }
+            DEFAULT: { value: "#050505" },
+            50: { value: "#0F0F0F" },
+            100: { value: "#161616" },
+            200: { value: "#1C1C1C" },
+            300: { value: "#2E2E2E" },
+            400: { value: "#474747" },
+            500: { value: "#656565" },
+            600: { value: "#9C9C9C" },
+            700: { value: "#CCCCCC" },
+            800: { value: "#EFEFEF" },
+            900: { value: "#FFFFFF" }
         },
         fg: {
             solid: { value: "{colors.fg.100}" },
@@ -109,7 +109,7 @@ const semanticTokens = defineSemanticTokens({
         },
         primary: {
             solid: { value: "{colors.primary.500}" },
-            contrast: { value: "{colors.primary.300}" },
+            contrast: { value: "{colors.primary.50}" },
             fg: { value: "{colors.primary.800}" },
             muted: { value: "{colors.primary.300}" },
             subtle: { value: "{colors.primary.200}" },
@@ -166,10 +166,6 @@ const config = defineConfig({
     globalCss: {
         body: {
             bg: "bg",
-            bgGradient: "to-t",
-            gradientFrom: "bg.50",
-            gradientVia: "bg.200",
-            gradientTo: "bg.300",
         },
     }
 })
