@@ -51,7 +51,7 @@ export function MessageContainer({ ...props }: Props) {
     return (
         <Center p={"6"} pos={"relative"} flex={"1"} w={"full"} h={"full"} {...props}>
             <ScrollMotionVStack
-                px={"6"}
+                px={"2"}
                 pos={"absolute"}
                 gap={"6"}
                 flex={"1"}

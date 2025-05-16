@@ -14,7 +14,7 @@ export default async function Page({
     return (
         <Provider id={address}>
             <DirectMessageProvider id={address}>
-                <Chat channelType="DIRECT_CHAT" flex={"4"} />
+                <Chat channelType="DIRECT_CHAT" />
             </DirectMessageProvider>
         </Provider>
     );

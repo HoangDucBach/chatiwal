@@ -1,13 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Heading, StackProps, Text, VStack } from "@chakra-ui/react";
-import { useAbly, useChannel, useConnectionStateListener } from "ably/react";
+import { useChannel, useConnectionStateListener } from "ably/react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
-import { TMessage } from "@/types";
-import { AblyChannelManager } from "@/libs/ablyHelpers";
-import { useGroup } from "../_hooks/useGroup";
 import { Tag } from "@/components/ui/tag";
 import { ComposerInput, ComposerInputForDirectMessage } from "./ComposerInput";
 import { useChannelName } from "../_hooks/useChannelName";
@@ -42,8 +39,10 @@ export function Chat({ channelType, ...props }: Props) {
     return (
         <VStack
             pos={"relative"}
+            flex={4}
             h={"full"}
             zIndex={"0"}
+            px={"4"}
             {...props}
         >
             <ChatControlPanel channelType={channelType} />

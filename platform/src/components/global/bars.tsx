@@ -1,7 +1,7 @@
 "use client"
 
 import { chakra, Heading, HStack, Link, StackProps, Text, VStack } from "@chakra-ui/react";
-import { Image as ChakraImage } from "@chakra-ui/react"
+import { Image } from "@chakra-ui/react"
 import NextImage from "next/image"
 import NextLink from "next/link"
 import { siteConfig } from "@/config/site";
@@ -24,7 +24,7 @@ const Brand = () => {
     return (
         <HStack asChild align={"center"} flex={"1 0"} cursor={"pointer"}>
             <NextLink href="/">
-                <ChakraImage asChild>
+                <Image asChild>
                     <NextImage
                         src={"/Favicon.svg"}
                         alt={siteConfig.name}
@@ -32,7 +32,7 @@ const Brand = () => {
                         height={32}
                         priority
                     />
-                </ChakraImage>
+                </Image>
                 <VStack align={"start"} gap={0}>
                     <Heading as={"h1"} size={"lg"} fontWeight={"semibold"}>
                         {siteConfig.name}
@@ -50,15 +50,37 @@ interface LeftBarProps extends StackProps {
 }
 
 export function LeftBar({ children, ...props }: LeftBarProps) {
+    const Brand = () => {
+        return (
+
+            <Image
+                asChild
+                outline={"1px solid"}
+                outlineColor={"bg.300"}
+                outlineOffset={"1px"}
+                rounded={"lg"}
+            >
+                <NextImage
+                    alt="logo"
+                    width={40}
+                    height={40}
+
+                    src={"/BgFavicon.png"}
+                >
+
+                </NextImage>
+            </Image>
+        )
+    }
     return (
         <chakra.aside
             w={"fit"}
             h={"full"}
-            p={"4"}
+            px={"4"}
             {...props}
         >
             <VStack align={"center"} w={"full"} h={"full"}>
-                <ChatiwalMascotIcon size={32}/>
+                <Brand />
             </VStack>
         </chakra.aside>
     )

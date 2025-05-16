@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState } from "react";
 import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
+import { NumericFormat } from 'react-number-format';
 
 import { Button } from "@/components/ui/button";
 import { toaster } from "@/components/ui/toaster";
@@ -25,7 +26,6 @@ import {
     HStack,
     Span,
     SelectItemText,
-    Center,
 } from "@chakra-ui/react";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,14 +39,10 @@ import { useSealClient } from "@/hooks/useSealClient";
 import { MediaInput, TextInput } from "./MessageInput";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { nanoid, random } from "nanoid";
-import { useSessionKeys } from "@/hooks/useSessionKeysStore";
-import { HiKey } from "react-icons/hi";
 import { useAbly, useChannel } from "ably/react";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
 import { generateContentId } from "@/libs";
 import { fromHex, SUI_DECIMALS } from "@mysten/sui/utils";
-import { Tooltip } from "@/components/ui/tooltip";
-import { SessionKey } from "@mysten/seal";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useChannelName } from "../_hooks/useChannelName";
 import { useDirectMessageId } from "../_hooks/useDirectMessageId";
@@ -165,7 +161,7 @@ const renderDatePickerField = (
                     selected={field.value ? new Date(field.value * 1000) : new Date()}
                     onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : new Date())}
                     onBlur={field.onBlur}
-                    customInput={<DatePickerInput w="full" />}
+                    customInput={<DatePickerInput/>}
                     showTimeSelect timeFormat="HH:mm" timeIntervals={5} dateFormat="yyyy-MM-dd HH:mm"
                     isClearable placeholderText={`Select ${label.toLowerCase()}`}
                     disabled={isPending || isSubmitting}
@@ -203,20 +199,18 @@ const renderNumberField = (
         render={({ field: { onChange, onBlur, value, ref }, fieldState }) => (
             <Field.Root flex={name === "fee" ? "1" : undefined} w={name === "maxReads" ? "full" : undefined} invalid={!!fieldState.error} >
                 <Field.Label fontSize="sm">{label}</Field.Label>
-                <NumberInput.Root
-                    w={name === "maxReads" || name === "fee" ? "full" : undefined}
-                    variant="subtle" size="sm"
-                    disabled={isPending || isSubmitting}
-                    min={min}
-                    value={String(value)}
-                    step={name === "fee" ? 0.25 : 1}
-                    onValueChange={(valNum) => onChange(valNum.valueAsNumber)}
-                    onBlur={onBlur}
-                    ref={ref}
-                >
-                    {name === "maxReads" ? <NumberInput.Control /> : null}
-                    <NumberInput.Input bg="bg.300" rounded="lg" />
-                </NumberInput.Root>
+                <NumericFormat
+                    customInput={Input}
+                    variant={"subtle"}
+                    size="sm"
+                    bg="bg.300"
+                    rounded="lg"
+                    allowNegative={false}
+                    value={value}
+                    thousandSeparator={true}
+                    allowedDecimalSeparators={[".", ","]}
+                    onValueChange={(valNum) => onChange(valNum.floatValue)}
+                />
                 {helperText && <Field.HelperText color="fg.contrast">{helperText}</Field.HelperText>}
                 {fieldState.error && <Text fontSize="xs" color="red.500">{fieldState.error.message}</Text>}
             </Field.Root>
@@ -620,10 +614,10 @@ export function ComposerInput(props: ComposerInputProps) {
                                     }
                                 )}
                             </HStack>
-                            {renderNumberField("maxReads", "Max Reads", control, isPending, isSubmitting, undefined, 1)}
                         </HStack>
+                        {renderNumberField("maxReads", "Max Reads", control, isPending, isSubmitting, undefined, 1)}
                         <HStack w="full" align="start">
-                            {renderNumberField("fee", "Fee", control, isPending, isSubmitting, "Atomic units", 0)}
+                            {renderNumberField("fee", "Fee", control, isPending, isSubmitting, "SUI", 0)}
                             {renderTextField(
                                 "recipient",
                                 "Recipient",
@@ -664,6 +658,7 @@ export function ComposerInput(props: ComposerInputProps) {
             p="2"
             bg="bg.200"
             shadow="custom.sm" rounded="3xl"
+            border={"1px solid"} borderColor={"bg.300"}
             alignItems="stretch" {...props}
         >
             <HStack align="center" justify={"space-between"} gap={"1"}>
@@ -846,6 +841,7 @@ export function ComposerInputForDirectMessage({ messages, ...props }: ComposerIn
             bg="bg.200"
             backdropFilter="blur(12px)"
             shadow="custom.sm" rounded="3xl"
+            border={"1px solid"} borderColor={"bg.300"}
             alignItems="stretch" {...props}
         >
             <VStack

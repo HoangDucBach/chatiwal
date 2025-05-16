@@ -1,9 +1,9 @@
 "use client"
 
-import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center, For, Image } from "@chakra-ui/react";
+import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center, For, Image, InputProps, Input, InputGroup, Icon } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import NextImage from "next/image";
+import { LuSearch } from "react-icons/lu";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { GroupCard } from "./GroupCard";
@@ -87,36 +87,38 @@ export function ControlPanel(props: Props) {
             zIndex={"0"}
             h={"full"}
             gap={"6"}
+            p={"4"}
+            rounded={"3xl"}
+            bg={"bg.200"}
+            border={"1px solid"}
+            borderColor={"bg.300"}
             {...props}
         >
-            <Brand />
+            <ControlPanelHeader />
             <ControlPanelBody flex={1} myGroupsQuery={myGroupsQuery} />
             <ControlPanelFooter />
         </VStack>
     )
 }
 
-interface BrandProps extends StackProps { }
-function Brand(props: BrandProps) {
+interface SearchEngineProps extends InputProps { }
+export function SearchEngine({ ...props }: SearchEngineProps) {
     return (
-        <HStack
-            w={"full"}
-            align={"start"}
-            {...props}
+        <InputGroup
+            startElement={
+                <Icon size={"md"} color={"fg"} as={LuSearch} />
+            }
         >
-            <Image
-                asChild
-            >
-                <NextImage
-                    alt="logo"
-                    width={32}
-                    height={32}
-                    src={"/BgFavicon.png"}
-                >
-
-                </NextImage>
-            </Image>
-        </HStack>
+            <Input
+                placeholder="Search"
+                variant="subtle"
+                size="md"
+                rounded={"2xl"}
+                bg={"bg.300"}
+                _placeholder={{ color: "fg.900" }}
+                {...props}
+            />
+        </InputGroup>
     )
 }
 
@@ -185,14 +187,12 @@ function ControlPanelBody({ myGroupsQuery, ...props }: ControlPanelBodyProps) {
     )
 }
 interface ControlPanelHeaderProps extends StackProps {
-    myGroupsQuery: ReturnType<typeof useQuery<TGroup[]>>,
 }
 
-function ControlPanelHeader({ myGroupsQuery, ...props }: ControlPanelHeaderProps) {
-    const { data: myGroups, isLoading } = myGroupsQuery;
-
+function ControlPanelHeader({ ...props }: ControlPanelHeaderProps) {
     return (
-        <VStack {...props} w={"full"} gap={"4"}>
+        <VStack {...props} w={"full"}>
+            <SearchEngine />
         </VStack>
 
     )

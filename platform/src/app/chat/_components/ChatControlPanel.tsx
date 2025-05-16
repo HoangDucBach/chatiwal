@@ -23,7 +23,7 @@ interface Props extends StackProps {
 }
 export function ChatControlPanel({ channelType, ...props }: Props) {
     return (
-        <HStack bg={"bg.200"} w={"full"} p={"4"} rounded={"3xl"} {...props}>
+        <HStack bg={"bg.200"} w={"full"} p={"4"} border={"1px solid"} borderColor={"bg.300"} rounded={"3xl"} {...props}>
             {
                 channelType === "GROUP_CHAT" ? <GroupProfile /> :
                     channelType === "DIRECT_CHAT" ? <DirectProfile /> : null

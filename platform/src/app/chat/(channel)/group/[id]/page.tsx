@@ -16,8 +16,8 @@ export default async function Page({
     return (
         <Provider id={id}>
             <GroupProvider id={id}>
-                <Chat channelType="GROUP_CHAT" flex={"4"} />
-                <ChatInfo flex={"1"} />
+                <Chat channelType="GROUP_CHAT" />
+                <ChatInfo />
             </GroupProvider>
         </Provider>
     );

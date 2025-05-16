@@ -13,14 +13,11 @@ export default function Layout({
     return (
         <ChatGuard>
             <Provider>
-                <LayoutLayout bg={"bg.100"}>
-                    <HStack w={"full"} h={"full"} gap={0}>
-                        <ControlPanel p={"4"} flex={"1"} />
-                        <Center py={"4"} w={"full"} h={"full"}>
-                            <HStack w={"full"} h={"full"} p={"4"} bg={"bg.50"} rounded={"4xl"} shadow={"custom.md"}>
-                                {children}
-                            </HStack>
-                        </Center>
+                <LayoutLayout bg={"bg"}>
+                    <HStack py={"4"} w={"full"} h={"full"} gap={0}>
+                        <LeftBar />
+                        <ControlPanel flex={1} />
+                        {children}
                     </HStack>
                 </LayoutLayout>
             </Provider>

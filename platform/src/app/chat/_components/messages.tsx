@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, BoxProps, Avatar as ChakraAvatar, HStack, Icon, Image, Text, VStack, Float, Circle, For, Heading, DataListRoot, DataListItem, DataListItemValue, DataListItemLabel, Link } from "@chakra-ui/react";
-import { formatAddress } from "@mysten/sui/utils";
+import { formatAddress, SUI_DECIMALS } from "@mysten/sui/utils";
 import { useMemo, useCallback, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { useChannel } from "ably/react";
@@ -10,6 +10,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@
 import { TbCalendar } from "react-icons/tb";
 import { TbCalendarPause } from "react-icons/tb";
 import { TiUserOutline } from "react-icons/ti";
+import BigNumber from "bignumber.js";
 
 import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { formatTime, generateColorFromAddress, parseSuiError } from "@/libs";
@@ -530,6 +531,12 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
         return { disabled, label };
     }, [message, new Date()]);
+    const formatFee = useMemo(() => {
+        if (!message) return "Free";
+        if (!message.feePolicy) return "Free";
+        const fee = new BigNumber(message.feePolicy.fee_amount).dividedBy(10 ** SUI_DECIMALS);
+        return fee.isZero() ? "Free" : `${fee.toFormat()} SUI`;
+    }, [message]);
 
     if (isLoading) return <Box p={3}><Text color="fg.muted">Loading message...</Text></Box>;
     if (error) return <Box p={3}><Text color="red.500">Error loading message: {error.message}</Text></Box>;
@@ -582,6 +589,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         },
     ];
 
+
     return (
         <MessageBase message={message} self={self}>
             <VStack p={"3"} bg={"bg.200"} rounded={"3xl"} justify={"center"} shadow={"custom.md"} w={"full"}>
@@ -618,7 +626,7 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 <HStack justify={"space-between"} gap={"1"} w={"full"}>
                     <VStack align={"start"} gap={"0"}>
                         <Text fontSize={"sm"} fontWeight={"semibold"} color={"fg"}>
-                            {message.feePolicy?.fee_amount ? `${message.feePolicy.fee_amount} SUI` : "Free"}
+                            {formatFee}
                         </Text>
                         <Text fontSize={"xs"} color={"fg.contrast"}>
                             Fee per read
