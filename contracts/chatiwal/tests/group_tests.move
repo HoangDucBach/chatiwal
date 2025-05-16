@@ -1,10 +1,11 @@
 #[test_only]
 module chatiwal::group_tests;
 
-use chatiwal::group::{Self, Group, GroupCap};
+use chatiwal::group::{Self, Group, GroupCap, check_policy_for_direct};
 use std::string::{Self, String};
 use sui::clock::{Self, Clock};
 use sui::test_scenario::{Self as ts, Scenario};
+use sui::bcs;
 
 const ADMIN_1: address = @0xA1;
 const ADMIN_2: address = @0xA2;
@@ -240,4 +241,15 @@ fun test_seal_approve() {
     };
     c.destroy_for_testing();
     ts::end(s);
+}
+
+#[test]
+fun test_check_policy_for_direct() {
+    let ctx = tx_context::dummy();
+    let sender = ctx.sender();
+    let id = bcs::to_bytes(&sender);
+    assert!(check_policy_for_direct(id, &ctx), 0);
+
+    let id = bcs::to_bytes(&USER_1);
+    assert!(!check_policy_for_direct(id, &ctx), 0);
 }
