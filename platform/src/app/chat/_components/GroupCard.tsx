@@ -27,6 +27,7 @@ export function GroupCard({ isSelected, ...props }: Props) {
             transition="all 0.2s ease-in-out"
             _hover={{
                 bg: "bg.300",
+                color: "fg",
             }}
             bg={isSelected ? "bg.300" : "transparent"}
             backdropBlur={"2xl"}

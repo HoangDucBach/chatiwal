@@ -142,11 +142,8 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
             </DialogTrigger>
             <DialogBackdrop />
             <DialogContent>
-                <DialogHeader flexDirection={"row"} justifyContent={"space-between"} alignItems={"start"} rounded={"3xl"} shadow={"custom.sm"} bg={"bg.50"}>
-                    <VStack align={"start"}>
-                        <Heading as={"h6"} size={"lg"}>Mint New Group</Heading>
-                        <Text fontSize={"sm"} color={"fg.700"}>Mint group with optional metadata</Text>
-                    </VStack>
+                <DialogHeader flexDirection={"row"} justifyContent={"space-between"} alignItems={"start"}>
+                    <Heading as={"h6"} size={"lg"}>Mint New Group</Heading>
                     <SwitchRoot
                         id='enable-metadata-switch'
                         checked={isMetadataEnabled}
@@ -154,7 +151,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                         colorPalette="primary"
                     >
                         <SwitchHiddenInput />
-                        <SwitchControl />
+                        <SwitchControl/>
                         <SwitchLabel>
                             Enable metadata
                         </SwitchLabel>

@@ -5,7 +5,10 @@ import { Image } from "@chakra-ui/react"
 import NextImage from "next/image"
 import NextLink from "next/link"
 import { siteConfig } from "@/config/site";
-import { ChatiwalMascotIcon } from "./icons";
+import { CgLoadbarDoc } from "react-icons/cg";
+import { Tooltip } from "../ui/tooltip";
+import { Button } from "../ui/button";
+
 
 interface Props extends StackProps { }
 
@@ -72,6 +75,15 @@ export function LeftBar({ children, ...props }: LeftBarProps) {
             </Image>
         )
     }
+
+    const links = [
+        {
+            label: "Docs",
+            icon: <CgLoadbarDoc size={20} />,
+            href: "/docs",
+        }
+    ]
+
     return (
         <chakra.aside
             w={"fit"}
@@ -81,6 +93,34 @@ export function LeftBar({ children, ...props }: LeftBarProps) {
         >
             <VStack align={"center"} w={"full"} h={"full"}>
                 <Brand />
+                <VStack>
+                    {
+                        links.map((link) => (
+                            <Tooltip content={link.label} key={link.label} positioning={{
+                                placement: "right",
+                            }}>
+                                <Link
+                                    key={link.label}
+                                    href={link.href}
+                                    asChild
+                                >
+                                    <Button
+                                        rounded={"lg"}
+                                        color={"fg.900"}
+                                        _hover={{
+                                            bg: "bg.200",
+                                            color: "fg"
+                                        }}
+                                        variant={"plain"}
+                                        p={"1"}
+                                    >
+                                        {link.icon}
+                                    </Button>
+                                </Link>
+                            </Tooltip>
+                        ))
+                    }
+                </VStack>
             </VStack>
         </chakra.aside>
     )

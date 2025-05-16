@@ -37,25 +37,23 @@ export function AddDirectMessage(props: Props) {
             </PopoverTrigger>
             <PopoverContent gap={"2"} p="4">
                 <PopoverHeader p={"0"}>
-                    <HStack w={"full"} h={"fit"} gap={"2"} rounded={"2xl"} bg={"primary"} shadow={"custom.md"} p={"4"}>
-                        <Icon size={"lg"} as={TiUserAdd} color={"primary.contrast"} />
-                        <VStack gap={"0"} align={"start"}>
-                            <PopoverTitle fontWeight={"medium"} color={"primary.contrast"}>
-                                Add direct message
-                            </PopoverTitle>
-                            <PopoverDescription color={"primary.200"}>
-                                Enter user address to add.
-                            </PopoverDescription>
-                        </VStack>
+                    <HStack w={"full"} h={"fit"} gap={"2"} rounded={"2xl"}>
+                        <Icon size={"md"} as={TiUserAdd} color={"primary"} />
+                        <PopoverTitle fontWeight={"medium"} color={"fg"}>
+                            Add direct message
+                        </PopoverTitle>
                     </HStack>
                 </PopoverHeader>
                 <PopoverBody p={"0"}>
                     <VStack align={"start"}>
+                        <PopoverDescription color={"fg.contrast"}>
+                            Enter user address to add.
+                        </PopoverDescription>
                         <Input
                             placeholder="Enter user address"
                             variant={"subtle"}
                             color={"fg.900"}
-                            bg={"bg.300"}
+                            bg={"bg.400"}
                             rounded={"lg"}
                             size={"sm"}
                             _placeholder={{

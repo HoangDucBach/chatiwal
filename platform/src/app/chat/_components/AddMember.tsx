@@ -116,7 +116,7 @@ export default function AddMember(
             </DialogTrigger>
             <DialogBackdrop backdropBlur={"4xl"} />
             <DialogContent>
-                <DialogHeader flexDirection={"row"} justifyContent={"space-between"} alignItems={"start"} rounded={"3xl"} shadow={"custom.sm"} bg={"bg.50"}>
+                <DialogHeader flexDirection={"row"} justifyContent={"space-between"} alignItems={"start"}>
                     <VStack align={"start"}>
                         <Heading as={"h6"} size={"lg"}>Add member</Heading>
                         <Text fontSize={"sm"} color={"fg.700"}>
@@ -152,7 +152,7 @@ export default function AddMember(
 
                 <DialogFooter>
                     <Button
-                        colorScheme="blue"
+                        colorPalette={"primary"}
                         onClick={handleSubmit(onSubmit)}
                         loading={isPending}
                         loadingText="Adding"
