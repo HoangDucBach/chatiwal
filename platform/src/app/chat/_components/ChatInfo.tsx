@@ -15,10 +15,10 @@ import EmptyContent from "@/components/ui/empty-content";
 
 
 interface Props extends CenterProps {
-
+    channelType: "DIRECT_CHAT" | "GROUP_CHAT";
 }
 
-export function ChatInfo({ ...props }: Props) {
+export function ChatInfo({ channelType, ...props }: Props) {
     return (
         <Center
             flex={2}
@@ -26,7 +26,13 @@ export function ChatInfo({ ...props }: Props) {
             p={"4"}
             {...props}
         >
-            <GroupInfo />
+            {
+                channelType === "GROUP_CHAT" ?
+                    <GroupInfo /> :
+                    channelType === "DIRECT_CHAT" ?
+                        <DirectInfo /> :
+                        null
+            }
         </Center>
     )
 }
@@ -84,7 +90,7 @@ export function GroupInfo({ ...props }: GroupInfoProps) {
                     }
                 </HStack>
                 {
-                    group?.metadata?.description?
+                    group?.metadata?.description ?
                         <Text
                             fontSize={"sm"}
                             color={"fg.900"}
@@ -192,20 +198,31 @@ interface DirectInfoProps extends StackProps {
 }
 export function DirectInfo({ ...props }: DirectInfoProps) {
     const { id } = useDirectMessageId();
+    const Header = () => {
+        return (
+            <VStack
+                w={"full"}
+                gap={0}
+                align={"start"}
+            >
+                <Heading
+                    fontSize={"lg"}
+                    as={"h2"}
+                    fontWeight={"medium"}
+                    color={"fg"}
+                >
+                    Info
+                </Heading>
+            </VStack>
+        )
+    }
     return (
         <VStack
             w={"full"}
-            p={"4"}
+            h={"full"}
             {...props}
         >
-            <VStack>
-                <Heading
-                    fontSize={"lg"}
-                    fontWeight={"bold"}
-                    color={"fg.900"}
-                >
-                </Heading>
-            </VStack>
+            {/* <Header /> */}
 
         </VStack>
     )

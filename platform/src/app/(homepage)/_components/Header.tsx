@@ -15,13 +15,23 @@ export function Header() {
 const NavLinks = () => {
     return (
         <HStack flexGrow={"1"} align={"center"} justify={"center"} flex={"1 0"}>
-            {siteConfig.navLinks.map((link) => (
-                <ChakraLink asChild key={link.href} variant={"plain"} color={"fg.800"} _hover={{ color: "fg", transition: "color ease-in-out 0.5s" }}>
-                    <Link href={link.href}>
-                        {link.name}
-                    </Link>
-                </ChakraLink>
-            ))}
+            {
+                Object.entries(siteConfig.navLinks).map(([key, value]) => (
+                    <ChakraLink
+                        as={Link}
+                        href={value.href}
+                        key={key}
+                        fontSize={"sm"}
+                        color={"fg.700"}
+                        _hover={{
+                            textDecoration: "none",
+                            color: "fg.900",
+                        }}
+                    >
+                        {value.name}
+                    </ChakraLink>
+                ))
+            }
         </HStack>
     )
 }

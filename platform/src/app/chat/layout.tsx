@@ -13,7 +13,7 @@ export default function Layout({
     return (
         <ChatGuard>
             <Provider>
-                <LayoutLayout bg={"bg"}>
+                <LayoutLayout bg={"bg.50"}>
                     <HStack py={"4"} w={"full"} h={"full"} gap={0}>
                         <LeftBar />
                         <ControlPanel flex={1} />

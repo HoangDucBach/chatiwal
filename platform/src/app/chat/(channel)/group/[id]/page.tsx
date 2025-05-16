@@ -17,7 +17,7 @@ export default async function Page({
         <Provider id={id}>
             <GroupProvider id={id}>
                 <Chat channelType="GROUP_CHAT" />
-                <ChatInfo />
+                <ChatInfo channelType="GROUP_CHAT" />
             </GroupProvider>
         </Provider>
     );

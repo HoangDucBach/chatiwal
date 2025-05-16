@@ -47,7 +47,6 @@ export function UserCard({ address, isSelected, ...props }: Props) {
     return (
         <HStack
             w={"full"}
-            p={"3"}
             transition="all 0.2s ease-in-out"
             _hover={{
                 bg: "bg.200",

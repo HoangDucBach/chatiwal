@@ -14,7 +14,7 @@ interface Props extends StackProps { }
 
 export function Header({ children, ...props }: Props) {
     return (
-        <chakra.header w={"full"} bg={"bg.100"} shadow={"custom.md"} rounded={"2xl"} py={"1"} px={"2"}>
+        <chakra.header w={"full"} rounded={"2xl"} p={"4"}>
             <HStack justifyContent={"space-between"} alignItems={"center"}>
                 <Brand />
                 {children}
@@ -29,21 +29,16 @@ const Brand = () => {
             <NextLink href="/">
                 <Image asChild>
                     <NextImage
-                        src={"/Favicon.svg"}
+                        src={"/RootFavicon.svg"}
                         alt={siteConfig.name}
                         width={32}
                         height={32}
                         priority
                     />
                 </Image>
-                <VStack align={"start"} gap={0}>
-                    <Heading as={"h1"} size={"lg"} fontWeight={"semibold"}>
-                        {siteConfig.name}
-                    </Heading>
-                    <Text fontSize={"sm"} color={"fg.700"}>
-                        Y3 Model
-                    </Text>
-                </VStack>
+                <Heading as={"h1"} size={"lg"} fontWeight={"semibold"}>
+                    {siteConfig.name}
+                </Heading>
             </NextLink>
         </HStack>
     )
@@ -55,32 +50,33 @@ interface LeftBarProps extends StackProps {
 export function LeftBar({ children, ...props }: LeftBarProps) {
     const Brand = () => {
         return (
-
-            <Image
-                asChild
-                outline={"1px solid"}
-                outlineColor={"bg.300"}
-                outlineOffset={"1px"}
-                rounded={"lg"}
-            >
-                <NextImage
-                    alt="logo"
-                    width={40}
-                    height={40}
-
-                    src={"/BgFavicon.png"}
+            <NextLink href="/">
+                <Image
+                    asChild
+                    outline={"1px solid"}
+                    outlineColor={"bg.300"}
+                    outlineOffset={"1px"}
+                    rounded={"lg"}
                 >
+                    <NextImage
+                        alt="logo"
+                        width={40}
+                        height={40}
 
-                </NextImage>
-            </Image>
+                        src={"/BgFavicon.png"}
+                    >
+
+                    </NextImage>
+                </Image>
+            </NextLink>
         )
     }
 
     const links = [
         {
-            label: "Docs",
+            label: siteConfig.navLinks.doc.name,
             icon: <CgLoadbarDoc size={20} />,
-            href: "/docs",
+            href: siteConfig.navLinks.doc.href,
         }
     ]
 
