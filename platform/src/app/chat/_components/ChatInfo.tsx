@@ -1,6 +1,6 @@
 "use client"
 import { StackProps, VStack, Heading, Center, CenterProps, Text, Span, AccordionItemIndicator, TagRoot, TagLabel, HStack } from "@chakra-ui/react";
-import { formatTime } from "@/libs";
+import { formatTime, generateColorFromString } from "@/libs";
 
 import { useGroup } from "../_hooks/useGroup";
 import { formatAddress } from "@mysten/sui/utils";
@@ -73,14 +73,14 @@ export function GroupInfo({ ...props }: GroupInfoProps) {
         return (
             <VStack
                 w={"full"}
-                gap={0}
+                gap={"2"}
                 align={"start"}
             >
                 <HStack>
                     {
                         group.metadata?.tags && group.metadata.tags.length > 0 && (
                             group.metadata.tags.map((tag, index) => (
-                                <TagRoot key={index} rounded={"full"}>
+                                <TagRoot key={index} rounded={"full"} color={generateColorFromString(tag)} bg={generateColorFromString(tag, { alpha: 25 })} borderColor={generateColorFromString(tag, { alpha: 50 })} border={"1px solid"}>
                                     <TagLabel>
                                         {tag}
                                     </TagLabel>
@@ -93,7 +93,7 @@ export function GroupInfo({ ...props }: GroupInfoProps) {
                     group?.metadata?.description ?
                         <Text
                             fontSize={"sm"}
-                            color={"fg.900"}
+                            color={"fg"}
                         >
                             {group?.metadata?.description}
                         </Text> :

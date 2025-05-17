@@ -74,7 +74,6 @@ export function GroupProfile() {
         <HStack w={"full"} align={"center"} justify={"space-between"}>
             <VStack align={"start"} gap={0}>
                 <Heading fontSize={"lg"}>{group.metadata?.name || formatAddress(group.id)}</Heading>
-                <Text fontSize={"sm"} color={"text.200"}>{group.metadata?.description}</Text>
                 <HStack>
                     <Text fontSize={"sm"} color={"fg.900"}>{group.members.size} members</Text>
                     <AddMember />
