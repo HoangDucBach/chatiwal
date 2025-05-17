@@ -31,7 +31,10 @@ export class AblyChannelManager {
         GROUP_MINTED: 'group-minted',
         GROUP_CAP_MINTED: 'group-cap-minted',
         GROUP_MEMBER_ADDED: 'group-member-added',
-        GROUP_MEMBER_REMOVED: 'group-member-removed'
+        GROUP_MEMBER_REMOVED: 'group-member-removed',
+
+        // Flag
+        FLAG_UPDATED: 'flag-updated',
     } as const;
 
     static getChannel(type: "GROUP_CHAT", groupId: string): string;

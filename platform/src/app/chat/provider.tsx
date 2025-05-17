@@ -99,43 +99,54 @@ export function GroupChannelsProvider({
         if (!currentAccount || membershipIds.length === 0) return;
 
         const subscriptions: { [channelName: string]: (message: any) => void } = {};
+        const attachedChannels: string[] = [];
 
-        membershipIds.forEach((groupId) => {
+        membershipIds.forEach(async (groupId) => {
             const groupChannelName = AblyChannelManager.getChannel("GROUP_CHAT", groupId);
-            if (!hasSubscribed(groupChannelName)) {
-                addChannel(groupChannelName);
+            if (hasSubscribed(groupChannelName)) return;
 
-                const handler = (message: any) => {
-                    try {
-                        const messageData = message.data;
-                        addMessage(groupChannelName, decode(messageData) as TMessage);
-                    } catch (error) {
-                        console.error(error);
-                    }
-                };
+            addChannel(groupChannelName);
+            const groupChannel = ably.channels.get(groupChannelName);
 
-                subscriptions[groupChannelName] = handler;
-                ably.channels.get(groupChannelName).subscribe(AblyChannelManager.EVENTS.MESSAGE_SEND, handler);
+            try {
+                await groupChannel.attach();
+                attachedChannels.push(groupChannelName);
+            } catch (error) {
+                console.error(`[Ably] Failed to attach channel ${groupChannelName}:`, error);
+                return;
             }
+
+            const handler = (message: any) => {
+                try {
+                    const messageData = message.data;
+                    addMessage(groupChannelName, decode(messageData) as TMessage);
+                } catch (error) {
+                    console.error(`[Ably] Failed to decode message on ${groupChannelName}:`, error);
+                }
+            };
+
+            subscriptions[groupChannelName] = handler;
+            groupChannel.subscribe(AblyChannelManager.EVENTS.MESSAGE_SEND, handler);
         });
 
         return () => {
             Object.entries(subscriptions).forEach(([channelName, handler]) => {
-                ably.channels.get(channelName).unsubscribe(AblyChannelManager.EVENTS.MESSAGE_SEND, handler);
+                const channel = ably.channels.get(channelName);
+                channel.unsubscribe(AblyChannelManager.EVENTS.MESSAGE_SEND, handler);
             });
-            Object.keys(subscriptions).forEach((channelName) => {
-                ably.channels.get(channelName).detach();
-            });
+
+            Promise.allSettled(
+                attachedChannels.map((channelName) =>
+                    ably.channels.get(channelName).detach().catch((err) => {
+                        console.warn(`[Ably] Detach failed for ${channelName}:`, err);
+                    })
+                )
+            );
         };
     }, [currentAccount?.address, JSON.stringify(membershipIds)]);
 
-    return (
-        <>
-            {children}
-        </>
-    );
+    return <>{children}</>;
 }
-
 export function Provider({
     children,
 }: Readonly<{

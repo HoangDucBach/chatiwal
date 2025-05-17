@@ -124,7 +124,7 @@ export function Content(props: ContentProps) {
             );
         }
 
-        if (isVideo || isAudio) {
+        if (isVideo) {
             return (
                 <ReactPlayer
                     url={decodedUrl}
@@ -148,6 +148,28 @@ export function Content(props: ContentProps) {
             );
         }
 
+        if (isAudio) {
+            return (
+                <ReactPlayer
+                    url={decodedUrl}
+                    config={{
+                        file: {
+                            forceAudio: isAudio,
+                            attributes: {
+                                controls: true,
+                            },
+                        }
+                    }}
+                    width="100%"
+                    height={"64px"}
+                    controls
+                    playing={false}
+                    style={{
+                        borderRadius: "inherit",
+                    }}
+                />
+            );
+        }
         if (isText && typeof media.raw === 'string') {
             return (
                 <Text
@@ -175,6 +197,7 @@ export function Content(props: ContentProps) {
             justify={"start"}
             gap={"1"}
             w={"full"}
+            h={"auto"}
         >
             {mediaNode}
         </VStack>

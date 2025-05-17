@@ -10,6 +10,9 @@ import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { toaster } from "@/components/ui/toaster";
 import { useSupabase } from "@/hooks/useSupabase";
 import { MdAdd } from "react-icons/md";
+import { useChannelName } from "../_hooks/useChannelName";
+import { useChannel } from "ably/react";
+import { AblyChannelManager } from "@/libs/ablyHelpers";
 
 type FormValues = {
     member: string;
@@ -38,9 +41,11 @@ export default function AddMember(
     });
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const { addMember, validateGroupCap } = useChatiwalClient();
+    const { addGroupMembership } = useSupabase();
+    const { channelName } = useChannelName();
+    const { channel } = useChannel({ channelName });
     const suiClient = useSuiClient();
     const queryClient = useQueryClient();
-    const { addGroupMembership } = useSupabase();
 
     const { data: group_cap, isSuccess } = useQuery({
         queryKey: ["group::members::group_cap"],
@@ -87,6 +92,7 @@ export default function AddMember(
                 title: "Success",
                 description: "Member added successfully",
             });
+            channel.publish(AblyChannelManager.EVENTS.FLAG_UPDATED, {});
             resetForm();
             setOpen(false);
         }
@@ -117,12 +123,7 @@ export default function AddMember(
             <DialogBackdrop backdropBlur={"4xl"} />
             <DialogContent>
                 <DialogHeader flexDirection={"row"} justifyContent={"space-between"} alignItems={"start"}>
-                    <VStack align={"start"}>
-                        <Heading as={"h6"} size={"lg"}>Add member</Heading>
-                        <Text fontSize={"sm"} color={"fg.700"}>
-                            Add a member to the group
-                        </Text>
-                    </VStack>
+                    <Heading as={"h6"} size={"lg"}>Add member</Heading>
                 </DialogHeader>
                 <DialogBody>
                     <Controller
