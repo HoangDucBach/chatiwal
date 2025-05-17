@@ -11,13 +11,24 @@ export function formatBalance(balance: bigint, decimals = 9): string {
     return `${whole}.${fractionStr}`;
 }
 
-export function generateColorFromAddress(addr: string): string {
+type ColorOptions = {
+    alpha?: number;
+}
+export function generateColorFromAddress(addr: string, options?: ColorOptions): string {
     const clean = addr.startsWith('0x') ? addr.slice(2) : addr;
     const hash = parseInt(clean.slice(0, 6), 16);
     const hue = hash % 360;
     const saturation = 60 + (hash % 20); // 60–80%
     const lightness = 50 + (hash % 20); // 50–70%
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)/${options?.alpha || 100}`;
+}
+
+export function generateColorFromString(str: string, options?: ColorOptions): string {
+    const hash = Array.from(str).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hue = hash % 360;
+    const saturation = 60 + (hash % 20); // 60–80%
+    const lightness = 50 + (hash % 20); // 50–70%
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)/${options?.alpha || 100}`;
 }
 
 export const TypeSuffixRegex = /<([^>]+)>/;
