@@ -40,9 +40,8 @@ export function GroupProfile() {
     const { channelName } = useChannelName();
 
     const currentSessionKey = useMemo<SessionKey | null>(() => {
-        const s = getSessionKey(group.id);
-        return s instanceof SessionKey ? s : null;
-    }, [currentAccount, group, getSessionKey, sessionKeys]);
+        return getSessionKey(channelName);
+    }, [currentAccount, group, sessionKeys]);
 
     const handleSessionKeyCreation = async (
         currentAccount: ReturnType<typeof useCurrentAccount>,
@@ -83,7 +82,7 @@ export function GroupProfile() {
                 <Tooltip
                     content={
                         currentSessionKey ?
-                            currentSessionKey.isExpired() ? "Session key expired" : currentSessionKey.getAddress()
+                            currentSessionKey.isExpired() ? "Session key expired" : "Session key created"
                             : "Create group key"
                     }
                 >

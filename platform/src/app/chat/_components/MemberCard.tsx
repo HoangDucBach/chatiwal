@@ -14,6 +14,9 @@ import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { toaster } from "@/components/ui/toaster";
 import { IoMdRemoveCircleOutline } from "react-icons/io";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useChannel } from "ably/react";
+import { useChannelName } from "../_hooks/useChannelName";
+import { AblyChannelManager } from "@/libs/ablyHelpers";
 
 interface Props extends StackProps {
     member: string;
@@ -113,6 +116,8 @@ const MemberMenu = ({ member, group }: MemberCardProps) => {
     const { mintGroupCap, removeMember } = useChatiwalClient();
     const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const queryClient = useQueryClient();
+    const { channelName } = useChannelName();
+    const { channel } = useChannel({ channelName });
 
     const { mutate: mintCap } = useMutation({
         mutationKey: ["group::member::remove", member],
@@ -122,6 +127,7 @@ const MemberMenu = ({ member, group }: MemberCardProps) => {
                 { transaction: tx },
                 {
                     onSuccess: () => {
+                        channel.publish(AblyChannelManager.EVENTS.FLAG_UPDATED, {});
                         toaster.success({
                             title: "Cap minted",
                             description: "The group cap has been minted.",
@@ -152,6 +158,7 @@ const MemberMenu = ({ member, group }: MemberCardProps) => {
                             title: "Member removed",
                             description: "The member has been removed from the group.",
                         });
+                        channel.publish(AblyChannelManager.EVENTS.FLAG_UPDATED, {});
                         queryClient.invalidateQueries({
                             queryKey: ["group::members", group.id],
                         })

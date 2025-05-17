@@ -11,18 +11,22 @@ import { TMessage } from "@/types";
 import { useGroup } from "../_hooks/useGroup";
 import { toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
-interface Props extends ButtonProps {
-    messages?: TMessage[];
-}
+import { useMessageStore } from "../_hooks/useMessagesStore";
+import { useChannelName } from "../_hooks/useChannelName";
+interface Props extends ButtonProps { }
 
-export function MessagesSnapshotButton({ messages, ...props }: Props) {
+export function MessagesSnapshotButton({ ...props }: Props) {
     const { group } = useGroup();
     const { mintMessagesSnapshotAndTransfer } = useChatiwalClient();
     const { store } = useWalrusClient();
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const currentAccount = useCurrentAccount();
+    const { channelName } = useChannelName();
+    const { getMessages } = useMessageStore();
+    const messages = getMessages(channelName);
+
     const { mutate: snap, isPending } = useMutation({
-        mutationKey: ["mint::messages::snapshot", messages, currentAccount?.address],
+        mutationKey: ["mint::messages::snapshot", currentAccount?.address],
         mutationFn: async () => {
             if (!currentAccount) throw new Error("Not connected");
             if (!messages) throw new Error("No messages to snapshot");
@@ -39,7 +43,7 @@ export function MessagesSnapshotButton({ messages, ...props }: Props) {
             });
         },
         onError: (error) => {
-            if(error.message === "No messages to snapshot") {
+            if (error.message === "No messages to snapshot") {
                 toaster.warning({
                     title: "Empty snapshot",
                     description: "No messages to snapshot.",

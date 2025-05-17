@@ -7,14 +7,20 @@ import { TGroup } from "@/types";
 import { Center, Skeleton } from "@chakra-ui/react";
 import { decode } from "@msgpack/msgpack";
 import { useSuiClient } from "@mysten/dapp-kit";
-import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, ReactNode, useEffect } from "react";
+import { useChannelName } from "./useChannelName";
+import { useChannel } from "ably/react";
+import { AblyChannelManager } from "@/libs/ablyHelpers";
 
 const GroupContext = createContext<{ group: TGroup } | null>(null);
 
 export const GroupProvider = ({ id, children }: { id: string; children: ReactNode }) => {
     const { getGroupData } = useChatiwalClient();
     const { read } = useWalrusClient();
+    const { channelName } = useChannelName();
+    const { channel } = useChannel({ channelName });
+    const queryClient = useQueryClient();
 
     const { data: group, isLoading } = useQuery({
         queryKey: ["group", id],
@@ -40,13 +46,21 @@ export const GroupProvider = ({ id, children }: { id: string; children: ReactNod
             } as TGroup;
         },
         enabled: !!id,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        refetchOnMount: false,
-        refetchInterval: false,
-        staleTime: 0,
+        staleTime: 1000 * 60 * 5,
         retry: false,
     })
+
+    useEffect(() => {
+        channel.subscribe(AblyChannelManager.EVENTS.FLAG_UPDATED, (message) => {
+            queryClient.invalidateQueries({
+                queryKey: ["group", id],
+            });
+        });
+
+        return () => {
+            channel.unsubscribe(AblyChannelManager.EVENTS.FLAG_UPDATED);
+        }
+    }, [channel, id, queryClient]);
 
     if (isLoading) return (
         <Center flex={"4"} w={"full"} h={"full"} px={"4"}>
