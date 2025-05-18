@@ -13,12 +13,12 @@ import { extractPrefixFromContentId, generateContentId } from "@/libs";
 
 
 function superMessageSealApprove(packageId: string) {
-    return (tx: Transaction, id: string, groupId: string) => {
+    return (tx: Transaction, id: string, messageId: string, groupId: string) => {
         tx.moveCall({
             target: `${packageId}::message::seal_approve_super_message`,
             arguments: [
                 tx.pure.vector('u8', fromHex(id)),
-                tx.object(id),
+                tx.object(messageId),
                 tx.object(groupId),
                 tx.object(SUI_CLOCK_OBJECT_ID),
             ],
@@ -46,14 +46,13 @@ function directSealApprove(packageId: string) {
 
 interface Options {
     type?: MessageType;
+    messageId?: string;
     groupId?: string;
 }
 
 interface ISealActions {
-    // encryptMessage: (message: TMessage, options?: Options) => Promise<TMessage>;
     encrypt(id: Uint8Array, object: any, options?: Options): Promise<Uint8Array>;
     decrypt: (encryptedObject: Uint8Array, sessionKey: SessionKey, options?: Options) => Promise<Uint8Array>;
-    // decryptMessage: (encryptedMessage: TMessage, type: MessageType, sessionKey: SessionKey, options?: Options) => Promise<Uint8Array>;
     createSessionKey: () => Promise<SessionKey>;
 }
 
@@ -128,10 +127,10 @@ export function useSealClient(): ISealActions {
                     directSealApprove(packageId)(tx, id);
                     break;
                 case MessageType.SUPER_MESSAGE:
-                    if (!options?.groupId) {
+                    if (!options?.groupId || !options?.messageId) {
                         throw new Error("Message ID and group ID are required for super message decryption");
                     }
-                    superMessageSealApprove(packageId)(tx, id, options.groupId);
+                    superMessageSealApprove(packageId)(tx, id, options.messageId, options.groupId);
                     break;
                 default:
                     groupSealApprove(packageId)(tx, toHex(extractPrefixFromContentId(fromHex(encryptedObjectParsed.id))), id);

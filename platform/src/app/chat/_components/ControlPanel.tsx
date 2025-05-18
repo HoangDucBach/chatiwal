@@ -75,10 +75,7 @@ export function ControlPanel(props: Props) {
             return groupMemberShips;
         },
         enabled: !!currentAccount,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        refetchOnMount: false,
-        staleTime: Infinity,
+        staleTime: 1000 * 60 * 5,
         retry: 0,
     });
 

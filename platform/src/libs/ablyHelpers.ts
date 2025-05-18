@@ -23,6 +23,7 @@ export class AblyChannelManager {
         SUPER_MESSAGE_MINTED: 'super-message-minted',
         MESSAGE_SEND: 'message-send',
         MESSAGE_READ: 'message-read',
+        MESSAGE_SUBSCRIBE: 'message-subscribe',
 
         // Fee
         FEES_WITHDRAWN: 'fees-withdrawn',

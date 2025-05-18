@@ -265,7 +265,8 @@ export function MessageBase(props: MessageBaseProps) {
             }
 
             const decryptedBytes = await decrypt(message.content, sessionKey, {
-                type: channelType,
+                type: message.type,
+                messageId: message.id,
                 groupId: message.groupId,
             });
             const decodedData = decode(decryptedBytes) as MediaContent[];
@@ -410,6 +411,8 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const currentAccount = useCurrentAccount();
     const queryClient = useQueryClient();
+    const { channelName } = useChannelName();
+    const { channel } = useChannel({ channelName });
 
     const { data: message, isLoading, error } = useQuery({
         queryKey: ["messages::group::get::object", messageId],
@@ -461,7 +464,6 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
                 transaction: tx,
             });
 
-            console.log("Transaction result:", res.effects);
             const { errors } = await suiClient.waitForTransaction(res);
 
             if (errors) {
@@ -480,6 +482,8 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
             queryClient.invalidateQueries({
                 queryKey: ["messages::group::get::object", messageId],
             });
+
+            channel.publish(AblyChannelManager.EVENTS.MESSAGE_SUBSCRIBE, {})
         },
 
         onError: (error) => {
@@ -494,6 +498,17 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         }
     })
 
+    useEffect(() => {
+        channel.subscribe(AblyChannelManager.EVENTS.MESSAGE_SUBSCRIBE, (message) => {
+            queryClient.invalidateQueries({
+                queryKey: ["messages::group::get::object", messageId],
+            });
+        });
+        return () => {
+            channel.unsubscribe(AblyChannelManager.EVENTS.MESSAGE_SUBSCRIBE);
+        };
+
+    }, [channel]);
     const createMessageKey = useCallback(async () => {
         const sessionKey = await createSessionKey();
         setSessionKey(messageId, sessionKey);
@@ -530,6 +545,10 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
         label: string | null;
     }>(() => {
         if (!message) return { disabled: false, label: null };
+        if (!currentAccount) return { disabled: false, label: null };
+
+        if (message.readers.includes(currentAccount?.address)) return { disabled: false, label: null };
+
         let disabled = false;
         let label = null;
 
