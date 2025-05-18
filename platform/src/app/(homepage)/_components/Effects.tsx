@@ -101,9 +101,6 @@ export function Effects() {
         <chakra.div pos={"absolute"} zIndex={"-1"} top={"0"} left={"0"} w={"svw"} h={"svh"} pointerEvents={"none"}>
             <NextImage
                 style={{
-                    position: "absolute",
-                    bottom: "0",
-                    left: "0",
                     pointerEvents: "none",
                 }}
                 src={"/assets/effect-radial-gradient.png"}
