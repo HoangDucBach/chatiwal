@@ -3,9 +3,8 @@ export const siteConfig = {
     slogan: "Your chat, your key, your storage",
     description: "Empower Evolving Conversations with E2EE and Full Control",
     hotFeatures: [
-        "End-to-End Encryption",
-        "Envolving Conversations",
-        "Programmable Messages",
+        "Encryption Messaging",
+        "Programmable Message",
         "Full Control"
     ],
     navLinks: {

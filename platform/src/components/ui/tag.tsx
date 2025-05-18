@@ -13,7 +13,7 @@ export function Tag({ children, ...props }: TagProps) {
             outlineStyle={"solid"}
             outlineWidth={"4px"}
             borderRadius={"lg"}
-            color={"colorPalette.emphasized"}
+            color={"colorPalette.contrast"}
             bg={"colorPalette.solid"}
             fontWeight={"semibold"}
             cursor={"pointer"}

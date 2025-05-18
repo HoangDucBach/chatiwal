@@ -21,7 +21,7 @@ const NavLinks = () => {
                         as={Link}
                         href={value.href}
                         key={key}
-                        fontSize={"sm"}
+                        fontSize={"md"}
                         color={"fg.700"}
                         _hover={{
                             textDecoration: "none",

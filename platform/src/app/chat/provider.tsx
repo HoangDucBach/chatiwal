@@ -13,6 +13,7 @@ import { useDirectMessages } from "./_hooks/useDirectMessages";
 import { TMessage } from "@/types";
 import { useSubscribedChannelsStore } from "./_hooks/useSubsribedChannelStore";
 import { useMembershipGroups } from "./_hooks/useMembershipGroups";
+import { toaster } from "@/components/ui/toaster";
 
 export function InboxChannelProvider({
     children,
@@ -162,6 +163,12 @@ export function Provider({
         key: ABLY_API_KEY,
         useBinaryProtocol: true,
     });
+
+    useEffect(() => {
+        queueMicrotask(() => {
+            toaster.dismiss("redirecting-to-chat");
+        });
+    }, [])
 
     return (
         <AblyProvider client={ablyClient}>

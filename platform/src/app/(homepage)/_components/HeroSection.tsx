@@ -5,16 +5,23 @@ import { chakra, Heading, VStack, Text, Image, Highlight, Box, Span, HStack, Cen
 import { ChatNowButton } from "./ChatNowButton";
 import { Tag } from "@/components/ui/tag";
 import { siteConfig } from "@/config/site";
-import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion, useScroll } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { fadeSlideUp } from "./motion";
 
 const MotionTag = motion.create(Tag);
+const MotionSection = motion.create(chakra.section);
 
 interface HeroSectionProps extends React.HTMLAttributes<HTMLElement> {
 }
 export default function HeroSection(props: HeroSectionProps) {
     const [currentTagIndex, setCurrentTagIndex] = useState(0);
-
+    const ref = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: ref,
+        offset: ["start end",
+            "end start"],
+    });
     const slicedTags = siteConfig.hotFeatures.slice(1);
     const visibleTags = [slicedTags[(currentTagIndex + 1) % slicedTags.length]];
 
@@ -27,8 +34,15 @@ export default function HeroSection(props: HeroSectionProps) {
     }, []);
 
     return (
-        <chakra.section id="hero" zIndex={"0"} w={"full"} h={"full"} overflow={"hidden"}>
-            <VStack w="full" h={"full"} justify={"center"} align={"center"} pt={["4", "24", "32"]} gap={"8"} mx={"auto"}>
+        <MotionSection
+            ref={ref}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeSlideUp}
+            id="hero" zIndex={"0"} w={"full"} h={"full"} overflow={"hidden"}
+        >
+            <VStack w="full" h={"full"} justify={"center"} align={"center"} pt={["4", "20", "24"]} gap={"8"} mx={"auto"}>
                 <Center w={"full"} h={"fit"} pos={"relative"}>
                     {visibleTags.map((feature, i) => (
                         <MotionTag
@@ -51,8 +65,8 @@ export default function HeroSection(props: HeroSectionProps) {
                     ))}
                 </Center>
                 <VStack w={"full"} h={"full"} align={"center"}>
-                    <Heading as="h1" size={"4xl"} fontWeight={"semibold"} textAlign={"center"}>
-                        Sovereign Programmable Messaging
+                    <Heading as="h1" size={["4xl", "4xl", "5xl", "6xl"]} fontWeight={"semibold"} textAlign={"center"}>
+                        Sovereign Web3 Messaging
                     </Heading>
                     <Text color={"fg.800"} fontSize={"lg"} textAlign={"center"} maxW={"md"}>
                         <Highlight
@@ -64,6 +78,6 @@ export default function HeroSection(props: HeroSectionProps) {
                 </VStack>
                 <ChatNowButton />
             </VStack>
-        </chakra.section >
+        </MotionSection >
     )
 }

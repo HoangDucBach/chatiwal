@@ -14,6 +14,7 @@ export function Posters({ ...props }: Props) {
             justify={"center"}
             gap={"8"}
             p={"6"}
+            overflow={"visible"}
         >
             <Image
                 src={"/assets/poster-super-message.png"}
