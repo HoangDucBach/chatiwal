@@ -45,6 +45,9 @@ export function ChatHistoryBySnapshot({ onSuccess, ...props }: Props) {
             }
 
             const snapShot = await getMessageSnapshotData(lastestSnapshot.data?.objectId);
+            if (snapShot.group_id !== group.id) {
+                return [];
+            }
             const bufferArr = await read([snapShot.messages_blob_id]);
             if (!bufferArr) {
                 return [];
