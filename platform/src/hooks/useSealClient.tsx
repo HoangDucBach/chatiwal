@@ -5,11 +5,8 @@ import { fromHex, SUI_CLOCK_OBJECT_ID, toHex } from "@mysten/sui/utils";
 import { Transaction } from "@mysten/sui/transactions";
 
 import { useChatiwalClient } from "./useChatiwalClient";
-import { useSessionKeys } from "./useSessionKeysStore";
-import { MessageType, TMessage } from "@/types";
-import { nanoid } from "nanoid";
-import { decode, encode } from "@msgpack/msgpack";
-import { extractPrefixFromContentId, generateContentId } from "@/libs";
+import { MessageType } from "@/types";
+import { extractPrefixFromContentId } from "@/libs";
 
 
 function superMessageSealApprove(packageId: string) {
@@ -63,7 +60,10 @@ export function useSealClient(): ISealActions {
     const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
     const sealClient = new SealClient({
         suiClient,
-        serverObjectIds: getAllowlistedKeyServers("testnet"),
+        serverConfigs: getAllowlistedKeyServers('testnet').map((id) => ({
+            objectId: id,
+            weight: 1,
+        })), 
         verifyKeyServers: false,
     });
 
@@ -79,6 +79,7 @@ export function useSealClient(): ISealActions {
             address: currentAccount.address,
             packageId: packageId,
             ttlMin: 30,
+            suiClient,
         });
 
         const signResult = await signPersonalMessage({ message: sessionKey.getPersonalMessage() });

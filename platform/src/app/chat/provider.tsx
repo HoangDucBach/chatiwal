@@ -119,6 +119,7 @@ export function GroupChannelsProvider({
 
             const handler = (message: any) => {
                 try {
+                    console.log(`[Ably] Received message on ${groupChannelName}:`, message);
                     const messageData = message.data;
                     addMessage(groupChannelName, decode(messageData) as TMessage);
                 } catch (error) {
