@@ -16,7 +16,7 @@ type MessagesSnapshotData = typeof MessagesSnapshotStruct.$inferType;
 type GroupCapData = typeof GroupCapStruct.$inferType;
 
 export interface IGroupActions {
-    mintGroupAndTransfer(metadataBlobId?: string): Promise<Transaction>;
+    mintGroupAndTransfer(metadataBlobId?: string, _tx?: Transaction): Promise<Transaction>;
     mintGroupCap(groupId: string, recipient: string): Promise<Transaction>;
     addMember(groupId: string, member: string, groupCap?: string): Promise<Transaction>;
     removeMember(groupId: string, member: string): Promise<Transaction>;
@@ -119,9 +119,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
 
     const groupActions: IGroupActions = {
-        mintGroupAndTransfer: (metadataBlobId: string = "") => {
+        mintGroupAndTransfer: (metadataBlobId: string = "", tx: Transaction) => {
             return executeTransaction(() =>
-                client.mintGroupAndTransfer({ metadataBlobId })
+                client.mintGroupAndTransfer({ metadataBlobId, _tx: tx })
             );
         },
 

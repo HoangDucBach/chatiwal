@@ -2,6 +2,7 @@ import { TMessage } from '@/types';
 import { NETWORK } from '@/utils/constants';
 import { encode } from '@msgpack/msgpack';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
 import { WalrusClient } from '@mysten/walrus';
 import { useMemo } from 'react';
 
@@ -14,6 +15,10 @@ interface IWalrusClientActions {
     storeMessage: (message: TMessage, options?: StoreOptions) => Promise<TMessage>;
     deleteMessage: (blobId: string) => Promise<void>;
     store(object: any): Promise<string>;
+    storeReturnTransaction: (object: any) => Promise<{
+        transaction: Transaction;
+        blobId: string;
+    }>
     read(blobIds: string[]): Promise<ArrayBuffer[]>;
     client: WalrusClient;
 }
@@ -31,6 +36,67 @@ export const useWalrusClient = (): IWalrusClientActions => {
         }
     });
 
+    const storeReturnTransaction = async (object: any, options?: StoreOptions) => {
+
+        const { deletable = true, epochs = 1 } = options || {};
+        const encoded = encode(object);
+        const encodedBlob = await walrusClient.encodeBlob(encoded);
+
+        if (!currentAccount) {
+            throw new Error("Not connected");
+        }
+
+        const registerBlobTransaction = walrusClient.registerBlobTransaction({
+            blobId: encodedBlob.blobId,
+            rootHash: encodedBlob.rootHash,
+            size: encoded.length,
+            deletable,
+            epochs,
+            owner: currentAccount?.address,
+        });
+
+        registerBlobTransaction.setSender(currentAccount?.address);
+        const { digest } = await signAndExecuteTransaction({ transaction: registerBlobTransaction });
+
+        const { objectChanges, effects } = await suiClient.waitForTransaction({
+            digest,
+            options: { showObjectChanges: true, showEffects: true },
+        });
+
+        if (effects?.status.status !== 'success') {
+            throw new Error('Failed to register blob');
+        }
+
+        const blobType = await walrusClient.getBlobType();
+
+        const blobObject = objectChanges?.find(
+            (change) => change.type === 'created' && change.objectType === blobType,
+        );
+
+        if (!blobObject || blobObject.type !== 'created') {
+            throw new Error('Blob object not found');
+        }
+
+        const confirmations = await walrusClient.writeEncodedBlobToNodes({
+            blobId: encodedBlob.blobId,
+            metadata: encodedBlob.metadata,
+            sliversByNode: encodedBlob.sliversByNode,
+            deletable: true,
+            objectId: blobObject.objectId,
+        });
+
+        const certifyBlobTransaction = walrusClient.certifyBlobTransaction({
+            blobId: encodedBlob.blobId,
+            blobObjectId: blobObject.objectId,
+            confirmations,
+            deletable: true,
+        });
+
+        return {
+            transaction: certifyBlobTransaction,
+            blobId: encodedBlob.blobId,
+        };
+    }
     const store = async (object: any, options?: StoreOptions) => {
         const { deletable = true, epochs = 1 } = options || {};
         const encoded = encode(object);
@@ -168,6 +234,7 @@ export const useWalrusClient = (): IWalrusClientActions => {
 
     return useMemo(
         () => ({
+            storeReturnTransaction,
             store,
             read,
             storeMessage,

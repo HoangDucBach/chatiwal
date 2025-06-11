@@ -48,8 +48,8 @@ export class ChatiwalClient {
 
     // --- Group Module Methods ---
 
-    mintGroupAndTransfer({ metadataBlobId }: { metadataBlobId: string }): Transaction {
-        const tx = new Transaction();
+    mintGroupAndTransfer({ metadataBlobId, _tx }: { metadataBlobId: string, _tx?: Transaction }): Transaction {
+        const tx = _tx || new Transaction();
         this.groupModule.mint_group_and_transfer({ arguments: [metadataBlobId] })(tx);
         return tx;
     }

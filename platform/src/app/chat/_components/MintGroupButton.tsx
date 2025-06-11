@@ -15,6 +15,7 @@ import { type MetadataGroup, MetadataGroupSchema } from "@/libs/schema";
 import { useState } from "react";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { DialogBackdrop, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTrigger } from "@/components/ui/dialog";
+import { Transaction } from "@mysten/sui/transactions";
 
 interface MintGroupFormData {
     name?: string;
@@ -32,7 +33,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
     const { onClose, onOpen, setOpen, open } = useDisclosure()
     const { mintGroupAndTransfer, client } = useChatiwalClient();
     const { addGroupMembership } = useSupabase();
-    const { store } = useWalrusClient();
+    const { store, storeReturnTransaction } = useWalrusClient();
     const suiClient = useSuiClient();
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction()
     const currentAccount = useCurrentAccount();
@@ -40,10 +41,11 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
 
     const { mutate: mint, isPending } = useMutation({
         mutationKey: ["groups::mint"],
-        mutationFn: async (metatadataBlobId?: string) => {
+        mutationFn: async ({ blobId, metatadataTx }: { blobId?: string, metatadataTx?: Transaction }) => {
             if (!currentAccount) throw new Error("Not connected");
 
-            const tx = await mintGroupAndTransfer(metatadataBlobId);
+            const tx = await mintGroupAndTransfer(blobId, metatadataTx);
+
             const { digest } = await signAndExecuteTransaction({
                 transaction: tx,
             })
@@ -110,15 +112,15 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                 tags: data.tags,
             }
 
-            metadataBlobId = await store(metadata);
+            const { blobId, transaction } = await storeReturnTransaction(metadata);
 
+            mint({ blobId, metatadataTx: transaction });
         }
 
-        mint(metadataBlobId);
     };
 
     const handleMintGroupWithoutMetadata = () => {
-        mint(undefined);
+        mint({});
     }
 
     const handleMetadataToggle = (event: any) => {
@@ -151,7 +153,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
                         colorPalette="primary"
                     >
                         <SwitchHiddenInput />
-                        <SwitchControl/>
+                        <SwitchControl />
                         <SwitchLabel>
                             Enable metadata
                         </SwitchLabel>
