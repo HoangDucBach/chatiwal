@@ -256,57 +256,74 @@ export function useChatiwalClient(): IChatiwalClientActions {
     };
 
     const messageActions: IMessageActions = {
-        mintMessagesSnapshotAndTransfer: (groupId: string, metadataBlobId: string) => {
+        mintMessagesSnapshotAndTransfer: (groupId: string, metadataBlobId: string, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+
             return executeTransaction(() =>
                 client.mintMessagesSnapshotAndTransfer({
                     g_id: groupId,
-                    mt_b_id: metadataBlobId
+                    mt_b_id: metadataBlobId,
+                    _tx: tx
                 })
             );
         },
 
-        mintMessagesSnapshotCapAndTransfer: (messagesSnapshotId: string) => {
+        mintMessagesSnapshotCapAndTransfer: (messagesSnapshotId: string, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+
             return executeTransaction(() =>
                 client.mintMessagesSnapshotCapAndTransfer({
-                    msg_snapshot_id: messagesSnapshotId
+                    msg_snapshot_id: messagesSnapshotId,
+                    _tx: tx
                 })
             );
         },
 
-        mintSuperMessageNoPolicyAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array) => {
+        mintSuperMessageNoPolicyAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+
             return executeTransaction(() =>
                 client.mintSuperMessageNoPolicyAndTransfer({
                     g_id: groupId,
                     mt_b_id: messageBlobId,
-                    aux_id: auxId
+                    aux_id: auxId,
+                    _tx: tx
                 })
             );
         },
 
-        mintSuperMessageTimeLockAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint) => {
+        mintSuperMessageTimeLockAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+            
             return executeTransaction(() =>
                 client.mintSuperMessageTimeLockAndTransfer({
                     g_id: groupId,
                     mt_b_id: messageBlobId,
                     aux_id: auxId,
                     from: timeFrom,
-                    to: timeTo
+                    to: timeTo,
+                    _tx: tx
                 })
             );
         },
 
-        mintSuperMessageLimitedReadAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint) => {
+        mintSuperMessageLimitedReadAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+
             return executeTransaction(() =>
                 client.mintSuperMessageLimitedReadAndTransfer({
                     g_id: groupId,
                     mt_b_id: messageBlobId,
                     aux_id: auxId,
-                    max: maxReads
+                    max: maxReads,
+                    _tx: tx
                 })
             );
         },
 
-        mintSuperMessageFeeBasedAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, fee: number | bigint, recipient: string) => {
+        mintSuperMessageFeeBasedAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, fee: number | bigint, recipient: string, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+
             return executeTransaction(() =>
                 client.mintSuperMessageFeeBasedAndTransfer({
                     g_id: groupId,
@@ -318,7 +335,9 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        mintSuperMessageCompoundAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string) => {
+        mintSuperMessageCompoundAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+            
             return executeTransaction(() =>
                 client.mintSuperMessageCompoundAndTransfer({
                     g_id: groupId,
