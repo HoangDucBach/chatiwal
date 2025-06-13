@@ -15,13 +15,16 @@ type SuperMessageData = typeof SuperMessageStruct.$inferType
 type MessagesSnapshotData = typeof MessagesSnapshotStruct.$inferType;
 type GroupCapData = typeof GroupCapStruct.$inferType;
 
+interface ActionOptions {
+    tx?: Transaction;
+}
 export interface IGroupActions {
-    mintGroupAndTransfer(metadataBlobId?: string, _tx?: Transaction): Promise<Transaction>;
-    mintGroupCap(groupId: string, recipient: string): Promise<Transaction>;
-    addMember(groupId: string, member: string, groupCap?: string): Promise<Transaction>;
-    removeMember(groupId: string, member: string): Promise<Transaction>;
-    leaveGroup(groupId: string, member: string): Promise<Transaction>;
-    sealApprove(id: Uint8Array, groupId: string): Promise<Transaction>;
+    mintGroupAndTransfer(metadataBlobId?: string, options?: ActionOptions): Promise<Transaction>;
+    mintGroupCap(groupId: string, recipient: string, options?: ActionOptions): Promise<Transaction>;
+    addMember(groupId: string, member: string, groupCap?: string, options?: ActionOptions): Promise<Transaction>;
+    removeMember(groupId: string, member: string, options?: ActionOptions): Promise<Transaction>;
+    leaveGroup(groupId: string, member: string, options?: ActionOptions): Promise<Transaction>;
+    sealApprove(id: Uint8Array, groupId: string, options?: ActionOptions): Promise<Transaction>;
     validateGroupCap(groupId: string): Promise<string>;
     getGroupData(groupdId: string): Promise<GroupData>;
     getGroupCapData(groupCapId: string): Promise<GroupCapData>;
@@ -29,16 +32,16 @@ export interface IGroupActions {
 }
 
 export interface IMessageActions {
-    mintMessagesSnapshotAndTransfer(groupId: string, metadataBlobId: string): Promise<Transaction>;
-    mintMessagesSnapshotCapAndTransfer(messagesSnapshotId: string): Promise<Transaction>;
-    mintSuperMessageNoPolicyAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array): Promise<Transaction>;
-    mintSuperMessageTimeLockAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint): Promise<Transaction>;
-    mintSuperMessageLimitedReadAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint): Promise<Transaction>;
-    mintSuperMessageFeeBasedAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, fee: number | bigint, recipient: string): Promise<Transaction>;
-    mintSuperMessageCompoundAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string): Promise<Transaction>;
+    mintMessagesSnapshotAndTransfer(groupId: string, metadataBlobId: string, options?: ActionOptions): Promise<Transaction>;
+    mintMessagesSnapshotCapAndTransfer(messagesSnapshotId: string, options?: ActionOptions): Promise<Transaction>;
+    mintSuperMessageNoPolicyAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, options?: ActionOptions): Promise<Transaction>;
+    mintSuperMessageTimeLockAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, options?: ActionOptions): Promise<Transaction>;
+    mintSuperMessageLimitedReadAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint, options?: ActionOptions): Promise<Transaction>;
+    mintSuperMessageFeeBasedAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, fee: number | bigint, recipient: string, options?: ActionOptions): Promise<Transaction>;
+    mintSuperMessageCompoundAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, options?: ActionOptions): Promise<Transaction>;
     readMessage(messageId: string, paymentCoinId: string): Promise<Transaction>;
-    withdrawFees(messageId: string): Promise<Transaction>;
-    sealApproveSuperMessage(id: Uint8Array, messageId: ObjectId, groupId: ObjectId): Promise<Transaction>;
+    withdrawFees(messageId: string, options?: ActionOptions): Promise<Transaction>;
+    sealApproveSuperMessage(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, options?: ActionOptions): Promise<Transaction>;
     getSuperMessageData(messageId: string): Promise<SuperMessageData>;
 }
 
@@ -119,13 +122,15 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
 
     const groupActions: IGroupActions = {
-        mintGroupAndTransfer: (metadataBlobId: string = "", tx: Transaction) => {
+        mintGroupAndTransfer: (metadataBlobId: string = "", options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
             return executeTransaction(() =>
                 client.mintGroupAndTransfer({ metadataBlobId, _tx: tx })
             );
         },
 
-        mintGroupCap: async (groupId: string, recipient: string) => {
+        mintGroupCap: async (groupId: string, recipient: string, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
             const groupCapId = await validateGroupCap(groupId);
             return executeTransaction(() =>
                 client.mintGroupCap({
