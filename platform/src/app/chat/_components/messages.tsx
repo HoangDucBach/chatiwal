@@ -267,7 +267,6 @@ export function MessageBase(props: MessageBaseProps) {
 
             const decryptedBytes = await decrypt(message.content, sessionKey, {
                 type: message.type,
-                messageId: message.id,
                 groupId: message.groupId,
                 msgId: message.id,
             });
