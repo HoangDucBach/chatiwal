@@ -49,7 +49,7 @@ export default function HeroSection(props: HeroSectionProps) {
             pb={"8"}
             id="hero" zIndex={"0"} w={"full"} h={"full"} overflow={"hidden"}
         >
-            <VStack w={"full"} h={"full"} align={"start"} justify={"space-between"}>
+            <VStack w={"full"} h={"full"} align={"start"} justify={"space-between"} gap={"8"}>
                 <VStack w="full" h={"fit"} justify={"center"} align={"start"} gap={"8"}>
                     <HStack>
                         <Icon as={LuBoxes} boxSize={"4"} color={"primary"} />
@@ -74,7 +74,7 @@ export default function HeroSection(props: HeroSectionProps) {
                         </HStack>
                     </VStack>
                 </VStack>
-                <Stack w={"full"} h={"fit"} pos={"relative"}>
+                {/* <Stack w={"full"} h={"fit"} pos={"relative"}>
                     {visibleTags.map((feature, i) => (
                         <MotionTag
                             w="72"
@@ -92,7 +92,7 @@ export default function HeroSection(props: HeroSectionProps) {
                             {feature}
                         </MotionTag>
                     ))}
-                </Stack>
+                </Stack> */}
                 <SupportedBrands />
             </VStack>
         </MotionSection >

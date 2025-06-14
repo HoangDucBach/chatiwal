@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation"
 
 export function Header() {
     return (
-        <HeaderComponent>
+        <HeaderComponent pos={"fixed"} top={0}>
             <NavLinks />
         </HeaderComponent>
     )
