@@ -14,7 +14,7 @@ interface Props extends StackProps { }
 
 export function Header({ children, ...props }: Props) {
     return (
-        <chakra.header w={"full"} rounded={"2xl"} p={"4"}>
+        <chakra.header w={"full"} rounded={"2xl"} p={"4"} pos={"sticky"}>
             <HStack justifyContent={"space-between"} alignItems={"center"}>
                 <Brand />
                 {children}
