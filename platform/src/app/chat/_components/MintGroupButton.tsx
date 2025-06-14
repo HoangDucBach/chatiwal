@@ -44,7 +44,7 @@ export function MintGroupButton({ onSuccess, onError, ...props }: Props) {
         mutationFn: async ({ blobId, metatadataTx }: { blobId?: string, metatadataTx?: Transaction }) => {
             if (!currentAccount) throw new Error("Not connected");
 
-            const tx = await mintGroupAndTransfer(blobId, metatadataTx);
+            const tx = await mintGroupAndTransfer(blobId, { tx: metatadataTx });
 
             const { digest } = await signAndExecuteTransaction({
                 transaction: tx,
