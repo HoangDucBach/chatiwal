@@ -13,12 +13,13 @@ import { toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { useMessageStore } from "../_hooks/useMessagesStore";
 import { useChannelName } from "../_hooks/useChannelName";
+import { Transaction } from "@mysten/sui/transactions";
 interface Props extends ButtonProps { }
 
 export function MessagesSnapshotButton({ ...props }: Props) {
     const { group } = useGroup();
     const { mintMessagesSnapshotAndTransfer } = useChatiwalClient();
-    const { store } = useWalrusClient();
+    const { storeReturnTransaction } = useWalrusClient();
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
     const currentAccount = useCurrentAccount();
     const { channelName } = useChannelName();
@@ -31,8 +32,8 @@ export function MessagesSnapshotButton({ ...props }: Props) {
             if (!currentAccount) throw new Error("Not connected");
             if (!messages) throw new Error("No messages to snapshot");
 
-            const blobId = await store(messages);
-            const tx = await mintMessagesSnapshotAndTransfer(group.id, blobId);
+            const { blobId, transaction } = await storeReturnTransaction(messages);
+            const tx = await mintMessagesSnapshotAndTransfer(group.id, blobId, { tx: transaction });
 
             await signAndExecuteTransaction({ transaction: tx })
         },
@@ -43,6 +44,7 @@ export function MessagesSnapshotButton({ ...props }: Props) {
             });
         },
         onError: (error) => {
+            console.error("Snapshot error:", error);
             if (error.message === "No messages to snapshot") {
                 toaster.warning({
                     title: "Empty snapshot",
