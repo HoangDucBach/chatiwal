@@ -10,12 +10,12 @@ import { extractPrefixFromContentId } from "@/libs";
 
 
 function superMessageSealApprove(packageId: string) {
-    return (tx: Transaction, id: string, messageId: string, groupId: string) => {
+    return (tx: Transaction, id: string, msgId: string, groupId: string) => {
         tx.moveCall({
             target: `${packageId}::message::seal_approve_super_message`,
             arguments: [
                 tx.pure.vector('u8', fromHex(id)),
-                tx.object(messageId),
+                tx.object(msgId),
                 tx.object(groupId),
                 tx.object(SUI_CLOCK_OBJECT_ID),
             ],
@@ -43,8 +43,8 @@ function directSealApprove(packageId: string) {
 
 interface Options {
     type?: MessageType;
-    messageId?: string;
     groupId?: string;
+    msgId?: string
 }
 
 interface ISealActions {
@@ -63,7 +63,7 @@ export function useSealClient(): ISealActions {
         serverConfigs: getAllowlistedKeyServers('testnet').map((id) => ({
             objectId: id,
             weight: 1,
-        })), 
+        })),
         verifyKeyServers: false,
     });
 
@@ -75,7 +75,7 @@ export function useSealClient(): ISealActions {
             throw new Error("Not connected");
         }
 
-        const sessionKey = new SessionKey({
+        const sessionKey = await SessionKey.create({
             address: currentAccount.address,
             packageId: packageId,
             ttlMin: 30,
@@ -118,7 +118,7 @@ export function useSealClient(): ISealActions {
         const tx = new Transaction();
         const encryptedObjectParsed = EncryptedObject.parse(new Uint8Array(encryptedObject));
         const ids = [encryptedObjectParsed.id];
-
+        
         ids.forEach((id) => {
             switch (options?.type) {
                 case MessageType.GROUP:
@@ -128,10 +128,13 @@ export function useSealClient(): ISealActions {
                     directSealApprove(packageId)(tx, id);
                     break;
                 case MessageType.SUPER_MESSAGE:
-                    if (!options?.groupId || !options?.messageId) {
+                    if (!options?.groupId) {
                         throw new Error("Message ID and group ID are required for super message decryption");
                     }
-                    superMessageSealApprove(packageId)(tx, id, options.messageId, options.groupId);
+                    if (!options?.msgId) {
+                        throw new Error("Message ID is required for super message decryption");
+                    }
+                    superMessageSealApprove(packageId)(tx, id, options.msgId, options.groupId);
                     break;
                 default:
                     groupSealApprove(packageId)(tx, toHex(extractPrefixFromContentId(fromHex(encryptedObjectParsed.id))), id);

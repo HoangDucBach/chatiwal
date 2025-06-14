@@ -62,6 +62,7 @@ type MintParams = {
     maxReads?: bigint;
     fee?: bigint;
     recipient?: string;
+    tx?: Transaction;
 }
 
 interface FormValues {
@@ -161,7 +162,7 @@ const renderDatePickerField = (
                     selected={field.value ? new Date(field.value * 1000) : new Date()}
                     onChange={(date: Date | null) => field.onChange(date ? Math.floor(date.getTime() / 1000) : new Date())}
                     onBlur={field.onBlur}
-                    customInput={<DatePickerInput/>}
+                    customInput={<DatePickerInput />}
                     showTimeSelect timeFormat="HH:mm" timeIntervals={5} dateFormat="yyyy-MM-dd HH:mm"
                     isClearable placeholderText={`Select ${label.toLowerCase()}`}
                     disabled={isPending || isSubmitting}
@@ -265,7 +266,7 @@ export function ComposerInput(props: ComposerInputProps) {
         mintSuperMessageCompoundAndTransfer,
     } = useChatiwalClient();
     const { encrypt } = useSealClient();
-    const { store } = useWalrusClient();
+    const { storeReturnTransaction } = useWalrusClient();
     const { client } = useChatiwalClient();
     const { addSuperMessage } = useSupabase();
     const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
@@ -277,27 +278,36 @@ export function ComposerInput(props: ComposerInputProps) {
             if (!group?.id) throw new Error("Group ID is not available");
             if (!currentAccount) throw new Error("Not connected");
 
-            let tx: Transaction;
+            let tx = params.tx;
             switch (params.type) {
                 case 'time_lock':
                     if (!params.timeFrom || !params.timeTo || !params.messageBlobId || !params.auxId)
                         throw new Error("Missing parameters for Time Lock");
                     tx = await mintSuperMessageTimeLockAndTransfer(
-                        group.id, params.messageBlobId, params.auxId, params.timeFrom, params.timeTo
+                        group.id, params.messageBlobId, params.auxId, params.timeFrom, params.timeTo,
+                        {
+                            tx,
+                        }
                     );
                     break;
                 case 'limited_read':
                     if (!params.maxReads || !params.messageBlobId || !params.auxId)
                         throw new Error("Missing parameters for Limited Read");
                     tx = await mintSuperMessageLimitedReadAndTransfer(
-                        group.id, params.messageBlobId, params.auxId, params.maxReads
+                        group.id, params.messageBlobId, params.auxId, params.maxReads,
+                        {
+                            tx,
+                        }
                     );
                     break;
                 case 'fee_based':
                     if (params.fee === undefined || !params.recipient)
                         throw new Error("Missing parameters for Fee Based");
                     tx = await mintSuperMessageFeeBasedAndTransfer(
-                        group.id, params.messageBlobId, params.auxId, BigInt(params.fee), params.recipient
+                        group.id, params.messageBlobId, params.auxId, BigInt(params.fee), params.recipient,
+                        {
+                            tx,
+                        }
                     );
                     break;
                 case 'compound':
@@ -306,13 +316,18 @@ export function ComposerInput(props: ComposerInputProps) {
                         throw new Error("Missing parameters for Compound");
                     tx = await mintSuperMessageCompoundAndTransfer(
                         group.id, params.messageBlobId, params.auxId, params.timeFrom, params.timeTo,
-                        params.maxReads, BigInt(params.fee), params.recipient
+                        params.maxReads, BigInt(params.fee), params.recipient,
+                        {
+                            tx,
+                        }
                     );
                     break;
                 case 'no_policy':
                     if (!params.messageBlobId || !params.auxId)
                         throw new Error("Missing parameters for No Policy");
-                    tx = await mintSuperMessageNoPolicyAndTransfer(group.id, params.messageBlobId, params.auxId);
+                    tx = await mintSuperMessageNoPolicyAndTransfer(group.id, params.messageBlobId, params.auxId, {
+                        tx,
+                    });
                     break;
                 default:
                     const exhaustiveCheck: never = params.type;
@@ -453,24 +468,17 @@ export function ComposerInput(props: ComposerInputProps) {
                 .filter(mc => mc.raw && (typeof mc.raw === 'string' ? mc.raw.length > 0 : mc.raw.length > 0));
 
             let encryptedResult = await encrypt(auxId, encode(finalDataStructure));
-            let blobId: string | undefined;
 
-            try {
-                blobId = await store(encryptedResult);
-                if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
-            } catch (storeError: any) {
-                toaster.error({
-                    title: "Storage Error",
-                    description: storeError?.message ?? 'Failed to store message'
-                });
-                return;
-            }
+            const { blobId, transaction } = await storeReturnTransaction(encryptedResult);
+            if (!blobId) throw new Error("Failed to store message, received undefined blobId.");
 
-            const baseParams: { type: SuperMessageType, groupId: string, messageBlobId: string, auxId: Uint8Array } = {
+
+            const baseParams: { type: SuperMessageType, groupId: string, messageBlobId: string, auxId: Uint8Array, tx: Transaction } = {
                 type: data.messageType,
                 groupId: group.id,
                 messageBlobId: blobId,
-                auxId
+                auxId,
+                tx: transaction
             };
 
             let finalParams: MintParams;

@@ -1,7 +1,7 @@
 "use client"
 
 import { AblyProvider, useAbly, useConnectionStateListener } from "ably/react";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import * as Ably from "ably";
 import { decode } from "@msgpack/msgpack";
 
@@ -14,6 +14,8 @@ import { TMessage } from "@/types";
 import { useSubscribedChannelsStore } from "./_hooks/useSubsribedChannelStore";
 import { useMembershipGroups } from "./_hooks/useMembershipGroups";
 import { toaster } from "@/components/ui/toaster";
+import { coinWithBalance, Transaction } from "@mysten/sui/transactions";
+import { MIST_PER_SUI } from "@mysten/sui/utils";
 
 export function InboxChannelProvider({
     children,
@@ -155,6 +157,7 @@ export function Provider({
     children: React.ReactNode;
 }>) {
     const currentAccount = useCurrentAccount();
+    const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
 
 
     const ablyClient = new Ably.Realtime({

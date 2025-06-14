@@ -1,18 +1,19 @@
-import { ChatiwalMascotIcon } from "@/components/global/icons";
 import { Button, ButtonProps } from "@/components/ui/button";
 import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot } from "@/components/ui/dialog";
-import { DialogBackdrop, DialogTrigger, Field, Heading, Icon, Input, Text, useDisclosure, VStack } from "@chakra-ui/react";
+import { DialogBackdrop, DialogTrigger, Field, Heading, Icon, Input, Text, useDisclosure } from "@chakra-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
-import { useGroup } from "../_hooks/useGroup";
-import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { MdAdd } from "react-icons/md";
+import { useChannel } from "ably/react";
+
 import { toaster } from "@/components/ui/toaster";
 import { useSupabase } from "@/hooks/useSupabase";
-import { MdAdd } from "react-icons/md";
-import { useChannelName } from "../_hooks/useChannelName";
-import { useChannel } from "ably/react";
 import { AblyChannelManager } from "@/libs/ablyHelpers";
+import { useChatiwalClient } from "@/hooks/useChatiwalClient";
+
+import { useChannelName } from "../_hooks/useChannelName";
+import { useGroup } from "../_hooks/useGroup";
 
 type FormValues = {
     member: string;
@@ -31,7 +32,6 @@ export default function AddMember(
     const {
         handleSubmit,
         control,
-        watch,
         formState: { errors },
         reset: resetForm
     } = useForm<FormValues>({
@@ -48,7 +48,7 @@ export default function AddMember(
     const queryClient = useQueryClient();
 
     const { data: group_cap, isSuccess } = useQuery({
-        queryKey: ["group::members::group_cap"],
+        queryKey: ["group::members::group_cap", group?.id],
         queryFn: async () => {
             if (!group) throw new Error("Group not found");
             const group_cap = await validateGroupCap(group.id);
