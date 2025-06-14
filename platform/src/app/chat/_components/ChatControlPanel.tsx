@@ -1,19 +1,20 @@
 "use client"
 
 import { Heading, HStack, VStack, Text, StackProps } from "@chakra-ui/react";
-
-import { useGroup } from "../_hooks/useGroup";
-import AddMember from "./AddMember";
 import { formatAddress } from "@mysten/sui/utils";
 import { useCurrentAccount } from "@mysten/dapp-kit";
+import { HiKey } from "react-icons/hi";
+import { SessionKey } from "@mysten/seal";
+import { useMemo } from "react";
+
 import { toaster } from "@/components/ui/toaster";
 import { useSessionKeys } from "@/hooks/useSessionKeysStore";
 import { useSealClient } from "@/hooks/useSealClient";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { HiKey } from "react-icons/hi";
-import { SessionKey } from "@mysten/seal";
-import { useMemo } from "react";
+
+import { useGroup } from "../_hooks/useGroup";
+import AddMember from "./AddMember";
 import { MessagesSnapshotButton } from "./MessagesSnapshotButton";
 import { useDirectMessageId } from "../_hooks/useDirectMessageId";
 import { useChannelName } from "../_hooks/useChannelName";

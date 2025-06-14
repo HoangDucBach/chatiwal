@@ -1,8 +1,8 @@
 "use client"
 
-import { Heading, HStack, Skeleton, StackProps, VStack, Text, Center, For, Image, InputProps, Input, InputGroup, Icon } from "@chakra-ui/react";
+import { Skeleton, StackProps, VStack, For, InputProps, Input, InputGroup, Icon } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { LuSearch } from "react-icons/lu";
 
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";

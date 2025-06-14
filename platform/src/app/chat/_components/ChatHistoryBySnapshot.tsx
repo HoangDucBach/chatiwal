@@ -1,15 +1,17 @@
+import { useEffect } from "react";
+import { StackProps } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
+import { decode } from "@msgpack/msgpack";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
+
 import { useChatiwalClient } from "@/hooks/useChatiwalClient";
 import { useWalrusClient } from "@/hooks/useWalrusClient";
 import { getMessagePolicyType, MessageType, TMessage } from "@/types";
-import { StackProps } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
-import { useGroup } from "../_hooks/useGroup";
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import { decode } from "@msgpack/msgpack";
-import { MessageBase, SuperMessagePolicy } from "./messages";
-import { useEffect } from "react";
 import { LoadingContent } from "@/components/ui/loading-content";
 import { ChatiwalMascotIcon } from "@/components/global/icons";
+
+import { useGroup } from "../_hooks/useGroup";
+import { MessageBase, SuperMessagePolicy } from "./messages";
 
 interface Props extends StackProps {
     onSuccess?: (messages: TMessage[]) => void;
