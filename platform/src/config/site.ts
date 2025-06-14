@@ -8,9 +8,21 @@ export const siteConfig = {
         "Full Control"
     ],
     navLinks: {
+        home: {
+            name: "Home",
+            href: "/"
+        },
         doc: {
             name: "Docs",
             href: "https://chatiwal.gitbook.io/chatiwal-docs/",
+        },
+        about: {
+            name: "About",
+            href: "https://chatiwal.gitbook.io/chatiwal-docs/about-chatiwal"
+        },
+        team: {
+            name: "Team",
+            href: "/team"
         }
     }
 }

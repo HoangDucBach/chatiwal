@@ -1,20 +1,27 @@
+"use client";
+
 import { Header as HeaderComponent } from "@/components/global/bars"
 import { siteConfig } from "@/config/site"
 import { HStack, Link as ChakraLink } from "@chakra-ui/react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 export function Header() {
     return (
         <HeaderComponent>
             <NavLinks />
-            <Tools />
         </HeaderComponent>
     )
 }
 
 const NavLinks = () => {
+    const pathname = usePathname();
+    const isActive = (href: string) => {
+        return pathname === href || pathname.startsWith(href + "/");
+    }
+
     return (
-        <HStack flexGrow={"1"} align={"center"} justify={"center"} flex={"1 0"}>
+        <HStack align={"end"} justify={"end"} flex={1}>
             {
                 Object.entries(siteConfig.navLinks).map(([key, value]) => (
                     <ChakraLink
@@ -22,10 +29,13 @@ const NavLinks = () => {
                         href={value.href}
                         key={key}
                         fontSize={"md"}
-                        color={"fg.700"}
+                        color={isActive(value.href) ? "fg" : "fg.900"}
+                        borderBottom={isActive(value.href) ? "2px solid" : "none"}
+                        borderColor={isActive(value.href) ? "primary.500" : "transparent"}
                         _hover={{
                             textDecoration: "none",
-                            color: "fg.900",
+                            color: "fg",
+                            animation: "color 0.2s ease-in-out",
                         }}
                     >
                         {value.name}
