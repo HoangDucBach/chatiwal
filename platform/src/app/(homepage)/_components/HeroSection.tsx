@@ -47,6 +47,7 @@ export default function HeroSection(props: HeroSectionProps) {
             variants={fadeSlideUp}
             pt={["4", "16", "32"]}
             pb={"8"}
+            px={["4", "8", "16"]}
             id="hero" zIndex={"0"} w={"full"} h={"full"} overflow={"hidden"}
         >
             <VStack w={"full"} h={"full"} align={"start"} justify={"space-between"} gap={"8"}>
