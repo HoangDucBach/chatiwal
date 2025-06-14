@@ -145,7 +145,7 @@ export const useWalrusClient = (): IWalrusClientActions => {
             objectId: blobObject.objectId,
         });
 
-        const certifyBlobTransaction = await walrusClient.certifyBlobTransaction({
+        const certifyBlobTransaction = walrusClient.certifyBlobTransaction({
             blobId: encodedBlob.blobId,
             blobObjectId: blobObject.objectId,
             confirmations,
