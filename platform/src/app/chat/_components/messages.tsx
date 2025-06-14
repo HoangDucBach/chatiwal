@@ -265,9 +265,8 @@ export function MessageBase(props: MessageBaseProps) {
                 return null;
             }
 
-            console.log("Decrypting message content:")
             const decryptedBytes = await decrypt(message.content, sessionKey, {
-                type: channelType,
+                type: message.type,
                 groupId: message.groupId,   
                 msgId: message.id,
             });
@@ -617,9 +616,6 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
     return (
         <MessageBase message={message} self={self}>
-            <p>
-                {JSON.stringify(message, null, 2)}
-            </p>
             <VStack p={"3"} bg={"bg.200"} rounded={"3xl"} justify={"center"} shadow={"custom.md"} w={"full"}>
                 <HStack rounded={"2xl"} w={"full"} bg={"bg.300"} p={"2"}>
                     <Heading as={"h6"} size={"md"} fontWeight={"medium"} textAlign={"start"} w={"full"}>

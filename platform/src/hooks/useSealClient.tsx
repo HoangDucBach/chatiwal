@@ -120,7 +120,7 @@ export function useSealClient(): ISealActions {
         const tx = new Transaction();
         const encryptedObjectParsed = EncryptedObject.parse(new Uint8Array(encryptedObject));
         const ids = [encryptedObjectParsed.id];
-
+        
         ids.forEach((id) => {
             switch (options?.type) {
                 case MessageType.GROUP:
