@@ -265,9 +265,11 @@ export function MessageBase(props: MessageBaseProps) {
                 return null;
             }
 
+            console.log("Decrypting message content:")
             const decryptedBytes = await decrypt(message.content, sessionKey, {
                 type: channelType,
-                groupId: message.groupId,
+                groupId: message.groupId,   
+                msgId: message.id,
             });
             const decodedData = decode(decryptedBytes) as MediaContent[];
             return decodedData;
@@ -295,7 +297,6 @@ export function MessageBase(props: MessageBaseProps) {
         refetchInterval: 30000,
         staleTime: 25000,
     });
-
 
     if (!message) return null;
 
@@ -371,7 +372,7 @@ export function MessageBase(props: MessageBaseProps) {
             console.error("Decryption error:", decryptError);
         }
     }, [decryptError]);
-
+    
     return (
         <MotionHStack
             w={"full"}
@@ -616,6 +617,9 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
 
     return (
         <MessageBase message={message} self={self}>
+            <p>
+                {JSON.stringify(message, null, 2)}
+            </p>
             <VStack p={"3"} bg={"bg.200"} rounded={"3xl"} justify={"center"} shadow={"custom.md"} w={"full"}>
                 <HStack rounded={"2xl"} w={"full"} bg={"bg.300"} p={"2"}>
                     <Heading as={"h6"} size={"md"} fontWeight={"medium"} textAlign={"start"} w={"full"}>
