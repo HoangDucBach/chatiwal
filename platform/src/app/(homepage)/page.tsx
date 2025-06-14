@@ -16,7 +16,6 @@ export default function Home() {
     >
       <VStack
         w={"full"}
-        maxW={["full", "full", "4xl", "6xl"]}
         h={"full"}
       >
         <Effects />
