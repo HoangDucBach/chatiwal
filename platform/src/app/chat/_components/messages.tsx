@@ -29,6 +29,7 @@ import { AblyChannelManager } from "@/libs/ablyHelpers";
 import { useChannelName } from "../_hooks/useChannelName";
 import { SessionKey } from "@mysten/seal";
 import { SUI_EXPLORER_URL } from "@/utils/constants";
+import { coinWithBalance, Transaction } from "@mysten/sui/transactions";
 
 const MotionVStack = motion.create(VStack);
 const MotionHStack = motion.create(HStack);
@@ -454,8 +455,8 @@ export function SuperMessagePolicy(props: SuperMessagePolicyProps) {
             if (!message) {
                 throw new Error("Message not found");
             }
-
-            const tx = await readMessage(message.id, "");
+            let tx = new Transaction();
+            tx = await readMessage(message.id, message.feePolicy?.fee_amount || 0, {tx});
 
             const res = await signAndExecuteTransaction({
                 transaction: tx,

@@ -39,7 +39,7 @@ export interface IMessageActions {
     mintSuperMessageLimitedReadAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, maxReads: number | bigint, options?: ActionOptions): Promise<Transaction>;
     mintSuperMessageFeeBasedAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, fee: number | bigint, recipient: string, options?: ActionOptions): Promise<Transaction>;
     mintSuperMessageCompoundAndTransfer(groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, options?: ActionOptions): Promise<Transaction>;
-    readMessage(messageId: string, paymentCoinId: string): Promise<Transaction>;
+    readMessage(messageId: string, payment: bigint | number | string, options?: ActionOptions): Promise<Transaction>;
     withdrawFees(messageId: string, options?: ActionOptions): Promise<Transaction>;
     sealApproveSuperMessage(id: Uint8Array, messageId: ObjectId, groupId: ObjectId, options?: ActionOptions): Promise<Transaction>;
     getSuperMessageData(messageId: string): Promise<SuperMessageData>;
@@ -294,7 +294,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         mintSuperMessageTimeLockAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, options?: ActionOptions) => {
             const tx = options?.tx || new Transaction();
-            
+
             return executeTransaction(() =>
                 client.mintSuperMessageTimeLockAndTransfer({
                     g_id: groupId,
@@ -337,7 +337,7 @@ export function useChatiwalClient(): IChatiwalClientActions {
 
         mintSuperMessageCompoundAndTransfer: (groupId: string, messageBlobId: string, auxId: Uint8Array, timeFrom: number | bigint, timeTo: number | bigint, maxReads: number | bigint, fee: number | bigint, recipient: string, options?: ActionOptions) => {
             const tx = options?.tx || new Transaction();
-            
+
             return executeTransaction(() =>
                 client.mintSuperMessageCompoundAndTransfer({
                     g_id: groupId,
@@ -352,11 +352,14 @@ export function useChatiwalClient(): IChatiwalClientActions {
             );
         },
 
-        readMessage: (messageId: string, paymentCoinId: string) => {
+        readMessage: (messageId: string, payment: number | string | bigint, options?: ActionOptions) => {
+            const tx = options?.tx || new Transaction();
+
             return executeTransaction(() =>
                 client.readMessage({
                     msg: messageId,
-                    payment: paymentCoinId
+                    payment: payment,
+                    _tx: tx
                 })
             );
         },

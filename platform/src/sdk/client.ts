@@ -252,11 +252,11 @@ export class ChatiwalClient {
 
     readMessage({ msg, payment, _tx }: {
         msg: ObjectId; // messageId
-        payment: ObjectId; // paymentCoinId
+        payment?: number | bigint | string; // payment amount in SUI
         _tx?: Transaction;
     }): Transaction {
         const tx = _tx || new Transaction();
-        const paymentCoin = tx.splitCoins(tx.gas, [payment]);
+        const paymentCoin = tx.splitCoins(tx.gas, [BigInt(payment || 0)]);
 
         this.messageModule.read_message({
             arguments: [msg, paymentCoin],
